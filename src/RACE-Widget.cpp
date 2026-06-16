@@ -603,7 +603,7 @@ void RaceWidget::DrawMainPanel()
 		}
 	}
 
-	if (SKEE64Compat::IsPresent()) {
+	if (SKEE64Compat::IsPresent() && !isGamepad) {
 		FUCK::SameLine();
 		RE::GFxValue menuInstance;
 		bool         isLightOn = false;
@@ -636,6 +636,11 @@ void RaceWidget::DrawMainPanel()
 		}
 	}
 
+	if (isGamepad) {
+		FUCK::SameLine();
+		FUCK::HelpMarker("$RACE_CamTooltip_GP"_T);
+	}
+
 	bool hasCam      = RaceCamera::GetSingleton()->HasAnyCamera();
 	bool hasEquipBtn = (!isGamepad && eqManager->HasItems());
 
@@ -659,10 +664,12 @@ void RaceWidget::DrawMainPanel()
 		itemsOnBottomLine = true;
 	}
 
-	if (itemsOnBottomLine)
-		FUCK::SameLine();
-	FUCK::HelpMarker(isGamepad ? "$RACE_CamTooltip_GP"_T : "$RACE_CamTooltip_KBM"_T);
-	itemsOnBottomLine = true;
+	if (!isGamepad) {
+		if (itemsOnBottomLine)
+			FUCK::SameLine();
+		FUCK::HelpMarker("$RACE_CamTooltip_KBM"_T);
+		itemsOnBottomLine = true;
+	}
 
 	if (hasCam) {
 		if (itemsOnBottomLine)
