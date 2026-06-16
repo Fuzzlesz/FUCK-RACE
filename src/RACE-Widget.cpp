@@ -284,6 +284,7 @@ void RaceWidget::LoadSettings()
 		_anchorPos.y = FUCK::Scale(FUCK::INI::LoadFloat(ini, "Widget", "Y", defaultPos.y / resScale));
 
 		_startFrozen = FUCK::INI::LoadBool(ini, "Widget", "StartFrozen", false);
+		_hideIdles   = FUCK::INI::LoadBool(ini, "Widget", "HideIdles", false);
 
 		RaceCamera::GetSingleton()->LoadSettings(ini);
 	});
@@ -301,6 +302,7 @@ void RaceWidget::SaveSettings()
 		FUCK::INI::SaveDouble(ini, "Widget", "Y", _anchorPos.y / resScale, defaultPos.y / resScale);
 
 		FUCK::INI::SaveBool(ini, "Widget", "StartFrozen", _startFrozen, false);
+		FUCK::INI::SaveBool(ini, "Widget", "HideIdles", _hideIdles, false);
 
 		RaceCamera::GetSingleton()->SaveSettings(ini);
 	});
@@ -554,22 +556,24 @@ void RaceWidget::DrawMainPanel()
 		FUCK::Indent(alignOffset);
 	}
 
-	FUCK::SetNextItemWidth(comboWidth);
-	if (FUCK::ComboWithFilter("##RACE_PluginFilter", &_selectedPluginIndex, _pluginNamesCStr.data(), static_cast<int>(_pluginNamesCStr.size())))
-		_idlesValid = false;
-	FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
+	if (!_hideIdles) {
+		FUCK::SetNextItemWidth(comboWidth);
+		if (FUCK::ComboWithFilter("##RACE_PluginFilter", &_selectedPluginIndex, _pluginNamesCStr.data(), static_cast<int>(_pluginNamesCStr.size())))
+			_idlesValid = false;
+		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
 
-	FUCK::SetNextItemWidth(comboWidth);
-	if (FUCK::ComboWithFilter("##RACE_Idles", &_selectedIndex, _idleNames.data(), static_cast<int>(_idleNames.size()))) {
-		if (_selectedIndex > 0 && _selectedIndex < static_cast<int>(_validIdles.size())) {
-			if (_isFrozen)
-				SetPlayerFrozen(false);
-			auto player = RE::PlayerCharacter::GetSingleton();
-			if (player && player->currentProcess)
-				player->currentProcess->PlayIdle(player, _validIdles[_selectedIndex].second, nullptr);
+		FUCK::SetNextItemWidth(comboWidth);
+		if (FUCK::ComboWithFilter("##RACE_Idles", &_selectedIndex, _idleNames.data(), static_cast<int>(_idleNames.size()))) {
+			if (_selectedIndex > 0 && _selectedIndex < static_cast<int>(_validIdles.size())) {
+				if (_isFrozen)
+					SetPlayerFrozen(false);
+				auto player = RE::PlayerCharacter::GetSingleton();
+				if (player && player->currentProcess)
+					player->currentProcess->PlayIdle(player, _validIdles[_selectedIndex].second, nullptr);
+			}
 		}
+		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
 	}
-	FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
 
 	if (FUCK::Button("$RACE_Freeze"_T)) {
 		if (!_isFrozen)
@@ -732,6 +736,10 @@ void RaceWidget::DrawSettingsPanel()
 	}
 
 	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
+
+	if (FUCK::Checkbox("$RACE_HideIdles"_T, &_hideIdles, true, true)) {
+		SaveSettings();
+	}
 
 	if (FUCK::Checkbox("$RACE_StartFrozen"_T, &_startFrozen, true, true)) {
 		SaveSettings();

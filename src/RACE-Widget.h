@@ -66,6 +66,7 @@ private:
 	bool _settingsJustOpened = false;
 
 	bool _startFrozen = false;
+	bool _hideIdles   = false;
 
 	int _lastMode = -1;
 };
