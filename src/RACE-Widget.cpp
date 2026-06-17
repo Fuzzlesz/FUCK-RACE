@@ -277,11 +277,16 @@ void RaceWidget::OnAdvanceMovie(RE::RaceSexMenu* a_menu)
 void RaceWidget::LoadSettings()
 {
 	GetSettings().Load([this](CSimpleIniA& ini) {
-		float  resScale   = FUCK::GetResolutionScale();
-		ImVec2 defaultPos = RaceWidgetWindow::GetSingleton()->GetDefaultPos();
+		float savedX = FUCK::INI::LoadFloat(ini, "Widget", "X", -1.0f);
+		float savedY = FUCK::INI::LoadFloat(ini, "Widget", "Y", -1.0f);
 
-		_anchorPos.x = FUCK::Scale(FUCK::INI::LoadFloat(ini, "Widget", "X", defaultPos.x / resScale));
-		_anchorPos.y = FUCK::Scale(FUCK::INI::LoadFloat(ini, "Widget", "Y", defaultPos.y / resScale));
+		if (savedX >= 0.0f && savedY >= 0.0f) {
+			_anchorPos.x = FUCK::Scale(savedX);
+			_anchorPos.y = FUCK::Scale(savedY);
+		} else {
+			_anchorPos.x = -1.0f;
+			_anchorPos.y = -1.0f;
+		}
 
 		_startFrozen = FUCK::INI::LoadBool(ini, "Widget", "StartFrozen", false);
 		_hideIdles   = FUCK::INI::LoadBool(ini, "Widget", "HideIdles", false);
@@ -334,12 +339,6 @@ bool RaceWidget::IsOpen() const
 	return open && !journalOpen;
 }
 
-bool RaceWidget::GetRequestedPos(ImVec2& outPos)
-{
-	outPos = _anchorPos;
-	return true;
-}
-
 void RaceWidget::HandlePositioning(ImVec2& expectedPos)
 {
 	bool isHovered = FUCK::IsWindowHovered(0);
@@ -358,11 +357,7 @@ void RaceWidget::HandlePositioning(ImVec2& expectedPos)
 
 	if (_isDragging && FUCK::IsMouseReleased(0)) {
 		_isDragging = false;
-		if (std::abs(_currentPos.x - expectedPos.x) > 1.0f || std::abs(_currentPos.y - expectedPos.y) > 1.0f) {
-			_anchorPos = _currentPos;
-			SaveSettings();
-			expectedPos = _currentPos;
-		}
+		SaveSettings();
 	}
 
 	if (!FUCK::IsMouseDown(0)) {
@@ -401,6 +396,21 @@ int RaceWidget::GetCurrentMode() const
 
 void RaceWidget::Draw()
 {
+	static bool s_clamped = false;
+	auto        initRes   = FUCK::InitializeCustomPosition(
+        _anchorPos,
+        RaceWidgetWindow::GetSingleton()->GetDefaultPos(),
+        FUCK::Scale(334.0f, 70.0f),
+        s_clamped);
+
+	if (initRes == FUCK::PosInitResult::kNotReady) {
+		return;
+	}
+	if (initRes == FUCK::PosInitResult::kChanged) {
+		_currentPos = _anchorPos;
+		SaveSettings();
+	}
+
 	int currentMode = GetCurrentMode();
 
 	if (!_idlesValid) {

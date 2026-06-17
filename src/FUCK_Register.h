@@ -37,11 +37,12 @@ public:
 	FUCK::WindowFlags GetFlags() const override
 	{
 		FUCK::WindowFlags flags =
-			FUCK::WindowFlags::kNoDecoration |
-			FUCK::WindowFlags::kNoBackground |
+			FUCK::WindowFlags::kNoDecoration    |
+			FUCK::WindowFlags::kNoBackground    |
 			FUCK::WindowFlags::kIgnoreUserScale |
-			FUCK::WindowFlags::kAutoResize |
-			FUCK::WindowFlags::kNoResize;
+			FUCK::WindowFlags::kAutoResize      |
+			FUCK::WindowFlags::kNoResize        |
+			FUCK::WindowFlags::kCustomPosition  ;
 
 		if (!FUCK::IsMenuOpen()) {
 			flags = flags | FUCK::WindowFlags::kNoMove;
@@ -71,12 +72,9 @@ public:
 
 	ImVec2 GetDefaultPos() const override
 	{
-		return FUCK::Scale(1586.0f, 70.0f);
-	}
-
-	bool GetRequestedPos(ImVec2& outPos) override
-	{
-		return RaceWidget::GetSingleton()->GetRequestedPos(outPos);
+		ImVec2 displaySize = FUCK::GetDisplaySize();
+		float  startX      = displaySize.x - FUCK::Scale(334.0f);
+		return { std::max(0.0f, startX), FUCK::Scale(70.0f) };
 	}
 };
 
@@ -97,6 +95,11 @@ public:
 
 	void Draw() override
 	{
+		ImVec2 spawnPos;
+		if (RaceEquipManager::GetSingleton()->ConsumeSpawnRequest(spawnPos)) {
+			FUCK::SetNextWindowPos(spawnPos, ImGuiCond_Always);
+		}
+
 		RaceEquipManager::GetSingleton()->DrawWindow();
 		_lastPos  = FUCK::GetWindowPos();
 		_lastSize = FUCK::GetWindowSize();
@@ -115,9 +118,10 @@ public:
 	FUCK::WindowFlags GetFlags() const override
 	{
 		FUCK::WindowFlags flags =
-			FUCK::WindowFlags::kNoDecoration |
-			FUCK::WindowFlags::kAutoResize |
-			FUCK::WindowFlags::kNoResize;
+			FUCK::WindowFlags::kNoDecoration  |
+			FUCK::WindowFlags::kAutoResize    |
+			FUCK::WindowFlags::kNoResize      |
+			FUCK::WindowFlags::kCustomPosition;
 
 		if (!FUCK::IsMenuOpen()) {
 			flags = flags | FUCK::WindowFlags::kNoMove;
@@ -140,11 +144,6 @@ public:
 	ImVec2 GetDefaultSize() const override
 	{
 		return FUCK::Scale(250.0f, 350.0f);
-	}
-
-	bool GetRequestedPos(ImVec2& outPos) override
-	{
-		return RaceEquipManager::GetSingleton()->ConsumeSpawnRequest(outPos);
 	}
 };
 

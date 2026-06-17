@@ -12,7 +12,6 @@ public:
 	void Initialize();
 
 	bool IsOpen() const;
-	bool GetRequestedPos(ImVec2& outPos);
 
 	void Draw();
 	void DrawMainPanel();
