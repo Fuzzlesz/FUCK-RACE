@@ -400,7 +400,7 @@ void RaceWidget::Draw()
 	auto        initRes   = FUCK::InitializeCustomPosition(
         _anchorPos,
         RaceWidgetWindow::GetSingleton()->GetDefaultPos(),
-        FUCK::Scale(334.0f, 70.0f),
+        RaceWidgetWindow::GetSingleton()->GetDefaultSize(),
         s_clamped);
 
 	if (initRes == FUCK::PosInitResult::kNotReady) {
