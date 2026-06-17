@@ -16,7 +16,7 @@ inline FUCK::PluginSettings& GetSettings()
 
 void RaceWidget::Initialize()
 {
-	_anchorPos  = RaceWidgetWindow::GetSingleton()->GetDefaultPos();
+	_anchorPos  = { -1.0f, -1.0f };
 	_currentPos = _anchorPos;
 	LoadSettings();
 
