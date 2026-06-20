@@ -65,11 +65,6 @@ public:
 		return flags;
 	}
 
-	ImVec2 GetDefaultSize() const override
-	{
-		return { 0.0f, 0.0f };
-	}
-
 	ImVec2 GetDefaultPos() const override
 	{
 		ImVec2 displaySize = FUCK::GetDisplaySize();

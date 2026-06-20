@@ -280,13 +280,7 @@ void RaceWidget::LoadSettings()
 		float savedX = FUCK::INI::LoadFloat(ini, "Widget", "X", -1.0f);
 		float savedY = FUCK::INI::LoadFloat(ini, "Widget", "Y", -1.0f);
 
-		if (savedX >= 0.0f && savedY >= 0.0f) {
-			_anchorPos.x = FUCK::Scale(savedX);
-			_anchorPos.y = FUCK::Scale(savedY);
-		} else {
-			_anchorPos.x = -1.0f;
-			_anchorPos.y = -1.0f;
-		}
+		_anchorPos = FUCK::Scale({ savedX, savedY });
 
 		_startFrozen = FUCK::INI::LoadBool(ini, "Widget", "StartFrozen", false);
 		_hideIdles   = FUCK::INI::LoadBool(ini, "Widget", "HideIdles", false);
@@ -400,7 +394,6 @@ void RaceWidget::Draw()
 	auto        initRes   = FUCK::InitializeCustomPosition(
         _anchorPos,
         RaceWidgetWindow::GetSingleton()->GetDefaultPos(),
-        RaceWidgetWindow::GetSingleton()->GetDefaultSize(),
         s_clamped);
 
 	if (initRes == FUCK::PosInitResult::kNotReady) {
