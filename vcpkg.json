@@ -1,6 +1,6 @@
 {
   "name": "fuck-race",
-  "version-string": "1.0.2",
+  "version-string": "1.0.3",
   "dependencies": [
     "clib-util",
     "directxtex",
