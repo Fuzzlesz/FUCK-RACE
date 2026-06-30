@@ -92,7 +92,7 @@ public:
 	{
 		ImVec2 spawnPos;
 		if (RaceEquipManager::GetSingleton()->ConsumeSpawnRequest(spawnPos)) {
-			FUCK::SetNextWindowPos(spawnPos, ImGuiCond_Always);
+			FUCK::SetWindowPos(spawnPos, ImGuiCond_Always);
 		}
 
 		RaceEquipManager::GetSingleton()->DrawWindow();

@@ -658,9 +658,9 @@ void RaceWidget::DrawMainPanel()
 		if (FUCK::Button("$RACE_EquipBtn"_T)) {
 			eqManager->ToggleWindow();
 			if (eqManager->IsWindowOpen()) {
-				ImVec2 mousePos = FUCK::GetMousePos();
-				mousePos.y += FUCK::Scale(35.0f);
-				eqManager->SetSpawnPos(mousePos);
+				ImVec2 minPos = FUCK::GetItemRectMin();
+				ImVec2 maxPos = FUCK::GetItemRectMax();
+				eqManager->SetSpawnPos(ImVec2(minPos.x, maxPos.y + FUCK::Scale(4.0f)));
 				_showSettings = false;
 			}
 		}
