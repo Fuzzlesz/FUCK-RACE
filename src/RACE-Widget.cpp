@@ -740,11 +740,12 @@ void RaceWidget::DrawSettingsPanel()
 			FUCK::PushID("GP");
 			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 
-			changed |= FUCK::SliderFloat("$RACE_SpeedPan"_T,   &camSettings.gpPanSpeed,  10.0f, 300.0f, "%.0f");
-			changed |= FUCK::SliderFloat("$RACE_SpeedZoom"_T,  &camSettings.gpZoomSpeed, 10.0f, 300.0f, "%.0f");
-			changed |= FUCK::SliderFloat("$RACE_SpeedOrbit"_T, &camSettings.gpRotSpeed,   0.1f,  10.0f, "%.1f");
-			changed |= FUCK::SliderFloat("$RACE_SpeedFOV"_T,   &camSettings.gpFovSpeed,   5.0f, 100.0f, "%.1f");
-			changed |= FUCK::SliderFloat("$RACE_Deadzone"_T,   &camSettings.gpDeadzone,   0.0f,   0.5f, "%.2f");
+			changed |= FUCK::SliderFloat("$RACE_SpeedPan"_T,     &camSettings.gpPanSpeed,      10.0f, 300.0f, "%.0f");
+			changed |= FUCK::SliderFloat("$RACE_SpeedZoom"_T,    &camSettings.gpZoomSpeed,     10.0f, 300.0f, "%.0f");
+			changed |= FUCK::SliderFloat("$RACE_SpeedOrbit"_T,   &camSettings.gpRotSpeed,       0.1f,  10.0f, "%.1f");
+			changed |= FUCK::SliderFloat("$RACE_SpeedFOV"_T,     &camSettings.gpFovSpeed,       5.0f, 100.0f, "%.1f");
+			changed |= FUCK::SliderFloat("$RACE_SpeedCharRot"_T, &camSettings.gpCharRotSpeed,   0.1f,  10.0f, "%.1f");
+			changed |= FUCK::SliderFloat("$RACE_Deadzone"_T,     &camSettings.gpDeadzone,       0.0f,   0.5f, "%.2f");
 
 			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 			FUCK::PopID();
@@ -767,15 +768,16 @@ void RaceWidget::DrawSettingsPanel()
 
 	CameraSettings def;
 	bool           isModified =
-		std::abs(camSettings.kbmPanSpeed  - def.kbmPanSpeed)  > 0.001f  ||
-		std::abs(camSettings.kbmRotSpeed  - def.kbmRotSpeed)  > 0.001f  ||
-		std::abs(camSettings.kbmFovSpeed  - def.kbmFovSpeed)  > 0.001f  ||
-		std::abs(camSettings.mouseRotMult - def.mouseRotMult) > 0.0001f ||
-		std::abs(camSettings.gpPanSpeed   - def.gpPanSpeed)   > 0.001f  ||
-		std::abs(camSettings.gpZoomSpeed  - def.gpZoomSpeed)  > 0.001f  ||
-		std::abs(camSettings.gpRotSpeed   - def.gpRotSpeed)   > 0.001f  ||
-		std::abs(camSettings.gpFovSpeed   - def.gpFovSpeed)   > 0.001f  ||
-		std::abs(camSettings.gpDeadzone   - def.gpDeadzone)   > 0.001f   ;
+		std::abs(camSettings.kbmPanSpeed    - def.kbmPanSpeed)    > 0.001f  ||
+		std::abs(camSettings.kbmRotSpeed    - def.kbmRotSpeed)    > 0.001f  ||
+		std::abs(camSettings.kbmFovSpeed    - def.kbmFovSpeed)    > 0.001f  ||
+		std::abs(camSettings.mouseRotMult   - def.mouseRotMult)   > 0.0001f ||
+		std::abs(camSettings.gpPanSpeed     - def.gpPanSpeed)     > 0.001f  ||
+		std::abs(camSettings.gpZoomSpeed    - def.gpZoomSpeed)    > 0.001f  ||
+		std::abs(camSettings.gpRotSpeed     - def.gpRotSpeed)     > 0.001f  ||
+		std::abs(camSettings.gpFovSpeed     - def.gpFovSpeed)     > 0.001f  ||
+		std::abs(camSettings.gpCharRotSpeed - def.gpCharRotSpeed) > 0.001f  ||
+		std::abs(camSettings.gpDeadzone     - def.gpDeadzone)     > 0.001f   ;
 
 	if (isModified) {
 		if (FUCK::Button("$RACE_RestoreDefaults"_T)) {

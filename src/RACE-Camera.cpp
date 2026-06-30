@@ -5,30 +5,32 @@
 
 void RaceCamera::LoadSettings(CSimpleIniA& a_ini)
 {
-	_settings.kbmPanSpeed  = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMPanSpeed", 10.0f);
-	_settings.kbmRotSpeed  = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMRotSpeed",  1.5f);
-	_settings.kbmFovSpeed  = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMFovSpeed", 30.0f);
-	_settings.mouseRotMult = FUCK::INI::LoadFloat(a_ini, "Camera", "MouseRotMult", 0.015f);
+	_settings.kbmPanSpeed    = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMPanSpeed",   10.0f);
+	_settings.kbmRotSpeed    = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMRotSpeed",    1.5f);
+	_settings.kbmFovSpeed    = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMFovSpeed",   30.0f);
+	_settings.mouseRotMult   = FUCK::INI::LoadFloat(a_ini, "Camera", "MouseRotMult",   0.015f);
 
-	_settings.gpPanSpeed  = FUCK::INI::LoadFloat(a_ini, "Camera", "GPPanSpeed",  100.0f);
-	_settings.gpZoomSpeed = FUCK::INI::LoadFloat(a_ini, "Camera", "GPZoomSpeed", 100.0f);
-	_settings.gpRotSpeed  = FUCK::INI::LoadFloat(a_ini, "Camera", "GPRotSpeed",    2.0f);
-	_settings.gpFovSpeed  = FUCK::INI::LoadFloat(a_ini, "Camera", "GPFovSpeed",   30.0f);
-	_settings.gpDeadzone  = FUCK::INI::LoadFloat(a_ini, "Camera", "GPDeadzone",    0.25f);
+	_settings.gpPanSpeed     = FUCK::INI::LoadFloat(a_ini, "Camera", "GPPanSpeed",   100.0f);
+	_settings.gpZoomSpeed    = FUCK::INI::LoadFloat(a_ini, "Camera", "GPZoomSpeed",  100.0f);
+	_settings.gpRotSpeed     = FUCK::INI::LoadFloat(a_ini, "Camera", "GPRotSpeed",     2.0f);
+	_settings.gpFovSpeed     = FUCK::INI::LoadFloat(a_ini, "Camera", "GPFovSpeed",    30.0f);
+	_settings.gpCharRotSpeed = FUCK::INI::LoadFloat(a_ini, "Camera", "GPCharRotSpeed", 3.0f);
+	_settings.gpDeadzone     = FUCK::INI::LoadFloat(a_ini, "Camera", "GPDeadzone",     0.25f);
 }
 
 void RaceCamera::SaveSettings(CSimpleIniA& a_ini)
 {
-	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMPanSpeed",  _settings.kbmPanSpeed, 10.0f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMRotSpeed",  _settings.kbmRotSpeed,  1.5f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMFovSpeed",  _settings.kbmFovSpeed, 30.0f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "MouseRotMult", _settings.mouseRotMult, 0.015f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMPanSpeed",    _settings.kbmPanSpeed,   10.0f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMRotSpeed",    _settings.kbmRotSpeed,    1.5f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMFovSpeed",    _settings.kbmFovSpeed,   30.0f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "MouseRotMult",   _settings.mouseRotMult,   0.015f);
 
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPPanSpeed",  _settings.gpPanSpeed,  100.0f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPZoomSpeed", _settings.gpZoomSpeed, 100.0f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPRotSpeed",  _settings.gpRotSpeed,    2.0f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPFovSpeed",  _settings.gpFovSpeed,   30.0f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPDeadzone",  _settings.gpDeadzone,    0.25f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPPanSpeed",     _settings.gpPanSpeed,   100.0f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPZoomSpeed",    _settings.gpZoomSpeed,  100.0f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPRotSpeed",     _settings.gpRotSpeed,     2.0f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPFovSpeed",     _settings.gpFovSpeed,    30.0f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPCharRotSpeed", _settings.gpCharRotSpeed, 3.0f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPDeadzone",     _settings.gpDeadzone,     0.25f);
 }
 
 void RaceCamera::RevertCameraTransform(RE::NiNode* a_cameraRoot)
@@ -127,14 +129,27 @@ void RaceCamera::HandleInput(float a_interval, bool a_isFrozen)
 		}
 	}
 
-	// Right-Click Character Rotation
-	if (FUCK::IsInputDown(RACE::Keys::kMouse_Right) && !FUCK::IsWindowHovered(0)) {
-		ImVec2 delta = FUCK::GetMouseDelta();
-		if (delta.x != 0.0f) {
+	// Right-Click or Gamepad Character Rotation
+	bool isGP_Y = FUCK::IsInputDown(RACE::Keys::kGP_Y);
+	bool isGP_A = FUCK::IsInputDown(RACE::Keys::kGP_A);
+
+	if ((FUCK::IsInputDown(RACE::Keys::kMouse_Right) && !FUCK::IsWindowHovered(0)) || (rbDown && (isGP_Y || isGP_A))) {
+		float rotAmount = 0.0f;
+
+		if (FUCK::IsInputDown(RACE::Keys::kMouse_Right)) {
+			rotAmount = FUCK::GetMouseDelta().x * _settings.mouseRotMult;
+		} else if (rbDown) {
+			if (isGP_Y)
+				rotAmount -= _settings.gpCharRotSpeed * a_interval;
+			if (isGP_A)
+				rotAmount += _settings.gpCharRotSpeed * a_interval;
+		}
+
+		if (rotAmount != 0.0f) {
 			auto player = RE::PlayerCharacter::GetSingleton();
 			if (player && player->Is3DLoaded()) {
 				RE::NiPoint3 newAngle = player->data.angle;
-				newAngle.z -= (delta.x * _settings.mouseRotMult);
+				newAngle.z -= rotAmount;
 				player->SetAngle(newAngle);
 
 				if (a_isFrozen) {

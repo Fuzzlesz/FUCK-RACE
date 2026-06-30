@@ -10,7 +10,8 @@ struct CameraSettings
 	float gpPanSpeed  = 100.0f;
 	float gpZoomSpeed = 100.0f;
 	float gpRotSpeed  = 2.0f;
-	float gpFovSpeed  = 30.0f;
+	float gpFovSpeed     = 30.0f;
+	float gpCharRotSpeed = 3.0f; 
 	float gpDeadzone  = 0.25f;
 };
 
