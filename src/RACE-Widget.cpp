@@ -233,7 +233,6 @@ void RaceWidget::OnAdvanceMovie(RE::RaceSexMenu* a_menu)
 
 			RE::GFxValue undefinedVal;
 			undefinedVal.SetUndefined();
-			menuInstance.SetMember("_zoomControl", undefinedVal);
 
 			if (!isGamepad) {
 				menuInstance.SetMember("_lightControl", undefinedVal);
@@ -241,7 +240,6 @@ void RaceWidget::OnAdvanceMovie(RE::RaceSexMenu* a_menu)
 
 			RE::GFxValue bottomBar, buttonPanel;
 			if (menuInstance.GetMember("bottomBar", &bottomBar) && bottomBar.GetMember("buttonPanel", &buttonPanel)) {
-				int zoomBtnIdx  = isGamepad ? 1 : 2;
 				int lightBtnIdx = isGamepad ? 2 : 3;
 
 				auto killButton = [&](int idx) {
@@ -263,8 +261,6 @@ void RaceWidget::OnAdvanceMovie(RE::RaceSexMenu* a_menu)
 						}
 					}
 				};
-
-				killButton(zoomBtnIdx);
 
 				if (!isGamepad) {
 					killButton(lightBtnIdx);

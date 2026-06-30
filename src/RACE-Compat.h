@@ -17,15 +17,11 @@ namespace SKEE64Compat
 		bool isGamepad = (FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad);
 
 		if (a_currentMode == 0) {
-			RE::GFxValue undefinedVal;
-			undefinedVal.SetUndefined();
-
-			menuInstance.SetMember("_zoomControl", undefinedVal);
-
 			if (!isGamepad) {
+				RE::GFxValue undefinedVal;
+				undefinedVal.SetUndefined();
 				menuInstance.SetMember("_lightControl", undefinedVal);
 			}
-
 		} else if (a_previousMode == 0) {
 			RE::GFxValue platformVal, ps3Val;
 			menuInstance.GetMember("_platform", &platformVal);
