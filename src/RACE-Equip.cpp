@@ -23,19 +23,9 @@ void RaceEquipManager::Populate()
 		if (data.second && data.second->IsWorn()) {
 			std::string name = item->GetName();
 			if (!name.empty()) {
-				RE::ExtraDataList* equipExtra = nullptr;
-				if (data.second->extraLists) {
-					for (auto* xList : *data.second->extraLists) {
-						if (xList && (xList->HasType(RE::ExtraDataType::kWorn) || xList->HasType(RE::ExtraDataType::kWornLeft))) {
-							equipExtra = xList;
-							break;
-						}
-					}
-				}
-
 				TrackedItem t;
 				t.item       = item;
-				t.extraData  = equipExtra;
+				t.extraData  = nullptr;
 				t.name       = name;
 				t.isEquipped = true;
 				_trackedItems.push_back(t);
@@ -117,22 +107,28 @@ void RaceEquipManager::ToggleItem(int a_index)
 	if (a_index < 0 || a_index >= static_cast<int>(_trackedItems.size()))
 		return;
 
-	auto& tracked      = _trackedItems[a_index];
-	auto  equipManager = RE::ActorEquipManager::GetSingleton();
-	auto  player       = RE::PlayerCharacter::GetSingleton();
+	auto& tracked = _trackedItems[a_index];
 
-	if (equipManager && player && tracked.item) {
-		if (tracked.isEquipped) {
-			equipManager->UnequipObject(player, tracked.item, nullptr, 1, nullptr, true, false, false, true);
-			tracked.isEquipped = false;
-		} else {
-			equipManager->EquipObject(player, tracked.item, tracked.extraData, 1, nullptr, true, false, false, true);
-			tracked.isEquipped = true;
+	tracked.isEquipped = !tracked.isEquipped;
+	UpdateComboStrings();
+	_scanTimer = 0.0f;
+
+	auto item      = tracked.item;
+	bool equipping = tracked.isEquipped;
+
+	SKSE::GetTaskInterface()->AddTask([item, equipping]() {
+		auto equipManager = RE::ActorEquipManager::GetSingleton();
+		auto player       = RE::PlayerCharacter::GetSingleton();
+
+		if (equipManager && player && item) {
+			if (equipping) {
+				equipManager->EquipObject(player, item, nullptr, 1, nullptr, true, false, false, true);
+			} else {
+				equipManager->UnequipObject(player, item, nullptr, 1, nullptr, true, false, false, true);
+			}
+			player->Update3DModel();
 		}
-		player->Update3DModel();
-		UpdateComboStrings();
-		_scanTimer = 0.0f;
-	}
+	});
 }
 
 void RaceEquipManager::DrawWindow()
@@ -168,23 +164,29 @@ void RaceEquipManager::DrawWindow()
 
 void RaceEquipManager::RestoreEquipped()
 {
-	auto equipManager = RE::ActorEquipManager::GetSingleton();
-	auto player       = RE::PlayerCharacter::GetSingleton();
-	if (!equipManager || !player)
-		return;
+	std::vector<RE::TESBoundObject*> itemsToEquip;
 
-	bool needsUpdate = false;
 	for (auto& tracked : _trackedItems) {
 		if (!tracked.isEquipped) {
-			equipManager->EquipObject(player, tracked.item, tracked.extraData, 1, nullptr, true, false, false, true);
+			itemsToEquip.push_back(tracked.item);
 			tracked.isEquipped = true;
-			needsUpdate        = true;
 		}
 	}
 
-	if (needsUpdate) {
+	if (itemsToEquip.empty())
+		return;
+
+	SKSE::GetTaskInterface()->AddTask([itemsToEquip]() {
+		auto equipManager = RE::ActorEquipManager::GetSingleton();
+		auto player       = RE::PlayerCharacter::GetSingleton();
+		if (!equipManager || !player)
+			return;
+
+		for (auto* item : itemsToEquip) {
+			equipManager->EquipObject(player, item, nullptr, 1, nullptr, true, false, false, true);
+		}
 		player->Update3DModel();
-	}
+	});
 }
 
 void RaceEquipManager::Clear()
