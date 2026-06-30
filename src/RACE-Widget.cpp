@@ -506,7 +506,15 @@ void RaceWidget::Draw()
 
 	FUCK::BeginGroup();
 
+	float pad = FUCK::Scale(15.0f);
+	FUCK::SetCursorPos(FUCK::GetCursorPos() + ImVec2(pad, pad));
+
+	FUCK::BeginGroup();
 	DrawMainPanel();
+	FUCK::EndGroup();
+
+	FUCK::SetCursorScreenPos(FUCK::GetItemRectMax());
+	FUCK::Dummy(ImVec2(pad, pad));
 
 	FUCK::EndGroup();
 
