@@ -212,6 +212,8 @@ bool RaceWidget::GetMenuInstance(RE::GFxMovieView* a_movie, RE::GFxValue& a_outI
 
 void RaceWidget::OnAdvanceMovie(RE::RaceSexMenu* a_menu)
 {
+	FUCK::ForceCursor(true);
+
 	if (_isFrozen) {
 		auto player = RE::PlayerCharacter::GetSingleton();
 		if (player) {
@@ -323,6 +325,8 @@ bool RaceWidget::IsOpen() const
 
 		RaceEquipManager::GetSingleton()->RestoreEquipped();
 		RaceEquipManager::GetSingleton()->Clear();
+
+		FUCK::ForceCursor(false);
 	}
 
 	bool journalOpen = ui && ui->IsMenuOpen(RE::JournalMenu::MENU_NAME);
