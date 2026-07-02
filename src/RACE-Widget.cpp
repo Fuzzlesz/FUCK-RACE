@@ -457,7 +457,7 @@ void RaceWidget::Draw()
 
 	if (toggleTriggered) {
 		_uiHidden = !_uiHidden;
-		if (menu && menu->uiMovie) {
+		if (hasMenu) {
 			RE::GFxValue root;
 			if (menu->uiMovie->GetVariable(&root, "_root")) {
 				root.SetMember("_visible", RE::GFxValue(!_uiHidden));
