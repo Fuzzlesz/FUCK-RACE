@@ -5,32 +5,36 @@
 
 void RaceCamera::LoadSettings(CSimpleIniA& a_ini)
 {
-	_settings.kbmPanSpeed    = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMPanSpeed",   10.0f);
-	_settings.kbmRotSpeed    = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMRotSpeed",    1.5f);
-	_settings.kbmFovSpeed    = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMFovSpeed",   30.0f);
-	_settings.mouseRotMult   = FUCK::INI::LoadFloat(a_ini, "Camera", "MouseRotMult",   0.015f);
+	_settings.kbmPanSpeed    = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMPanSpeed",     10.0f);
+	_settings.kbmRotSpeed    = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMRotSpeed",      1.5f);
+	_settings.kbmRollSpeed   = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMRollSpeed",     1.5f);
+	_settings.kbmFovSpeed    = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMFovSpeed",     30.0f);
+	_settings.mouseRotMult   = FUCK::INI::LoadFloat(a_ini, "Camera", "MouseRotMult",     0.015f);
 
-	_settings.gpPanSpeed     = FUCK::INI::LoadFloat(a_ini, "Camera", "GPPanSpeed",   100.0f);
-	_settings.gpZoomSpeed    = FUCK::INI::LoadFloat(a_ini, "Camera", "GPZoomSpeed",  100.0f);
-	_settings.gpRotSpeed     = FUCK::INI::LoadFloat(a_ini, "Camera", "GPRotSpeed",     2.0f);
-	_settings.gpFovSpeed     = FUCK::INI::LoadFloat(a_ini, "Camera", "GPFovSpeed",    30.0f);
-	_settings.gpCharRotSpeed = FUCK::INI::LoadFloat(a_ini, "Camera", "GPCharRotSpeed", 3.0f);
-	_settings.gpDeadzone     = FUCK::INI::LoadFloat(a_ini, "Camera", "GPDeadzone",     0.25f);
+	_settings.gpPanSpeed     = FUCK::INI::LoadFloat(a_ini, "Camera", "GPPanSpeed",     100.0f);
+	_settings.gpZoomSpeed    = FUCK::INI::LoadFloat(a_ini, "Camera", "GPZoomSpeed",    100.0f);
+	_settings.gpRotSpeed     = FUCK::INI::LoadFloat(a_ini, "Camera", "GPRotSpeed",       2.0f);
+	_settings.gpRollSpeed    = FUCK::INI::LoadFloat(a_ini, "Camera", "GPRollSpeed",      2.0f);
+	_settings.gpFovSpeed     = FUCK::INI::LoadFloat(a_ini, "Camera", "GPFovSpeed",      30.0f);
+	_settings.gpCharRotSpeed = FUCK::INI::LoadFloat(a_ini, "Camera", "GPCharRotSpeed",   3.0f);
+	_settings.gpDeadzone     = FUCK::INI::LoadFloat(a_ini, "Camera", "GPDeadzone",       0.25f);
 }
 
 void RaceCamera::SaveSettings(CSimpleIniA& a_ini)
 {
-	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMPanSpeed",    _settings.kbmPanSpeed,   10.0f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMRotSpeed",    _settings.kbmRotSpeed,    1.5f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMFovSpeed",    _settings.kbmFovSpeed,   30.0f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "MouseRotMult",   _settings.mouseRotMult,   0.015f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMPanSpeed",    _settings.kbmPanSpeed,     10.0f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMRotSpeed",    _settings.kbmRotSpeed,      1.5f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMRollSpeed",   _settings.kbmRollSpeed,     1.5f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMFovSpeed",    _settings.kbmFovSpeed,     30.0f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "MouseRotMult",   _settings.mouseRotMult,     0.015f);
 
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPPanSpeed",     _settings.gpPanSpeed,   100.0f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPZoomSpeed",    _settings.gpZoomSpeed,  100.0f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPRotSpeed",     _settings.gpRotSpeed,     2.0f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPFovSpeed",     _settings.gpFovSpeed,    30.0f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPCharRotSpeed", _settings.gpCharRotSpeed, 3.0f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPDeadzone",     _settings.gpDeadzone,     0.25f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPPanSpeed",     _settings.gpPanSpeed,     100.0f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPZoomSpeed",    _settings.gpZoomSpeed,    100.0f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPRotSpeed",     _settings.gpRotSpeed,       2.0f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPRollSpeed",    _settings.gpRollSpeed,      2.0f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPFovSpeed",     _settings.gpFovSpeed,      30.0f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPCharRotSpeed", _settings.gpCharRotSpeed,   3.0f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPDeadzone",     _settings.gpDeadzone,       0.25f);
 }
 
 void RaceCamera::RevertCameraTransform(RE::NiNode* a_cameraRoot)
@@ -52,6 +56,7 @@ void RaceCamera::HandleInput(float a_interval, bool a_isFrozen)
 	bool ctrlDown  = FUCK::IsModifierPressed(FUCK::Modifier::kCtrl);
 	bool shiftDown = FUCK::IsModifierPressed(FUCK::Modifier::kShift);
 
+	bool lbDown       = FUCK::IsInputDown(RACE::Keys::kGP_LB);
 	bool rbDown       = FUCK::IsInputDown(RACE::Keys::kGP_RB);
 	bool isCameraMode = (ctrlDown && !FUCK::IsAnyItemActive()) || (rbDown && !FUCK::IsAnyItemActive());
 
@@ -68,9 +73,10 @@ void RaceCamera::HandleInput(float a_interval, bool a_isFrozen)
 				_kbmAcceleration = 1.0f;
 			}
 
-			float speed    = _settings.kbmPanSpeed * _kbmAcceleration * a_interval;
-			float rotSpeed = _settings.kbmRotSpeed * a_interval;
-			float fovSpeed = _settings.kbmFovSpeed * a_interval;
+			float speed     = _settings.kbmPanSpeed  * _kbmAcceleration * a_interval;
+			float rotSpeed  = _settings.kbmRotSpeed  * a_interval;
+			float rollSpeed = _settings.kbmRollSpeed * a_interval;
+			float fovSpeed  = _settings.kbmFovSpeed  * a_interval;
 
 			if (shiftDown) {
 				if (FUCK::IsInputDown(RACE::Keys::kKB_W))
@@ -81,6 +87,12 @@ void RaceCamera::HandleInput(float a_interval, bool a_isFrozen)
 					_fovOffset -= fovSpeed;
 				if (FUCK::IsInputDown(RACE::Keys::kKB_D))
 					_fovOffset += fovSpeed;
+
+				// Roll Camera
+				if (FUCK::IsInputDown(RACE::Keys::kKB_Q))
+					_camRoll -= rollSpeed;
+				if (FUCK::IsInputDown(RACE::Keys::kKB_E))
+					_camRoll += rollSpeed;
 			} else {
 				if (FUCK::IsInputDown(RACE::Keys::kKB_W))
 					_camOffset.z += speed;
@@ -91,6 +103,7 @@ void RaceCamera::HandleInput(float a_interval, bool a_isFrozen)
 				if (FUCK::IsInputDown(RACE::Keys::kKB_D))
 					_camOffset.x += speed;
 
+				// Orbit Camera
 				if (FUCK::IsInputDown(RACE::Keys::kKB_Q))
 					_camRotZ -= rotSpeed;
 				if (FUCK::IsInputDown(RACE::Keys::kKB_E))
@@ -103,6 +116,7 @@ void RaceCamera::HandleInput(float a_interval, bool a_isFrozen)
 			float gpPanSpeed  = _settings.gpPanSpeed  * a_interval;
 			float gpZoomSpeed = _settings.gpZoomSpeed * a_interval;
 			float gpRotSpeed  = _settings.gpRotSpeed  * a_interval;
+			float gpRollSpeed = _settings.gpRollSpeed * a_interval;
 			float gpFovSpeed  = _settings.gpFovSpeed  * a_interval;
 			float deadzone    = _settings.gpDeadzone;
 
@@ -124,8 +138,14 @@ void RaceCamera::HandleInput(float a_interval, bool a_isFrozen)
 			_camOffset.z += (leftStickY * gpPanSpeed);
 			_camOffset.x += (leftStickX * gpPanSpeed);
 			_camOffset.y += (rightStickY * gpZoomSpeed);
-			_camRotZ += (rightStickX * gpRotSpeed);
 			_fovOffset += (rt - lt) * gpFovSpeed;
+
+			// Right Stick controls either Roll or Orbit based on Left Bumper
+			if (lbDown) {
+				_camRoll += (rightStickX * gpRollSpeed);
+			} else {
+				_camRotZ += (rightStickX * gpRotSpeed);
+			}
 		}
 	}
 
@@ -223,9 +243,24 @@ void RaceCamera::ApplyTransform(RE::NiNode* a_cameraRoot)
 		orbitedRotate.entry[2][i] = _originalRotate.entry[2][i];
 	}
 
+	// Roll Matrix (Rotation around local Y-axis / Forward vector)
+	RE::NiMatrix3 rollMat;
+	float         cosR = std::cos(_camRoll);
+	float         sinR = std::sin(_camRoll);
+
+	rollMat.entry[0][0] = cosR;
+	rollMat.entry[0][1] = 0.0f;
+	rollMat.entry[0][2] = -sinR;
+	rollMat.entry[1][0] = 0.0f;
+	rollMat.entry[1][1] = 1.0f;
+	rollMat.entry[1][2] = 0.0f;
+	rollMat.entry[2][0] = sinR;
+	rollMat.entry[2][1] = 0.0f;
+	rollMat.entry[2][2] = cosR;
+
 	RE::NiPoint3 finalOffset      = (orbitedRotate * _camOffset);
 	a_cameraRoot->local.translate = orbitedTranslate + finalOffset;
-	a_cameraRoot->local.rotate    = orbitedRotate;
+	a_cameraRoot->local.rotate    = orbitedRotate * rollMat;
 
 	RE::NiUpdateData ctx;
 	a_cameraRoot->UpdateWorldData(&ctx);
@@ -239,6 +274,7 @@ void RaceCamera::ResetOffsets()
 	}
 	_camOffset = { 0.0f, 0.0f, 0.0f };
 	_camRotZ   = 0.0f;
+	_camRoll   = 0.0f;
 	_fovOffset = 0.0f;
 	_baseFov   = 0.0f;
 }

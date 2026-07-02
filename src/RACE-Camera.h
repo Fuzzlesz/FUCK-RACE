@@ -2,17 +2,19 @@
 
 struct CameraSettings
 {
-	float kbmPanSpeed  = 10.0f;
-	float kbmRotSpeed  = 1.5f;
-	float kbmFovSpeed  = 30.0f;
-	float mouseRotMult = 0.015f;
+	float kbmPanSpeed    =  10.0f;
+	float kbmRotSpeed    =   1.5f;
+	float kbmRollSpeed   =   1.5f;
+	float kbmFovSpeed    =  30.0f;
+	float mouseRotMult   =   0.015f;
 
-	float gpPanSpeed  = 100.0f;
-	float gpZoomSpeed = 100.0f;
-	float gpRotSpeed  = 2.0f;
-	float gpFovSpeed     = 30.0f;
-	float gpCharRotSpeed = 3.0f; 
-	float gpDeadzone  = 0.25f;
+	float gpPanSpeed     = 100.0f;
+	float gpZoomSpeed    = 100.0f;
+	float gpRotSpeed     =   2.0f;
+	float gpRollSpeed    =   2.0f;
+	float gpFovSpeed     =  30.0f;
+	float gpCharRotSpeed =   3.0f; 
+	float gpDeadzone     =   0.25f;
 };
 
 class RaceCamera
@@ -32,7 +34,7 @@ public:
 	void LoadSettings(CSimpleIniA& a_ini);
 	void SaveSettings(CSimpleIniA& a_ini);
 
-	bool HasAnyCamera() const { return _camOffset.x != 0.0f || _camOffset.y != 0.0f || _camOffset.z != 0.0f || _camRotZ != 0.0f || _fovOffset != 0.0f; }
+	bool HasAnyCamera() const { return _camOffset.x != 0.0f || _camOffset.y != 0.0f || _camOffset.z != 0.0f || _camRotZ != 0.0f || _camRoll != 0.0f || _fovOffset != 0.0f; }
 
 	CameraSettings& GetSettings() { return _settings; }
 
@@ -43,6 +45,7 @@ private:
 
 	RE::NiPoint3 _camOffset{ 0.0f, 0.0f, 0.0f };
 	float        _camRotZ   = 0.0f;
+	float        _camRoll   = 0.0f;
 	float        _fovOffset = 0.0f;
 	float        _baseFov   = 0.0f;
 
