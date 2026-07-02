@@ -416,6 +416,17 @@ void RaceWidget::Draw()
 	RE::GFxValue menuInstance;
 	bool         hasMenu = menu && menu->uiMovie && GetMenuInstance(menu->uiMovie.get(), menuInstance);
 
+	// Hide widget while text entry
+	if (hasMenu) {
+		RE::GFxValue textEntry;
+		if (menuInstance.GetMember("textEntry", &textEntry) && textEntry.IsObject()) {
+			RE::GFxValue isVisible;
+			if (textEntry.GetMember("_visible", &isVisible) && isVisible.GetBool()) {
+				return;
+			}
+		}
+	}
+
 	if (currentMode != _lastMode) {
 		if (hasMenu) {
 			SKEE64Compat::OnModeChanged(currentMode, _lastMode, menuInstance);
