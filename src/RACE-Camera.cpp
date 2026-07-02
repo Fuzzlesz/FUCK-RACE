@@ -130,18 +130,33 @@ void RaceCamera::HandleInput(float a_interval, bool a_isFrozen)
 	}
 
 	// Right-Click or Gamepad Character Rotation
-	bool isGP_Y = FUCK::IsInputDown(RACE::Keys::kGP_Y);
-	bool isGP_A = FUCK::IsInputDown(RACE::Keys::kGP_A);
+	bool isGP_Y      = FUCK::IsInputDown(RACE::Keys::kGP_Y);
+	bool isGP_X      = FUCK::IsInputDown(RACE::Keys::kGP_X);
+	bool isPopupOpen = FUCK::IsPopupOpen(nullptr, FUCK::PopupFlags::kAnyPopup);
+	bool isAnyActive = FUCK::IsAnyItemActive();
 
-	if ((FUCK::IsInputDown(RACE::Keys::kMouse_Right) && !FUCK::IsWindowHovered(0)) || (rbDown && (isGP_Y || isGP_A))) {
+	// Prevent input "bleed" when selecting UI items with the gamepad.
+	static bool s_lockoutGPRot = false;
+	if (isPopupOpen || isAnyActive) {
+		s_lockoutGPRot = true;
+	} else if (!isGP_Y && !isGP_X) {
+		s_lockoutGPRot = false;
+	}
+
+	bool allowMouseRot = FUCK::IsInputDown(RACE::Keys::kMouse_Right) && !FUCK::IsWindowHovered(0) && !isPopupOpen;
+	bool allowGPRot    = rbDown && (isGP_Y || isGP_X) && !s_lockoutGPRot;
+
+	bool isRotatingNow = (allowMouseRot || allowGPRot);
+
+	if (isRotatingNow) {
 		float rotAmount = 0.0f;
 
-		if (FUCK::IsInputDown(RACE::Keys::kMouse_Right)) {
+		if (allowMouseRot) {
 			rotAmount = FUCK::GetMouseDelta().x * _settings.mouseRotMult;
-		} else if (rbDown) {
+		} else if (allowGPRot) {
 			if (isGP_Y)
 				rotAmount -= _settings.gpCharRotSpeed * a_interval;
-			if (isGP_A)
+			if (isGP_X)
 				rotAmount += _settings.gpCharRotSpeed * a_interval;
 		}
 
