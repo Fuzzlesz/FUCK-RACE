@@ -1,14 +1,8 @@
 #pragma once
 
-class RaceWidget
+class RaceWidget : public REX::Singleton<RaceWidget>
 {
 public:
-	static RaceWidget* GetSingleton()
-	{
-		static RaceWidget s;
-		return &s;
-	}
-
 	void Initialize();
 
 	bool IsOpen() const;
@@ -34,8 +28,6 @@ public:
 	bool GetMenuInstance(RE::GFxMovieView* a_movie, RE::GFxValue& a_outInstance) const;
 
 private:
-	RaceWidget() = default;
-
 	void LoadSettings();
 	void SaveSettings();
 	void HandlePositioning(ImVec2& expectedPos);

@@ -4,18 +4,9 @@
 #include "RACE-Inputs.h"
 #include "RACE-Widget.h"
 
-class RaceWidgetWindow : public FUCK::IWindow
+class RaceWidgetWindow : public FUCK::IWindow, public REX::Singleton<RaceWidgetWindow>
 {
-	ImVec2 _lastPos{};
-	ImVec2 _lastSize{};
-
 public:
-	static RaceWidgetWindow* GetSingleton()
-	{
-		static RaceWidgetWindow s;
-		return &s;
-	}
-
 	const char* Id() const override { return "RACE_Widget"; }
 	const char* Title() const override { return "$RACE_Title"_T; }
 
@@ -71,20 +62,15 @@ public:
 		float  startX      = displaySize.x - FUCK::Scale(334.0f);
 		return { std::max(0.0f, startX), FUCK::Scale(100.0f) };
 	}
-};
 
-class RaceEquipWindow : public FUCK::IWindow
-{
+private:
 	ImVec2 _lastPos{};
 	ImVec2 _lastSize{};
+};
 
+class RaceEquipWindow : public FUCK::IWindow, public REX::Singleton<RaceEquipWindow>
+{
 public:
-	static RaceEquipWindow* GetSingleton()
-	{
-		static RaceEquipWindow s;
-		return &s;
-	}
-
 	const char* Id() const override { return "RACE_Equip"; }
 	const char* Title() const override { return "$RACE_EquipTitle"_T; }
 
@@ -140,6 +126,10 @@ public:
 	{
 		return FUCK::Scale(250.0f, 350.0f);
 	}
+
+private:
+	ImVec2 _lastPos{};
+	ImVec2 _lastSize{};
 };
 
 namespace FUCK_Register

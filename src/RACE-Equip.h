@@ -2,15 +2,9 @@
 
 #include "PCH.h"
 
-class RaceEquipManager
+class RaceEquipManager : public REX::Singleton<RaceEquipManager>
 {
 public:
-	static RaceEquipManager* GetSingleton()
-	{
-		static RaceEquipManager s;
-		return &s;
-	}
-
 	void Initialize();
 	void Populate();
 	void Update();
@@ -50,8 +44,6 @@ public:
 	}
 
 private:
-	RaceEquipManager() = default;
-
 	struct TrackedItem
 	{
 		RE::TESBoundObject* item;

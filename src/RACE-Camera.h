@@ -17,15 +17,9 @@ struct CameraSettings
 	float gpDeadzone     =   0.25f;
 };
 
-class RaceCamera
+class RaceCamera : public REX::Singleton<RaceCamera>
 {
 public:
-	static RaceCamera* GetSingleton()
-	{
-		static RaceCamera s;
-		return &s;
-	}
-
 	void HandleInput(float a_interval, bool a_isFrozen);
 	void ApplyTransform(RE::NiNode* a_cameraRoot);
 	void RevertCameraTransform(RE::NiNode* a_cameraRoot);
@@ -39,8 +33,6 @@ public:
 	CameraSettings& GetSettings() { return _settings; }
 
 private:
-	RaceCamera() = default;
-
 	CameraSettings _settings;
 
 	RE::NiPoint3 _camOffset{ 0.0f, 0.0f, 0.0f };
