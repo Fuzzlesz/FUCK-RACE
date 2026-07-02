@@ -552,11 +552,31 @@ void RaceWidget::Draw()
 
 void RaceWidget::DrawMainPanel()
 {
-	static bool s_wasRbDown = false;
-	bool        rbDown      = FUCK::IsInputDown(RACE::Keys::kGP_RB);
-	if (rbDown && !s_wasRbDown)
-		FUCK::SetKeyboardFocusHere(0);
+	static bool s_wasRbDown  = false;
+	static bool s_queueFocus = false;
+
+	bool rbDown = FUCK::IsInputDown(RACE::Keys::kGP_RB);
+
+	if (!rbDown && s_wasRbDown) {
+		if (FUCK::IsPopupOpen(nullptr, FUCK::PopupFlags::kAnyPopup)) {
+			FUCK::CloseCurrentPopup();
+		}
+	}
+
+	if (rbDown && !s_wasRbDown) {
+		FUCK::SetWindowFocus();
+		s_queueFocus = true;
+	}
 	s_wasRbDown = rbDown;
+
+	bool requestFocus = false;
+	if (s_queueFocus && FUCK::IsWindowFocused(0)) {
+		requestFocus = true;
+		if (FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad) {
+			FUCK::SetNavCursorVisible(true);
+		}
+		s_queueFocus = false;
+	}
 
 	bool  isGamepad    = FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
 	auto  eqManager    = RaceEquipManager::GetSingleton();
@@ -567,6 +587,11 @@ void RaceWidget::DrawMainPanel()
 
 	if (isGamepad && eqManager->HasItems()) {
 		alignOffset = (comboWidth * 1.5f) - comboWidth;
+
+		if (requestFocus) {
+			FUCK::SetKeyboardFocusHere(0);
+			requestFocus = false;
+		}
 
 		FUCK::SetNextItemWidth(comboWidth * 1.5f);
 		int eqIndex = 0;
@@ -579,6 +604,11 @@ void RaceWidget::DrawMainPanel()
 	}
 
 	if (!_hideIdles) {
+		if (requestFocus) {
+			FUCK::SetKeyboardFocusHere(0);
+			requestFocus = false;
+		}
+
 		FUCK::SetNextItemWidth(comboWidth);
 		if (FUCK::ComboWithFilter("##RACE_PluginFilter", &_selectedPluginIndex, _pluginNamesCStr.data(), static_cast<int>(_pluginNamesCStr.size())))
 			_idlesValid = false;
@@ -597,10 +627,16 @@ void RaceWidget::DrawMainPanel()
 		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
 	}
 
+	if (requestFocus) {
+		FUCK::SetKeyboardFocusHere(0);
+		requestFocus = false;
+	}
+
 	if (FUCK::Button("$RACE_Freeze"_T)) {
 		if (!_isFrozen)
 			SetPlayerFrozen(true);
 	}
+
 	FUCK::SameLine();
 	if (FUCK::Button("$RACE_Play"_T)) {
 		if (_isFrozen)
