@@ -69,7 +69,7 @@ public:
 	{
 		ImVec2 displaySize = FUCK::GetDisplaySize();
 		float  startX      = displaySize.x - FUCK::Scale(334.0f);
-		return { std::max(0.0f, startX), FUCK::Scale(70.0f) };
+		return { std::max(0.0f, startX), FUCK::Scale(100.0f) };
 	}
 };
 
