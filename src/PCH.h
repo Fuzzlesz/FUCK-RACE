@@ -37,6 +37,7 @@ using namespace clib_util;
 using namespace string::literals;
 using namespace RE::literals;
 
+namespace fs     = std::filesystem;
 namespace logger = SKSE::log;
 
 using EventResult     = RE::BSEventNotifyControl;
