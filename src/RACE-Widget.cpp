@@ -736,10 +736,11 @@ void RaceWidget::DrawSettingsPanel()
 			FUCK::PushID("KBM");
 			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 
-			changed |= FUCK::SliderFloat("$RACE_SpeedPan"_T,   &camSettings.kbmPanSpeed,  1.0f,  50.0f,  "%.1f");
-			changed |= FUCK::SliderFloat("$RACE_SpeedOrbit"_T, &camSettings.kbmRotSpeed,  0.1f,   5.0f,  "%.1f");
-			changed |= FUCK::SliderFloat("$RACE_SpeedFOV"_T,   &camSettings.kbmFovSpeed,  5.0f, 100.0f,  "%.1f");
-			changed |= FUCK::SliderFloat("$RACE_MouseOrbit"_T, &camSettings.mouseRotMult, 0.001f, 0.05f, "%.3f");
+			changed |= FUCK::SliderFloat("$RACE_SpeedPan"_T,   &camSettings.kbmPanSpeed,  1.0f,    50.0f,  "%.1f");
+			changed |= FUCK::SliderFloat("$RACE_SpeedOrbit"_T, &camSettings.kbmRotSpeed,  0.1f,     5.0f,  "%.1f");
+			changed |= FUCK::SliderFloat("$RACE_SpeedRoll"_T,  &camSettings.kbmRollSpeed, 0.1f,     5.0f,  "%.1f");
+			changed |= FUCK::SliderFloat("$RACE_SpeedFOV"_T,   &camSettings.kbmFovSpeed,  5.0f,   100.0f,  "%.1f");
+			changed |= FUCK::SliderFloat("$RACE_MouseOrbit"_T, &camSettings.mouseRotMult, 0.001f,   0.05f, "%.3f");
 
 			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 			FUCK::PopID();
@@ -751,12 +752,12 @@ void RaceWidget::DrawSettingsPanel()
 			FUCK::PushID("GP");
 			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 
-			changed |= FUCK::SliderFloat("$RACE_SpeedPan"_T,     &camSettings.gpPanSpeed,      10.0f, 300.0f, "%.0f");
-			changed |= FUCK::SliderFloat("$RACE_SpeedZoom"_T,    &camSettings.gpZoomSpeed,     10.0f, 300.0f, "%.0f");
-			changed |= FUCK::SliderFloat("$RACE_SpeedOrbit"_T,   &camSettings.gpRotSpeed,       0.1f,  10.0f, "%.1f");
-			changed |= FUCK::SliderFloat("$RACE_SpeedFOV"_T,     &camSettings.gpFovSpeed,       5.0f, 100.0f, "%.1f");
-			changed |= FUCK::SliderFloat("$RACE_SpeedCharRot"_T, &camSettings.gpCharRotSpeed,   0.1f,  10.0f, "%.1f");
-			changed |= FUCK::SliderFloat("$RACE_Deadzone"_T,     &camSettings.gpDeadzone,       0.0f,   0.5f, "%.2f");
+			changed |= FUCK::SliderFloat("$RACE_SpeedPan"_T,     &camSettings.gpPanSpeed,     10.0f, 300.0f, "%.0f");
+			changed |= FUCK::SliderFloat("$RACE_SpeedZoom"_T,    &camSettings.gpZoomSpeed,    10.0f, 300.0f, "%.0f");
+			changed |= FUCK::SliderFloat("$RACE_SpeedOrbit"_T,   &camSettings.gpRotSpeed,      0.1f,  10.0f, "%.1f");
+			changed |= FUCK::SliderFloat("$RACE_SpeedRoll"_T,    &camSettings.gpRollSpeed,     0.1f,  10.0f, "%.1f");
+			changed |= FUCK::SliderFloat("$RACE_SpeedCharRot"_T, &camSettings.gpCharRotSpeed,  0.1f,  10.0f, "%.1f");
+			changed |= FUCK::SliderFloat("$RACE_Deadzone"_T,     &camSettings.gpDeadzone,      0.0f,   0.5f, "%.2f");
 
 			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 			FUCK::PopID();
