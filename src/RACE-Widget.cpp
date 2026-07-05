@@ -229,44 +229,85 @@ void RaceWidget::OnAdvanceMovie(RE::RaceSexMenu* a_menu)
 		}
 	}
 
-	if (a_menu && a_menu->uiMovie && GetCurrentMode() == 0) {
+	if (a_menu && a_menu->uiMovie) {
 		RE::GFxValue menuInstance;
 		if (GetMenuInstance(a_menu->uiMovie.get(), menuInstance)) {
-			bool isGamepad = (FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad);
+			if (SKEE64Compat::IsPresent()) {
+				if (!menuInstance.HasMember("FUCK_HooksApplied")) {
+					// Hijack Quick Zoom
+					class ZoomHandler : public RE::GFxFunctionHandler
+					{
+					public:
+						void Call(Params& a_params) override
+						{
+							RaceCamera::GetSingleton()->ToggleQuickZoom();
+							if (a_params.thisPtr) {
+								RE::GFxValue bPlayerZoom;
+								if (a_params.thisPtr->GetMember("bPlayerZoom", &bPlayerZoom)) {
+									a_params.thisPtr->SetMember("bPlayerZoom", RE::GFxValue(!bPlayerZoom.GetBool()));
+								}
+								a_params.thisPtr->Invoke("updateBottomBar", nullptr, nullptr, 0);
+							}
+						}
+					};
+					RE::GFxValue zoomFunc;
+					a_menu->uiMovie->CreateFunction(&zoomFunc, new ZoomHandler());
+					menuInstance.SetMember("onZoomClicked", zoomFunc);
 
-			RE::GFxValue undefinedVal;
-			undefinedVal.SetUndefined();
+					// Neuter Camera Editor Input
+					class CameraEditorInputHandler : public RE::GFxFunctionHandler
+					{
+					public:
+						void Call(Params& a_params) override
+						{
+							if (a_params.retVal) {
+								*a_params.retVal = RE::GFxValue(false);
+							}
+						}
+					};
+					RE::GFxValue cameraEditor;
+					if (menuInstance.GetMember("cameraEditor", &cameraEditor) && cameraEditor.IsObject()) {
+						RE::GFxValue dummyFunc;
+						a_menu->uiMovie->CreateFunction(&dummyFunc, new CameraEditorInputHandler());
+						cameraEditor.SetMember("handleInput", dummyFunc);
 
-			if (!isGamepad) {
-				menuInstance.SetMember("_lightControl", undefinedVal);
+						// Sync initial movement rate to FUCK framework on load
+						cameraEditor.SetMember("movementRate", RE::GFxValue(RaceCamera::GetSingleton()->GetCameraRate()));
+					}
+
+					menuInstance.SetMember("FUCK_HooksApplied", RE::GFxValue(true));
+				}
 			}
 
-			RE::GFxValue bottomBar, buttonPanel;
-			if (menuInstance.GetMember("bottomBar", &bottomBar) && bottomBar.GetMember("buttonPanel", &buttonPanel)) {
-				int lightBtnIdx = isGamepad ? 2 : 3;
-
-				auto killButton = [&](int idx) {
-					std::string  btnName = "button" + std::to_string(idx);
-					RE::GFxValue btn;
-					if (buttonPanel.GetMember(btnName.c_str(), &btn)) {
-						RE::GFxValue isVisible;
-						if (btn.GetMember("_visible", &isVisible) && isVisible.GetBool()) {
-							btn.SetMember("_visible", RE::GFxValue(false));
-
-							RE::GFxValue textField;
-							if (btn.GetMember("textField", &textField)) {
-								textField.SetMember("text", RE::GFxValue(""));
-								textField.SetMember("htmlText", RE::GFxValue(""));
-							}
-
-							RE::GFxValue arg(true);
-							buttonPanel.Invoke("updateButtons", nullptr, &arg, 1);
-						}
-					}
-				};
-
+			// Hide Light Control using the textField clearing trick so layout collapses properly
+			if (GetCurrentMode() == 0) {
+				bool isGamepad = (FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad);
 				if (!isGamepad) {
-					killButton(lightBtnIdx);
+					RE::GFxValue bottomBar, buttonPanel;
+					if (menuInstance.GetMember("bottomBar", &bottomBar) && bottomBar.GetMember("buttonPanel", &buttonPanel)) {
+						int lightBtnIdx = isGamepad ? 2 : 3;
+
+						auto killButton = [&](int idx) {
+							std::string  btnName = "button" + std::to_string(idx);
+							RE::GFxValue btn;
+							if (buttonPanel.GetMember(btnName.c_str(), &btn)) {
+								RE::GFxValue isVisible;
+								if (btn.GetMember("_visible", &isVisible) && isVisible.GetBool()) {
+									btn.SetMember("_visible", RE::GFxValue(false));
+
+									RE::GFxValue textField;
+									if (btn.GetMember("textField", &textField)) {
+										textField.SetMember("text", RE::GFxValue(""));
+										textField.SetMember("htmlText", RE::GFxValue(""));
+									}
+
+									RE::GFxValue arg(true);
+									buttonPanel.Invoke("updateButtons", nullptr, &arg, 1);
+								}
+							}
+						};
+						killButton(lightBtnIdx);
+					}
 				}
 			}
 		}
@@ -418,13 +459,16 @@ void RaceWidget::Draw()
 	RE::GFxValue menuInstance;
 	bool         hasMenu = menu && menu->uiMovie && GetMenuInstance(menu->uiMovie.get(), menuInstance);
 
-	// Hide widget while text entry
 	if (hasMenu) {
-		RE::GFxValue textEntry;
-		if (menuInstance.GetMember("textEntry", &textEntry) && textEntry.IsObject()) {
-			RE::GFxValue isVisible;
-			if (textEntry.GetMember("_visible", &isVisible) && isVisible.GetBool()) {
-				return;
+		// Sync to modeSelect's alpha safely using the IsFlagSet bitmask check.
+		RE::GFxValue modeSelect;
+		if (menuInstance.GetMember("modeSelect", &modeSelect)) {
+			RE::GFxValue::DisplayInfo dinfo;
+			if (modeSelect.GetDisplayInfo(&dinfo)) {
+				// If the Alpha flag is set, evaluate the fade. Otherwise, it is 100% visible.
+				if (dinfo.IsFlagSet(RE::GFxValue::DisplayInfo::Flag::kAlpha) && dinfo.GetAlpha() < 50.0) {
+					return;
+				}
 			}
 		}
 	}
@@ -794,11 +838,12 @@ void RaceWidget::DrawSettingsPanel()
 			FUCK::PushID("KBM");
 			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 
-			changed |= FUCK::SliderFloat("$RACE_SpeedPan"_T,   &camSettings.kbmPanSpeed,  1.0f,    50.0f,  "%.1f");
-			changed |= FUCK::SliderFloat("$RACE_SpeedOrbit"_T, &camSettings.kbmRotSpeed,  0.1f,     5.0f,  "%.1f");
-			changed |= FUCK::SliderFloat("$RACE_SpeedRoll"_T,  &camSettings.kbmRollSpeed, 0.1f,     5.0f,  "%.1f");
-			changed |= FUCK::SliderFloat("$RACE_SpeedFOV"_T,   &camSettings.kbmFovSpeed,  5.0f,   100.0f,  "%.1f");
-			changed |= FUCK::SliderFloat("$RACE_MouseOrbit"_T, &camSettings.mouseRotMult, 0.001f,   0.05f, "%.3f");
+			changed |= FUCK::SliderFloat("$RACE_SpeedPan"_T,      &camSettings.kbmPanSpeed,     1.0f,  50.0f,  "%.1f");
+			changed |= FUCK::SliderFloat("$RACE_SpeedOrbit"_T,    &camSettings.kbmRotSpeed,     0.1f,   5.0f,  "%.1f");
+			changed |= FUCK::SliderFloat("$RACE_SpeedRoll"_T,     &camSettings.kbmRollSpeed,    0.1f,   5.0f,  "%.1f");
+			changed |= FUCK::SliderFloat("$RACE_SpeedFOV"_T,      &camSettings.kbmFovSpeed,     5.0f, 100.0f,  "%.1f");
+			changed |= FUCK::SliderFloat("$RACE_MouseOrbit"_T,    &camSettings.mouseRotMult,  0.001f,  0.05f, "%.3f");
+			changed |= FUCK::SliderFloat("$RACE_QuickZoomDist"_T, &camSettings.quickZoomOffset, 10.0f, 300.0f, "%.0f");
 
 			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 			FUCK::PopID();
@@ -810,12 +855,13 @@ void RaceWidget::DrawSettingsPanel()
 			FUCK::PushID("GP");
 			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 
-			changed |= FUCK::SliderFloat("$RACE_SpeedPan"_T,     &camSettings.gpPanSpeed,     10.0f, 300.0f, "%.0f");
-			changed |= FUCK::SliderFloat("$RACE_SpeedZoom"_T,    &camSettings.gpZoomSpeed,    10.0f, 300.0f, "%.0f");
-			changed |= FUCK::SliderFloat("$RACE_SpeedOrbit"_T,   &camSettings.gpRotSpeed,      0.1f,  10.0f, "%.1f");
-			changed |= FUCK::SliderFloat("$RACE_SpeedRoll"_T,    &camSettings.gpRollSpeed,     0.1f,  10.0f, "%.1f");
-			changed |= FUCK::SliderFloat("$RACE_SpeedCharRot"_T, &camSettings.gpCharRotSpeed,  0.1f,  10.0f, "%.1f");
-			changed |= FUCK::SliderFloat("$RACE_Deadzone"_T,     &camSettings.gpDeadzone,      0.0f,   0.5f, "%.2f");
+			changed |= FUCK::SliderFloat("$RACE_SpeedPan"_T,      &camSettings.gpPanSpeed,      10.0f, 300.0f, "%.0f");
+			changed |= FUCK::SliderFloat("$RACE_SpeedZoom"_T,     &camSettings.gpZoomSpeed,     10.0f, 300.0f, "%.0f");
+			changed |= FUCK::SliderFloat("$RACE_SpeedOrbit"_T,    &camSettings.gpRotSpeed,       0.1f,  10.0f, "%.1f");
+			changed |= FUCK::SliderFloat("$RACE_SpeedRoll"_T,     &camSettings.gpRollSpeed,      0.1f,  10.0f, "%.1f");
+			changed |= FUCK::SliderFloat("$RACE_SpeedCharRot"_T,  &camSettings.gpCharRotSpeed,   0.1f,  10.0f, "%.1f");
+			changed |= FUCK::SliderFloat("$RACE_Deadzone"_T,      &camSettings.gpDeadzone,       0.0f,   0.5f, "%.2f");
+			changed |= FUCK::SliderFloat("$RACE_QuickZoomDist"_T, &camSettings.quickZoomOffset, 10.0f, 300.0f, "%.0f");
 
 			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 			FUCK::PopID();
@@ -838,16 +884,17 @@ void RaceWidget::DrawSettingsPanel()
 
 	CameraSettings def;
 	bool           isModified =
-		std::abs(camSettings.kbmPanSpeed    - def.kbmPanSpeed)    > 0.001f  ||
-		std::abs(camSettings.kbmRotSpeed    - def.kbmRotSpeed)    > 0.001f  ||
-		std::abs(camSettings.kbmFovSpeed    - def.kbmFovSpeed)    > 0.001f  ||
-		std::abs(camSettings.mouseRotMult   - def.mouseRotMult)   > 0.0001f ||
-		std::abs(camSettings.gpPanSpeed     - def.gpPanSpeed)     > 0.001f  ||
-		std::abs(camSettings.gpZoomSpeed    - def.gpZoomSpeed)    > 0.001f  ||
-		std::abs(camSettings.gpRotSpeed     - def.gpRotSpeed)     > 0.001f  ||
-		std::abs(camSettings.gpFovSpeed     - def.gpFovSpeed)     > 0.001f  ||
-		std::abs(camSettings.gpCharRotSpeed - def.gpCharRotSpeed) > 0.001f  ||
-		std::abs(camSettings.gpDeadzone     - def.gpDeadzone)     > 0.001f   ;
+		std::abs(camSettings.kbmPanSpeed     - def.kbmPanSpeed)     > 0.001f  ||
+		std::abs(camSettings.kbmRotSpeed     - def.kbmRotSpeed)     > 0.001f  ||
+		std::abs(camSettings.kbmFovSpeed     - def.kbmFovSpeed)     > 0.001f  ||
+		std::abs(camSettings.mouseRotMult    - def.mouseRotMult)    > 0.0001f ||
+		std::abs(camSettings.gpPanSpeed      - def.gpPanSpeed)      > 0.001f  ||
+		std::abs(camSettings.gpZoomSpeed     - def.gpZoomSpeed)     > 0.001f  ||
+		std::abs(camSettings.gpRotSpeed      - def.gpRotSpeed)      > 0.001f  ||
+		std::abs(camSettings.gpFovSpeed      - def.gpFovSpeed)      > 0.001f  ||
+		std::abs(camSettings.gpCharRotSpeed  - def.gpCharRotSpeed)  > 0.001f  ||
+		std::abs(camSettings.quickZoomOffset - def.quickZoomOffset) > 0.001f  ||
+		std::abs(camSettings.gpDeadzone      - def.gpDeadzone)      > 0.001f   ;
 
 	if (isModified) {
 		if (FUCK::Button("$RACE_RestoreDefaults"_T)) {

@@ -12,7 +12,13 @@ namespace RACE::Keys
 	inline constexpr uint32_t kGP_LT = kGPBase + SKSE::InputMap::kGamepadButtonOffset_LT;
 	inline constexpr uint32_t kGP_RT = kGPBase + SKSE::InputMap::kGamepadButtonOffset_RT;
 
+	inline constexpr uint32_t kGP_Up    = kGPBase + SKSE::InputMap::kGamepadButtonOffset_DPAD_UP;
+	inline constexpr uint32_t kGP_Down  = kGPBase + SKSE::InputMap::kGamepadButtonOffset_DPAD_DOWN;
+	inline constexpr uint32_t kGP_Left  = kGPBase + SKSE::InputMap::kGamepadButtonOffset_DPAD_LEFT;
+	inline constexpr uint32_t kGP_Right = kGPBase + SKSE::InputMap::kGamepadButtonOffset_DPAD_RIGHT;
+
 	inline constexpr uint32_t kGP_A = kGPBase + SKSE::InputMap::kGamepadButtonOffset_A;
+	inline constexpr uint32_t kGP_B = kGPBase + SKSE::InputMap::kGamepadButtonOffset_B;
 	inline constexpr uint32_t kGP_X = kGPBase + SKSE::InputMap::kGamepadButtonOffset_X;
 	inline constexpr uint32_t kGP_Y = kGPBase + SKSE::InputMap::kGamepadButtonOffset_Y;
 
