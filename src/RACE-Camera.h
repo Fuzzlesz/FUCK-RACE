@@ -16,7 +16,9 @@ struct CameraSettings
 	float gpCharRotSpeed =   3.0f;
 	float gpDeadzone     =   0.25f;
 
-	float quickZoomOffset = 50.0f;
+	float quickZoomOffset     = 100.0f;
+	float quickZoomDownOffset =  45.0f;
+	float quickZoomSideOffset = -30.0f;
 };
 
 class RaceCamera : public REX::Singleton<RaceCamera>
@@ -32,7 +34,21 @@ public:
 
 	void ToggleQuickZoom();
 
-	bool  HasAnyCamera() const { return _camOffset.x != 0.0f || _camOffset.y != 0.0f || _camOffset.z != 0.0f || _camRotZ != 0.0f || _camRoll != 0.0f || _fovOffset != 0.0f || std::abs(_currentZoomOffset) > 0.01f; }
+	bool HasAnyCamera() const
+	{
+		return IsCameraModified() ||
+		       std::abs(_currentZoomOffset) > 0.01f ||
+		       std::abs(_currentZoomDownOffset) > 0.01f ||
+		       std::abs(_currentZoomSideOffset) > 0.01f;
+	}
+
+	bool IsCameraModified() const
+	{
+		return std::abs(_camOffset.x) > 0.01f || std::abs(_camOffset.y) > 0.01f || std::abs(_camOffset.z) > 0.01f ||
+		       std::abs(_camRotZ) > 0.001f    || std::abs(_camRoll) > 0.001f    || std::abs(_fovOffset) > 0.01f   ||
+		       _isQuickZoomed;
+	}
+
 	float GetCameraRate() const { return _cameraRate; }
 
 	CameraSettings& GetSettings() { return _settings; }
@@ -46,9 +62,13 @@ private:
 	float        _fovOffset  = 0.0f;
 	float        _baseFov    = 0.0f;
 
-	float _currentZoomOffset = 0.0f;
-	float _targetZoomOffset  = 0.0f;
-	bool  _isQuickZoomed     = false;
+	float _currentZoomOffset     = 0.0f;
+	float _targetZoomOffset      = 0.0f;
+	float _currentZoomDownOffset = 0.0f;
+	float _targetZoomDownOffset  = 0.0f;
+	float _currentZoomSideOffset = 0.0f;
+	float _targetZoomSideOffset  = 0.0f;
+	bool  _isQuickZoomed         = false;
 
 	float _kbmAcceleration   = 1.0f;
 	float _cameraRate        = 5.0f;
