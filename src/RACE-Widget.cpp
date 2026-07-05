@@ -532,10 +532,15 @@ void RaceWidget::Draw()
 	float clusterScale = 0.8f;
 	float alignOffset  = 0.0f;
 
+	float baseWidth = FUCK::UIScale(360.0f * clusterScale);
+
+	// Calculate alignment shift so the right edge stays firmly anchored to the screen edge
 	if (isGamepad && eqManager->HasItems()) {
-		float baseWidth  = FUCK::UIScale(360.0f * clusterScale);
 		float equipWidth = baseWidth * 1.5f;
 		alignOffset      = equipWidth - baseWidth;
+	} else if (_showSettings) {
+		float settingsWidth = FUCK::UIScale(440.0f * clusterScale);
+		alignOffset         = settingsWidth - baseWidth;
 	}
 
 	bool   isEditing   = FUCK::IsMenuOpen();
@@ -568,14 +573,23 @@ void RaceWidget::Draw()
 	FUCK::BeginGroup();
 
 	float pad = FUCK::Scale(15.0f);
-	FUCK::SetCursorPos(FUCK::GetCursorPos() + ImVec2(pad, pad));
 
+	// Safe Top Padding
+	FUCK::Dummy(ImVec2(0.0f, pad));
+
+	// Safe Left Padding + Content
+	FUCK::Indent(pad);
 	FUCK::BeginGroup();
 	DrawMainPanel();
 	FUCK::EndGroup();
+	FUCK::Unindent(pad);
 
-	FUCK::SetCursorScreenPos(FUCK::GetItemRectMax());
-	FUCK::Dummy(ImVec2(pad, pad));
+	// Safe Right Padding
+	FUCK::SameLine(0.0f, 0.0f);
+	FUCK::Dummy(ImVec2(pad, 0.0f));
+
+	// Safe Bottom Padding
+	FUCK::Dummy(ImVec2(0.0f, pad));
 
 	FUCK::EndGroup();
 
@@ -646,6 +660,10 @@ void RaceWidget::DrawMainPanel()
 				eqManager->ToggleItem(eqIndex - 1);
 		}
 		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
+		FUCK::Indent(alignOffset);
+	} else if (_showSettings) {
+		float settingsWidth = FUCK::UIScale(440.0f * clusterScale);
+		alignOffset         = settingsWidth - comboWidth;
 		FUCK::Indent(alignOffset);
 	}
 
@@ -805,11 +823,13 @@ void RaceWidget::DrawMainPanel()
 	FUCK::Unindent();
 
 	if (_showSettings) {
+		if (alignOffset > 0.0f) {
+			FUCK::Unindent(alignOffset);
+		}
 		DrawSettingsPanel();
-	}
-
-	if (alignOffset > 0.0f)
+	} else if (alignOffset > 0.0f) {
 		FUCK::Unindent(alignOffset);
+	}
 }
 
 void RaceWidget::DrawSettingsPanel()
@@ -817,93 +837,109 @@ void RaceWidget::DrawSettingsPanel()
 	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
 	FUCK::SeparatorText("$RACE_Settings"_T);
 
-	auto& camSettings = RaceCamera::GetSingleton()->GetSettings();
-	bool  changed     = false;
+	float clusterScale  = 0.8f; 
+	float settingsWidth = FUCK::UIScale(440.0f * clusterScale);
 
-	int flagsKBM = 0;
-	int flagsGP  = 0;
+	FUCK::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0.0f, FUCK::Scale(4.0f)));
 
-	if (_settingsJustOpened) {
-		if (FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad) {
-			flagsGP = 2;  // ImGuiTabItemFlags_SetSelected
-		} else {
-			flagsKBM = 2;  // ImGuiTabItemFlags_SetSelected
-		}
-		_settingsJustOpened = false;
-	}
+	if (FUCK::BeginTable("SettingsWidthLocker", 1, FUCK::TableFlags::kSizingFixedFit, ImVec2(settingsWidth, 0.0f))) {
+		FUCK::TableSetupColumn("SettingsCol", FUCK::TableColumnFlags::kWidthFixed, settingsWidth);
+		FUCK::TableNextRow();
+		FUCK::TableNextColumn();
 
-	if (FUCK::BeginTabBar("RaceSettingsTabs", 0)) {
-		// Keyboard & Mouse Tab
-		if (FUCK::BeginTabItem("$RACE_CamSettings_KBM"_T, flagsKBM)) {
-			FUCK::PushID("KBM");
-			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
+		auto& camSettings = RaceCamera::GetSingleton()->GetSettings();
+		bool  changed     = false;
 
-			changed |= FUCK::SliderFloat("$RACE_SpeedPan"_T,      &camSettings.kbmPanSpeed,     1.0f,  50.0f,  "%.1f");
-			changed |= FUCK::SliderFloat("$RACE_SpeedOrbit"_T,    &camSettings.kbmRotSpeed,     0.1f,   5.0f,  "%.1f");
-			changed |= FUCK::SliderFloat("$RACE_SpeedRoll"_T,     &camSettings.kbmRollSpeed,    0.1f,   5.0f,  "%.1f");
-			changed |= FUCK::SliderFloat("$RACE_SpeedFOV"_T,      &camSettings.kbmFovSpeed,     5.0f, 100.0f,  "%.1f");
-			changed |= FUCK::SliderFloat("$RACE_MouseOrbit"_T,    &camSettings.mouseRotMult,  0.001f,  0.05f, "%.3f");
-			changed |= FUCK::SliderFloat("$RACE_QuickZoomDist"_T, &camSettings.quickZoomOffset, 10.0f, 300.0f, "%.0f");
+		int flagsKBM = 0;
+		int flagsGP  = 0;
 
-			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
-			FUCK::PopID();
-			FUCK::EndTabItem();
+		if (_settingsJustOpened) {
+			if (FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad) {
+				flagsGP = 2;  // ImGuiTabItemFlags_SetSelected
+			} else {
+				flagsKBM = 2;  // ImGuiTabItemFlags_SetSelected
+			}
+			_settingsJustOpened = false;
 		}
 
-		// Gamepad Tab
-		if (FUCK::BeginTabItem("$RACE_CamSettings_GP"_T, flagsGP)) {
-			FUCK::PushID("GP");
-			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
+		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
 
-			changed |= FUCK::SliderFloat("$RACE_SpeedPan"_T,      &camSettings.gpPanSpeed,      10.0f, 300.0f, "%.0f");
-			changed |= FUCK::SliderFloat("$RACE_SpeedZoom"_T,     &camSettings.gpZoomSpeed,     10.0f, 300.0f, "%.0f");
-			changed |= FUCK::SliderFloat("$RACE_SpeedOrbit"_T,    &camSettings.gpRotSpeed,       0.1f,  10.0f, "%.1f");
-			changed |= FUCK::SliderFloat("$RACE_SpeedRoll"_T,     &camSettings.gpRollSpeed,      0.1f,  10.0f, "%.1f");
-			changed |= FUCK::SliderFloat("$RACE_SpeedCharRot"_T,  &camSettings.gpCharRotSpeed,   0.1f,  10.0f, "%.1f");
-			changed |= FUCK::SliderFloat("$RACE_Deadzone"_T,      &camSettings.gpDeadzone,       0.0f,   0.5f, "%.2f");
-			changed |= FUCK::SliderFloat("$RACE_QuickZoomDist"_T, &camSettings.quickZoomOffset, 10.0f, 300.0f, "%.0f");
+		if (FUCK::BeginTabBar("RaceSettingsTabs", 0)) {
+			// Keyboard & Mouse Tab
+			if (FUCK::BeginTabItem("$RACE_CamSettings_KBM"_T, flagsKBM)) {
+				FUCK::PushID("KBM");
+				FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 
-			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
-			FUCK::PopID();
-			FUCK::EndTabItem();
+				changed |= FUCK::SliderFloat("$RACE_SpeedPan"_T,      &camSettings.kbmPanSpeed,     1.0f,  50.0f,  "%.1f");
+				changed |= FUCK::SliderFloat("$RACE_SpeedOrbit"_T,    &camSettings.kbmRotSpeed,     0.1f,   5.0f,  "%.1f");
+				changed |= FUCK::SliderFloat("$RACE_SpeedRoll"_T,     &camSettings.kbmRollSpeed,    0.1f,   5.0f,  "%.1f");
+				changed |= FUCK::SliderFloat("$RACE_SpeedFOV"_T,      &camSettings.kbmFovSpeed,     5.0f, 100.0f,  "%.1f");
+				changed |= FUCK::SliderFloat("$RACE_MouseOrbit"_T,    &camSettings.mouseRotMult,  0.001f,  0.05f, "%.3f");
+				changed |= FUCK::SliderFloat("$RACE_QuickZoomDist"_T, &camSettings.quickZoomOffset, 10.0f, 300.0f, "%.0f");
+
+				FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
+				FUCK::PopID();
+				FUCK::EndTabItem();
+			}
+
+			// Gamepad Tab
+			if (FUCK::BeginTabItem("$RACE_CamSettings_GP"_T, flagsGP)) {
+				FUCK::PushID("GP");
+				FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
+
+				changed |= FUCK::SliderFloat("$RACE_SpeedPan"_T,      &camSettings.gpPanSpeed,      10.0f, 300.0f, "%.0f");
+				changed |= FUCK::SliderFloat("$RACE_SpeedZoom"_T,     &camSettings.gpZoomSpeed,     10.0f, 300.0f, "%.0f");
+				changed |= FUCK::SliderFloat("$RACE_SpeedOrbit"_T,    &camSettings.gpRotSpeed,       0.1f,  10.0f, "%.1f");
+				changed |= FUCK::SliderFloat("$RACE_SpeedRoll"_T,     &camSettings.gpRollSpeed,      0.1f,  10.0f, "%.1f");
+				changed |= FUCK::SliderFloat("$RACE_SpeedCharRot"_T,  &camSettings.gpCharRotSpeed,   0.1f,  10.0f, "%.1f");
+				changed |= FUCK::SliderFloat("$RACE_Deadzone"_T,      &camSettings.gpDeadzone,       0.0f,   0.5f, "%.2f");
+				changed |= FUCK::SliderFloat("$RACE_QuickZoomDist"_T, &camSettings.quickZoomOffset, 10.0f, 300.0f, "%.0f");
+
+				FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
+				FUCK::PopID();
+				FUCK::EndTabItem();
+			}
+			FUCK::EndTabBar();
 		}
-		FUCK::EndTabBar();
-	}
 
-	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
+		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 
-	if (FUCK::Checkbox("$RACE_HideIdles"_T, &_hideIdles, true, true)) {
-		SaveSettings();
-	}
-
-	if (FUCK::Checkbox("$RACE_StartFrozen"_T, &_startFrozen, true, true)) {
-		SaveSettings();
-	}
-
-	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
-
-	CameraSettings def;
-	bool           isModified =
-		std::abs(camSettings.kbmPanSpeed     - def.kbmPanSpeed)     > 0.001f  ||
-		std::abs(camSettings.kbmRotSpeed     - def.kbmRotSpeed)     > 0.001f  ||
-		std::abs(camSettings.kbmFovSpeed     - def.kbmFovSpeed)     > 0.001f  ||
-		std::abs(camSettings.mouseRotMult    - def.mouseRotMult)    > 0.0001f ||
-		std::abs(camSettings.gpPanSpeed      - def.gpPanSpeed)      > 0.001f  ||
-		std::abs(camSettings.gpZoomSpeed     - def.gpZoomSpeed)     > 0.001f  ||
-		std::abs(camSettings.gpRotSpeed      - def.gpRotSpeed)      > 0.001f  ||
-		std::abs(camSettings.gpFovSpeed      - def.gpFovSpeed)      > 0.001f  ||
-		std::abs(camSettings.gpCharRotSpeed  - def.gpCharRotSpeed)  > 0.001f  ||
-		std::abs(camSettings.quickZoomOffset - def.quickZoomOffset) > 0.001f  ||
-		std::abs(camSettings.gpDeadzone      - def.gpDeadzone)      > 0.001f   ;
-
-	if (isModified) {
-		if (FUCK::Button("$RACE_RestoreDefaults"_T)) {
-			camSettings = def;
-			changed     = true;
+		if (FUCK::Checkbox("$RACE_HideIdles"_T, &_hideIdles, true, true)) {
+			SaveSettings();
 		}
-	}
 
-	if (changed) {
-		SaveSettings();
+		if (FUCK::Checkbox("$RACE_StartFrozen"_T, &_startFrozen, true, true)) {
+			SaveSettings();
+		}
+
+		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
+
+		CameraSettings def;
+		bool           isModified =
+			std::abs(camSettings.kbmPanSpeed     - def.kbmPanSpeed)     > 0.001f  ||
+			std::abs(camSettings.kbmRotSpeed     - def.kbmRotSpeed)     > 0.001f  ||
+			std::abs(camSettings.kbmFovSpeed     - def.kbmFovSpeed)     > 0.001f  ||
+			std::abs(camSettings.mouseRotMult    - def.mouseRotMult)    > 0.0001f ||
+			std::abs(camSettings.gpPanSpeed      - def.gpPanSpeed)      > 0.001f  ||
+			std::abs(camSettings.gpZoomSpeed     - def.gpZoomSpeed)     > 0.001f  ||
+			std::abs(camSettings.gpRotSpeed      - def.gpRotSpeed)      > 0.001f  ||
+			std::abs(camSettings.gpFovSpeed      - def.gpFovSpeed)      > 0.001f  ||
+			std::abs(camSettings.gpCharRotSpeed  - def.gpCharRotSpeed)  > 0.001f  ||
+			std::abs(camSettings.quickZoomOffset - def.quickZoomOffset) > 0.001f  ||
+			std::abs(camSettings.gpDeadzone      - def.gpDeadzone)      > 0.001f   ;
+
+		if (isModified) {
+			if (FUCK::Button("$RACE_RestoreDefaults"_T)) {
+				camSettings = def;
+				changed     = true;
+			}
+		}
+
+		if (changed) {
+			SaveSettings();
+		}
+
+		FUCK::EndTable();
 	}
+	FUCK::PopStyleVar();
 }
