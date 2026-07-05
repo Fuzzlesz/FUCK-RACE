@@ -562,7 +562,7 @@ void RaceWidget::Draw()
 		_anchorPos.y = _currentPos.y;
 	}
 
-	FUCK::SetWindowFontScale(clusterScale);
+	FUCK::PushFontScaled(nullptr, clusterScale);
 
 	ImVec2 spacing = FUCK::GetStyleVarVec(ImGuiStyleVar_ItemSpacing);
 	FUCK::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(spacing.x * clusterScale, spacing.y * clusterScale));
@@ -594,7 +594,7 @@ void RaceWidget::Draw()
 	FUCK::EndGroup();
 
 	FUCK::PopStyleVar(2);
-	FUCK::SetWindowFontScale(1.0f);
+	FUCK::PopFont();
 
 	if (isEditing) {
 		ImVec2 winMin = FUCK::GetItemRectMin();
