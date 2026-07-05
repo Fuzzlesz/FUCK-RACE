@@ -82,7 +82,8 @@ namespace FUCK
 		kNoMove          = 1 << 12,  // Prevents manual dragging by the user
 		kAutoResize      = 1 << 13,  // Sizes automatically to contents
 		kIgnoreUserScale = 1 << 14,  // Ignores global UI scaling slider
-		kCustomPosition  = 1 << 15   // Opts out of Host-managed pos saving/loading
+		kCustomPosition  = 1 << 15,  // Opts out of Host-managed pos saving/loading
+		kRenderDuringTM  = 1 << 16   // Renders when 'tm' (Toggle Menus) is set
 	};
 
 	enum class TableFlags
@@ -1768,6 +1769,18 @@ namespace FUCK
 	// --------------------------------------------------
 	// Overloads & Templates
 	// --------------------------------------------------
+
+	/// @brief Pushes a font scaled by a fractional multiplier. Must be paired with FUCK::PopFont().
+	inline void PushFontScaled(ImFont* font, float scale)
+	{
+		if (!font)
+			font = GetFont(Font::kRegular);
+
+		// Fallback to 30.0f (framework's base size) if font is somehow null
+		float baseSize = font ? font->LegacySize : 30.0f;
+
+		PushFont(font, baseSize * GetGlobalScale() * scale);
+	}
 
 	/// @brief Visual for UI widget editing. Handles Screen-Space and Window-Space.
 	inline void DrawEditorBounds(const ImVec2& min, const ImVec2& max, EditorBoundsState state = EditorBoundsState::kNormal, float thickness = 2.0f, bool screenSpace = false, const ImVec2* customAnchor = nullptr)
