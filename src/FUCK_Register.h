@@ -2,6 +2,7 @@
 
 #include "RACE-Equip.h"
 #include "RACE-Inputs.h"
+#include "RACE-Reference.h"
 #include "RACE-Widget.h"
 
 class RaceWidgetWindow : public FUCK::IWindow, public REX::Singleton<RaceWidgetWindow>
@@ -132,6 +133,33 @@ private:
 	ImVec2 _lastSize{};
 };
 
+class RaceReferenceWindow : public FUCK::IWindow, public REX::Singleton<RaceReferenceWindow>
+{
+public:
+	const char* Id() const override { return "RACE_Reference"; }
+	const char* Title() const override { return "$RACE_ReferenceTitle"_T; }
+
+	void Draw() override
+	{
+		RaceReferenceManager::GetSingleton()->DrawWindow();
+	}
+
+	bool IsOpen() const override
+	{
+		return RaceReferenceManager::GetSingleton()->IsWindowOpen();
+	}
+
+	void SetOpen(bool a_open) override
+	{
+		RaceReferenceManager::GetSingleton()->SetWindowOpen(a_open);
+	}
+
+	ImVec2 GetDefaultSize() const override
+	{
+		return FUCK::Scale(350.0f, 500.0f);
+	}
+};
+
 namespace FUCK_Register
 {
 	inline void Install()
@@ -141,5 +169,6 @@ namespace FUCK_Register
 
 		FUCK::RegisterWindow(RaceWidgetWindow::GetSingleton());
 		FUCK::RegisterWindow(RaceEquipWindow::GetSingleton());
+		FUCK::RegisterWindow(RaceReferenceWindow::GetSingleton());
 	}
 }

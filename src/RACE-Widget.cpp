@@ -6,6 +6,7 @@
 #include "RACE-Compat.h"
 #include "RACE-Equip.h"
 #include "RACE-Inputs.h"
+#include "RACE-Reference.h"
 #include "RACE-Widget.h"
 
 inline FUCK::PluginSettings& GetSettings()
@@ -19,6 +20,8 @@ void RaceWidget::Initialize()
 	_anchorPos  = { -1.0f, -1.0f };
 	_currentPos = _anchorPos;
 	LoadSettings();
+
+	RaceReferenceManager::GetSingleton()->ScanReferences();
 
 	std::sort(_allIdles.begin(), _allIdles.end(), [](const auto& a, const auto& b) {
 		return _stricmp(a.first.c_str(), b.first.c_str()) < 0;
@@ -324,9 +327,8 @@ bool RaceWidget::IsOpen() const
 		RaceEquipManager::GetSingleton()->RestoreEquipped();
 		RaceEquipManager::GetSingleton()->Clear();
 
-
-
-
+		RaceReferenceManager::GetSingleton()->SetWindowOpen(false);
+		RaceReferenceManager::GetSingleton()->ClearImage();
 	}
 
 	bool journalOpen = ui && ui->IsMenuOpen(RE::JournalMenu::MENU_NAME);
@@ -623,6 +625,26 @@ void RaceWidget::DrawMainPanel()
 				if (player && player->currentProcess)
 					player->currentProcess->PlayIdle(player, _validIdles[_selectedIndex].second, nullptr);
 			}
+		}
+		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
+	}
+
+	auto refManager = RaceReferenceManager::GetSingleton();
+
+	if (!refManager->IsWindowOpen() && refManager->GetSelectedIndex() > 0) {
+		refManager->ClearImage();
+	}
+
+	if (!isGamepad && refManager->HasReferences()) {
+		if (requestFocus) {
+			FUCK::SetKeyboardFocusHere(0);
+			requestFocus = false;
+		}
+
+		FUCK::SetNextItemWidth(comboWidth);
+		int refIndex = refManager->GetSelectedIndex();
+		if (FUCK::Combo("##RACE_RefImage", &refIndex, refManager->GetComboStrings().data(), static_cast<int>(refManager->GetComboStrings().size()))) {
+			refManager->SelectReference(refIndex);
 		}
 		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
 	}
