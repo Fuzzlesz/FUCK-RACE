@@ -3,6 +3,7 @@ set(headers ${headers}
 	src/FUCK_Register.h
 	src/IconsFontAwesome6.h
 	src/PCH.h
+	src/RACE-Anims.h
 	src/RACE-Camera.h
 	src/RACE-Compat.h
 	src/RACE-Equip.h

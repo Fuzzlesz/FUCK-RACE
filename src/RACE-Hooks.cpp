@@ -1,5 +1,6 @@
-#include "RACE-Hooks.h"
+#include "RACE-Anims.h"
 #include "RACE-Camera.h"
+#include "RACE-Hooks.h"
 #include "RACE-Widget.h"
 
 namespace Hooks
@@ -10,7 +11,7 @@ namespace Hooks
 		{
 			if (!clib_util::string::is_empty(a_str)) {
 				if (const std::string_view str(a_str); !str.starts_with("pa_")) {
-					RaceWidget::GetSingleton()->AddIdle(a_str, a_this);
+					RaceAnimManager::GetSingleton()->AddIdle(a_str, a_this);
 				}
 			}
 			return func(a_this, a_str);
@@ -33,7 +34,7 @@ namespace Hooks
 
 			RaceWidget::GetSingleton()->OnAdvanceMovie(a_this);
 
-			RaceCamera::GetSingleton()->HandleInput(a_interval, RaceWidget::GetSingleton()->IsFrozen());
+			RaceCamera::GetSingleton()->HandleInput(a_interval, RaceAnimManager::GetSingleton()->IsFrozen());
 			RaceCamera::GetSingleton()->ApplyTransform(root);
 		}
 

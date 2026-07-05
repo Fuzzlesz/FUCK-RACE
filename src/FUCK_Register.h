@@ -1,5 +1,6 @@
 #pragma once
 
+#include "RACE-Anims.h"
 #include "RACE-Equip.h"
 #include "RACE-Inputs.h"
 #include "RACE-Reference.h"
@@ -164,6 +165,7 @@ namespace FUCK_Register
 {
 	inline void Install()
 	{
+		RaceAnimManager::GetSingleton()->Initialize();
 		RaceEquipManager::GetSingleton()->Initialize();
 		RaceWidget::GetSingleton()->Initialize();
 

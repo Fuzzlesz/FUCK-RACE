@@ -2,6 +2,7 @@
 
 #include "IconsFontAwesome6.h"
 
+#include "RACE-Anims.h"
 #include "RACE-Camera.h"
 #include "RACE-Compat.h"
 #include "RACE-Equip.h"
@@ -22,173 +23,6 @@ void RaceWidget::Initialize()
 	LoadSettings();
 
 	RaceReferenceManager::GetSingleton()->ScanReferences();
-
-	std::sort(_allIdles.begin(), _allIdles.end(), [](const auto& a, const auto& b) {
-		return _stricmp(a.first.c_str(), b.first.c_str()) < 0;
-	});
-
-	_pluginNames.clear();
-	_pluginNames.push_back(std::string("$RACE_AllPlugins"_T) + "##NOFILTER");
-	_pluginNamesCStr.clear();
-	_pluginNamesCStr.push_back(_pluginNames[0].c_str());
-}
-
-void RaceWidget::AddIdle(const std::string& a_name, RE::TESIdleForm* a_idle)
-{
-	auto ptrIt = std::find_if(_allIdles.begin(), _allIdles.end(), [&](const auto& pair) {
-		return pair.second == a_idle;
-	});
-
-	if (ptrIt != _allIdles.end()) {
-		ptrIt->first = a_name;
-		return;
-	}
-
-	auto nameIt = std::find_if(_allIdles.begin(), _allIdles.end(), [&](const auto& pair) {
-		return _stricmp(pair.first.c_str(), a_name.c_str()) == 0;
-	});
-
-	if (nameIt != _allIdles.end()) {
-		nameIt->second = a_idle;
-	} else {
-		_allIdles.emplace_back(a_name, a_idle);
-	}
-}
-
-void RaceWidget::UpdateValidIdles()
-{
-	auto player = RE::PlayerCharacter::GetSingleton();
-	if (!player || !player->Is3DLoaded())
-		return;
-
-	std::sort(_allIdles.begin(), _allIdles.end(), [](const auto& a, const auto& b) {
-		return _stricmp(a.first.c_str(), b.first.c_str()) < 0;
-	});
-
-	std::string targetPlugin = _selectedPluginIndex > 0 && _selectedPluginIndex < static_cast<int>(_pluginNames.size()) ? _pluginNames[_selectedPluginIndex] : "";
-
-	std::set<std::string> activePlugins;
-	for (const auto& pair : _allIdles) {
-		if (player->CanUseIdle(pair.second) && pair.second->CheckConditions(player, nullptr, false)) {
-			if (auto file = pair.second->GetFile(0)) {
-				activePlugins.insert(std::string(file->GetFilename()));
-			} else {
-				activePlugins.insert("Unknown");
-			}
-		}
-	}
-
-	_pluginNames.clear();
-	_pluginNames.push_back("$RACE_AllPlugins"_T);
-
-	if (auto dataHandler = RE::TESDataHandler::GetSingleton()) {
-		for (auto* file : dataHandler->files) {
-			if (file) {
-				std::string fileName(file->GetFilename());
-				if (activePlugins.contains(fileName)) {
-					_pluginNames.push_back(fileName);
-					activePlugins.erase(fileName);
-				}
-			}
-		}
-	}
-
-	for (const auto& p : activePlugins) {
-		_pluginNames.push_back(p);
-	}
-
-	_pluginNamesCStr.clear();
-	for (const auto& p : _pluginNames) {
-		_pluginNamesCStr.push_back(p.c_str());
-	}
-
-	_selectedPluginIndex = 0;
-	if (!targetPlugin.empty()) {
-		for (size_t i = 1; i < _pluginNames.size(); ++i) {
-			if (_pluginNames[i] == targetPlugin) {
-				_selectedPluginIndex = static_cast<int>(i);
-				break;
-			}
-		}
-	}
-
-	_validIdles.clear();
-	_idleNames.clear();
-
-	_validIdles.reserve(_allIdles.size() + 1);
-	_idleNames.reserve(_allIdles.size() + 1);
-
-	_validIdles.push_back({ std::string("$RACE_SelectIdle"_T) + "##NOFILTER", nullptr });
-	_idleNames.push_back(_validIdles.back().first.c_str());
-
-	targetPlugin = _selectedPluginIndex > 0 ? _pluginNames[_selectedPluginIndex] : "";
-
-	for (const auto& pair : _allIdles) {
-		if (player->CanUseIdle(pair.second) && pair.second->CheckConditions(player, nullptr, false)) {
-			if (!targetPlugin.empty()) {
-				auto        file  = pair.second->GetFile(0);
-				std::string pName = file ? std::string(file->GetFilename()) : "Unknown";
-				if (pName != targetPlugin) {
-					continue;
-				}
-			}
-
-			_validIdles.push_back(pair);
-			_idleNames.push_back(_validIdles.back().first.c_str());
-		}
-	}
-
-	_selectedIndex = 0;
-	_idlesValid    = true;
-}
-
-void RaceWidget::SetPlayerFrozen(bool a_frozen)
-{
-	auto player = RE::PlayerCharacter::GetSingleton();
-	if (!player)
-		return;
-
-	if (a_frozen) {
-		if (const auto currentProcess = player->currentProcess) {
-			currentProcess->ClearMuzzleFlashes();
-		}
-
-		player->boolFlags.reset(RE::Actor::BOOL_FLAGS::kShouldAnimGraphUpdate);
-
-		if (const auto charController = player->GetCharController()) {
-			charController->flags.set  (RE::CHARACTER_FLAGS::kNotPushable);
-			charController->flags.reset(RE::CHARACTER_FLAGS::kRecordHits);
-			charController->flags.reset(RE::CHARACTER_FLAGS::kHitFlags);
-		}
-
-		player->EnableAI(false);
-		player->StopMoving(1.0f);
-
-		if (const auto animData = player->GetFaceGenAnimationData()) {
-			animData->eyesHeadingOffset = 0.0f;
-			animData->eyesPitchOffset   = 0.0f;
-			animData->eyesOffsetTimer   = FLT_MAX;
-			animData->eyesBlinkingTimer = FLT_MAX;
-			animData->eyesBlinkingStage = RE::BSFaceGenAnimationData::EyesBlinkingStage::BlinkDelay;
-		}
-	} else {
-		player->boolFlags.set(RE::Actor::BOOL_FLAGS::kShouldAnimGraphUpdate);
-
-		if (const auto charController = player->GetCharController()) {
-			charController->flags.reset(RE::CHARACTER_FLAGS::kNotPushable);
-			charController->flags.set  (RE::CHARACTER_FLAGS::kRecordHits);
-			charController->flags.set  (RE::CHARACTER_FLAGS::kHitFlags);
-		}
-
-		player->EnableAI(true);
-
-		if (const auto animData = player->GetFaceGenAnimationData()) {
-			animData->eyesOffsetTimer   = 0.0f;
-			animData->eyesBlinkingTimer = 0.0f;
-		}
-	}
-
-	_isFrozen = a_frozen;
 }
 
 bool RaceWidget::GetMenuInstance(RE::GFxMovieView* a_movie, RE::GFxValue& a_outInstance) const
@@ -215,19 +49,7 @@ bool RaceWidget::GetMenuInstance(RE::GFxMovieView* a_movie, RE::GFxValue& a_outI
 
 void RaceWidget::OnAdvanceMovie(RE::RaceSexMenu* a_menu)
 {
-	if (_isFrozen) {
-		auto player = RE::PlayerCharacter::GetSingleton();
-		if (player) {
-			if (const auto animData = player->GetFaceGenAnimationData()) {
-				animData->eyesHeadingOffset                                                            = 0.0f;
-				animData->eyesPitchOffset                                                              = 0.0f;
-				animData->eyesOffsetTimer                                                              = FLT_MAX;
-				animData->eyesBlinkingTimer                                                            = FLT_MAX;
-				animData->modifierKeyFrame.values[RE::BSFaceGenKeyframeMultiple::Modifier::BlinkLeft]  = 0.0f;
-				animData->modifierKeyFrame.values[RE::BSFaceGenKeyframeMultiple::Modifier::BlinkRight] = 0.0f;
-			}
-		}
-	}
+	RaceAnimManager::GetSingleton()->OnAdvanceMovie();
 
 	if (a_menu && a_menu->uiMovie) {
 		RE::GFxValue menuInstance;
@@ -354,13 +176,15 @@ bool RaceWidget::IsOpen() const
 
 	if (!open && _lastMode != -1) {
 		auto* self          = const_cast<RaceWidget*>(this);
-		self->_idlesValid   = false;
+		auto  animManager   = RaceAnimManager::GetSingleton();
+		
+		animManager->InvalidateIdles();
 		self->_lastMode     = -1;
 		self->_uiHidden     = false;
 		self->_showSettings = false;
 
-		if (self->_isFrozen) {
-			self->SetPlayerFrozen(false);
+		if (animManager->IsFrozen()) {
+			animManager->SetPlayerFrozen(false);
 		}
 
 		RaceCamera::GetSingleton()->ResetOffsets();
@@ -449,8 +273,9 @@ void RaceWidget::Draw()
 
 	int currentMode = GetCurrentMode();
 
-	if (!_idlesValid) {
-		UpdateValidIdles();
+	auto animManager = RaceAnimManager::GetSingleton();
+	if (!animManager->AreIdlesValid()) {
+		animManager->UpdateValidIdles();
 	}
 
 	auto ui   = RE::UI::GetSingleton();
@@ -478,7 +303,7 @@ void RaceWidget::Draw()
 			SKEE64Compat::OnModeChanged(currentMode, _lastMode, menuInstance);
 		}
 		if (_lastMode == -1 && _startFrozen) {
-			SetPlayerFrozen(true);
+			animManager->SetPlayerFrozen(true);
 		}
 		_lastMode = currentMode;
 	}
@@ -518,10 +343,10 @@ void RaceWidget::Draw()
 		return;
 	}
 
-	if (_isFrozen) {
+	if (animManager->IsFrozen()) {
 		auto player = RE::PlayerCharacter::GetSingleton();
 		if (player && player->boolFlags.all(RE::Actor::BOOL_FLAGS::kShouldAnimGraphUpdate)) {
-			_isFrozen = false;
+			animManager->SetPlayerFrozen(false);
 		}
 	}
 
@@ -667,6 +492,8 @@ void RaceWidget::DrawMainPanel()
 		FUCK::Indent(alignOffset);
 	}
 
+	auto animManager = RaceAnimManager::GetSingleton();
+
 	if (!_hideIdles) {
 		if (requestFocus) {
 			FUCK::SetKeyboardFocusHere(0);
@@ -674,19 +501,13 @@ void RaceWidget::DrawMainPanel()
 		}
 
 		FUCK::SetNextItemWidth(comboWidth);
-		if (FUCK::ComboWithFilter("##RACE_PluginFilter", &_selectedPluginIndex, _pluginNamesCStr.data(), static_cast<int>(_pluginNamesCStr.size())))
-			_idlesValid = false;
+		if (FUCK::ComboWithFilter("##RACE_PluginFilter", &animManager->GetSelectedPluginIndex(), animManager->GetPluginNamesCStr().data(), static_cast<int>(animManager->GetPluginNamesCStr().size())))
+			animManager->InvalidateIdles();
 		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
 
 		FUCK::SetNextItemWidth(comboWidth);
-		if (FUCK::ComboWithFilter("##RACE_Idles", &_selectedIndex, _idleNames.data(), static_cast<int>(_idleNames.size()))) {
-			if (_selectedIndex > 0 && _selectedIndex < static_cast<int>(_validIdles.size())) {
-				if (_isFrozen)
-					SetPlayerFrozen(false);
-				auto player = RE::PlayerCharacter::GetSingleton();
-				if (player && player->currentProcess)
-					player->currentProcess->PlayIdle(player, _validIdles[_selectedIndex].second, nullptr);
-			}
+		if (FUCK::ComboWithFilter("##RACE_Idles", &animManager->GetSelectedIndex(), animManager->GetIdleNames().data(), static_cast<int>(animManager->GetIdleNames().size()))) {
+			animManager->PlaySelectedIdle();
 		}
 		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
 	}
@@ -717,32 +538,17 @@ void RaceWidget::DrawMainPanel()
 	}
 
 	if (FUCK::Button("$RACE_Freeze"_T)) {
-		if (!_isFrozen)
-			SetPlayerFrozen(true);
+		if (!animManager->IsFrozen())
+			animManager->SetPlayerFrozen(true);
 	}
 
 	FUCK::SameLine();
 	if (FUCK::Button("$RACE_Play"_T)) {
-		if (_isFrozen)
-			SetPlayerFrozen(false);
-		else if (_selectedIndex > 0 && _selectedIndex < static_cast<int>(_validIdles.size())) {
-			auto player = RE::PlayerCharacter::GetSingleton();
-			if (player && player->currentProcess)
-				player->currentProcess->PlayIdle(player, _validIdles[_selectedIndex].second, nullptr);
-		}
+		animManager->TogglePlay();
 	}
 	FUCK::SameLine();
 	if (FUCK::Button("$RACE_Default"_T)) {
-		if (_isFrozen)
-			SetPlayerFrozen(false);
-		auto player = RE::PlayerCharacter::GetSingleton();
-		if (player && player->currentProcess) {
-			player->currentProcess->StopCurrentIdle(player, true);
-			auto resetRoot = RE::TESForm::LookupByEditorID<RE::TESIdleForm>("ResetRoot");
-			if (resetRoot)
-				player->currentProcess->PlayIdle(player, resetRoot, nullptr);
-			_selectedIndex = 0;
-		}
+		animManager->StopCurrentIdle();
 	}
 
 	if (SKEE64Compat::IsPresent() && !isGamepad) {
