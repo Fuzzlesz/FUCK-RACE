@@ -399,21 +399,17 @@ void RaceWidget::Draw()
 
 	float pad = FUCK::Scale(15.0f);
 
-	// Safe Top Padding
 	FUCK::Dummy(ImVec2(0.0f, pad));
 
-	// Safe Left Padding + Content
 	FUCK::Indent(pad);
 	FUCK::BeginGroup();
 	DrawMainPanel();
 	FUCK::EndGroup();
 	FUCK::Unindent(pad);
 
-	// Safe Right Padding
 	FUCK::SameLine(0.0f, 0.0f);
 	FUCK::Dummy(ImVec2(pad, 0.0f));
 
-	// Safe Bottom Padding
 	FUCK::Dummy(ImVec2(0.0f, pad));
 
 	FUCK::EndGroup();

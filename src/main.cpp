@@ -59,11 +59,8 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 	messaging->RegisterListener([](SKSE::MessagingInterface::Message* msg) {
 		if (msg->type == SKSE::MessagingInterface::kDataLoaded) {
 			if (FUCK::Connect("FUCK-RACE")) {
-				bool skee64Present = SKEE64Compat::Detect();
-				RaceWidget::GetSingleton()->SetSkee64Present(skee64Present);
-
+				RaceWidget::GetSingleton()->SetSkee64Present(SKEE64Compat::Detect());
 				FUCK_Register::Install();
-
 			} else {
 				SKSE::log::error("FUCK.dll not found or version mismatch. Tool disabled.");
 			}
