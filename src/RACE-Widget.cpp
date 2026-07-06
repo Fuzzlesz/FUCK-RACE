@@ -23,6 +23,19 @@ void RaceWidget::Initialize()
 	LoadSettings();
 
 	RaceReferenceManager::GetSingleton()->ScanReferences();
+
+	static FUCK::MenuEventListener listener([](const char* menuName, bool opening) {
+		if (opening && std::string_view(menuName) == RE::JournalMenu::MENU_NAME) {
+			if (auto ui = RE::UI::GetSingleton(); ui) {
+				if (auto menu = ui->GetMenu(RE::JournalMenu::MENU_NAME); menu && menu->uiMovie) {
+					if (RE::GFxValue jMenu; menu->uiMovie->GetVariable(&jMenu, "_root.QuestJournalFader.Menu_mc")) {
+						RE::GFxValue args[2]{ RE::GFxValue(2), RE::GFxValue(false) };
+						jMenu.Invoke("RestoreSavedSettings", nullptr, args, 2);
+					}
+				}
+			}
+		}
+	});
 }
 
 bool RaceWidget::GetMenuInstance(RE::GFxMovieView* a_movie, RE::GFxValue& a_outInstance) const
