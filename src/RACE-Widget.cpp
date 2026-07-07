@@ -538,7 +538,7 @@ void RaceWidget::DrawMainPanel()
 		refManager->ClearImage();
 	}
 
-	if (!isGamepad && refManager->HasReferences()) {
+	if (!IsOnCameraTab() && !isGamepad && refManager->HasReferences()) {
 		if (requestFocus) {
 			FUCK::SetKeyboardFocusHere(0);
 			requestFocus = false;

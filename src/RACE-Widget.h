@@ -20,6 +20,7 @@ public:
 
 	int  GetCurrentMode() const;
 	bool IsOnSculptTab() const { return GetCurrentMode() == 3; }
+	bool IsOnCameraTab() const { return GetCurrentMode() == 2; }
 	bool IsOnSlidersTab() const { return GetCurrentMode() == 0; }
 
 	bool GetMenuInstance(RE::GFxMovieView* a_movie, RE::GFxValue& a_outInstance) const;
