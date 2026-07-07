@@ -181,6 +181,9 @@ public:
 	void Draw() override
 	{
 		RaceReferenceManager::GetSingleton()->DrawWindow();
+
+		_lastPos  = FUCK::GetWindowPos();
+		_lastSize = FUCK::GetWindowSize();
 	}
 
 	bool IsOpen() const override
@@ -197,6 +200,28 @@ public:
 	{
 		return FUCK::Scale(350.0f, 500.0f);
 	}
+
+	FUCK::WindowFlags GetFlags() const override
+	{
+		FUCK::WindowFlags flags = FUCK::WindowFlags::kNone;
+
+		ImVec2 mouse   = FUCK::GetMousePos();
+		bool   hovered = mouse.x >= _lastPos.x && mouse.x <= _lastPos.x + _lastSize.x &&
+		               mouse.y >= _lastPos.y && mouse.y <= _lastPos.y + _lastSize.y;
+
+
+		bool isDraggingOrActive = FUCK::IsAnyItemActive();
+
+		if (!hovered && !isDraggingOrActive) {
+			flags = flags | FUCK::WindowFlags::kPassInputToGame;
+		}
+
+		return flags;
+	}
+
+private:
+	ImVec2 _lastPos{};
+	ImVec2 _lastSize{};
 };
 
 namespace FUCK_Register
