@@ -157,8 +157,9 @@ void RaceWidget::LoadSettings()
 
 		_anchorPos = FUCK::Scale({ savedX, savedY });
 
-		_startFrozen = FUCK::INI::LoadBool(ini, "Widget", "StartFrozen", false);
-		_hideIdles   = FUCK::INI::LoadBool(ini, "Widget", "HideIdles", false);
+		_startFrozen   = FUCK::INI::LoadBool(ini, "Widget", "StartFrozen",   false);
+		_hideIdles     = FUCK::INI::LoadBool(ini, "Widget", "HideIdles",     false);
+		_disableMirror = FUCK::INI::LoadBool(ini, "Widget", "DisableMirror", false);  
 
 		RaceCamera::GetSingleton()->LoadSettings(ini);
 	});
@@ -175,8 +176,9 @@ void RaceWidget::SaveSettings()
 		FUCK::INI::SaveDouble(ini, "Widget", "X", _anchorPos.x / resScale, defaultPos.x / resScale);
 		FUCK::INI::SaveDouble(ini, "Widget", "Y", _anchorPos.y / resScale, defaultPos.y / resScale);
 
-		FUCK::INI::SaveBool(ini, "Widget", "StartFrozen", _startFrozen, false);
-		FUCK::INI::SaveBool(ini, "Widget", "HideIdles", _hideIdles, false);
+		FUCK::INI::SaveBool(ini, "Widget", "StartFrozen",   _startFrozen,   false);
+		FUCK::INI::SaveBool(ini, "Widget", "HideIdles",     _hideIdles,     false);
+		FUCK::INI::SaveBool(ini, "Widget", "DisableMirror", _disableMirror, false); 
 
 		RaceCamera::GetSingleton()->SaveSettings(ini);
 	});
@@ -318,6 +320,11 @@ void RaceWidget::Draw()
 		if (_lastMode == -1 && _startFrozen) {
 			animManager->SetPlayerFrozen(true);
 		}
+
+		if (currentMode == 3) {
+			ApplyMirrorLock();
+		}
+
 		_lastMode = currentMode;
 	}
 
@@ -352,7 +359,7 @@ void RaceWidget::Draw()
 	s_l3Pressed  = l3Down;
 	s_r3Pressed  = r3Down;
 
-	if (_uiHidden || currentMode == 3) {
+	if (_uiHidden) {
 		return;
 	}
 
@@ -416,7 +423,11 @@ void RaceWidget::Draw()
 
 	FUCK::Indent(pad);
 	FUCK::BeginGroup();
-	DrawMainPanel();
+	if (currentMode == 3) {
+		DrawSculptPanel();
+	} else {
+		DrawMainPanel();
+	}
 	FUCK::EndGroup();
 	FUCK::Unindent(pad);
 
@@ -786,4 +797,87 @@ void RaceWidget::DrawSettingsPanel()
 		FUCK::EndTable();
 	}
 	FUCK::PopStyleVar();
+}
+
+void RaceWidget::ApplyMirrorLock()
+{
+	if (!SKEE64Compat::IsPresent())
+		return;
+
+	auto ui   = RE::UI::GetSingleton();
+	auto menu = ui ? ui->GetMenu(RE::RaceSexMenu::MENU_NAME) : nullptr;
+	if (!menu || !menu->uiMovie)
+		return;
+
+	double targetValue = _disableMirror ? 0.0 : 1.0;
+
+	RE::GFxValue charGen;
+	bool         hasCharGen = menu->uiMovie->GetVariable(&charGen, "_global.skse.plugins.CharGen");
+
+	RE::GFxValue menuInstance;
+	if (GetMenuInstance(menu->uiMovie.get(), menuInstance)) {
+		RE::GFxValue vertexEditor, brushWindow, brushList, entryList, brushesArr;
+
+		if (menuInstance.GetMember("vertexEditor", &vertexEditor) &&
+			vertexEditor.GetMember("brushWindow", &brushWindow)) {
+			if (brushWindow.GetMember("brushes", &brushesArr) && brushesArr.IsArray()) {
+				std::uint32_t count = brushesArr.GetArraySize();
+				for (std::uint32_t i = 0; i < count; ++i) {
+					RE::GFxValue brush;
+					if (brushesArr.GetElement(i, &brush) && brush.IsObject()) {
+						brush.SetMember("mirror", RE::GFxValue(targetValue));
+
+						if (hasCharGen && charGen.IsObject()) {
+							RE::GFxValue typeVal;
+							brush.GetMember("type", &typeVal);
+
+							RE::GFxValue args[2] = { typeVal, brush };
+							charGen.Invoke("SetBrushData", nullptr, args, 2);
+						}
+					}
+				}
+			}
+
+			if (brushWindow.GetMember("brushList", &brushList) &&
+				brushList.GetMember("entryList", &entryList) &&
+				entryList.IsArray()) {
+				std::uint32_t entryCount = entryList.GetArraySize();
+				bool          changedUI  = false;
+
+				for (std::uint32_t i = 0; i < entryCount; ++i) {
+					RE::GFxValue entry;
+					if (entryList.GetElement(i, &entry) && entry.IsObject()) {
+						RE::GFxValue textVal;
+						if (entry.GetMember("text", &textVal) && textVal.IsString()) {
+							if (std::string_view(textVal.GetString()) == "$Mirror") {
+								entry.SetMember("position", RE::GFxValue(targetValue));
+
+								RE::GFxValue brushRef;
+								if (entry.GetMember("brush", &brushRef) && brushRef.IsObject()) {
+									brushRef.SetMember("mirror", RE::GFxValue(targetValue));
+								}
+								changedUI = true;
+							}
+						}
+					}
+				}
+
+				if (changedUI) {
+					brushList.Invoke("InvalidateData", nullptr, nullptr, 0);
+				}
+			}
+		}
+	}
+}
+
+void RaceWidget::DrawSculptPanel()
+{
+	if (!SKEE64Compat::IsPresent())
+		return;
+
+	if (FUCK::Checkbox("$RACE_DisableMirror"_T, &_disableMirror, false)) {
+		SaveSettings();
+
+		ApplyMirrorLock();
+	}
 }

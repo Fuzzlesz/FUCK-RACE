@@ -10,6 +10,7 @@ public:
 	void Draw();
 	void DrawMainPanel();
 	void DrawSettingsPanel();
+	void DrawSculptPanel();
 
 	void OnAdvanceMovie(RE::RaceSexMenu* a_menu);
 
@@ -27,6 +28,7 @@ private:
 	void LoadSettings();
 	void SaveSettings();
 	void HandlePositioning(ImVec2& expectedPos);
+	void ApplyMirrorLock();
 
 	bool _isDragging = false;
 
@@ -39,8 +41,9 @@ private:
 	bool _showSettings       = false;
 	bool _settingsJustOpened = false;
 
-	bool _startFrozen = false;
-	bool _hideIdles   = false;
+	bool _startFrozen   = false;
+	bool _hideIdles     = false;
+	bool _disableMirror = false;
 
 	int _lastMode = -1;
 };
