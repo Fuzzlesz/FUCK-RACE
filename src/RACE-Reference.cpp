@@ -58,7 +58,10 @@ void RaceReferenceManager::SelectReference(int a_index)
 	_selectedIndex = a_index;
 
 	if (_selectedIndex > 0 && _selectedIndex < static_cast<int>(_refImagePaths.size())) {
-		_image  = FUCK::Image(_refImagePaths[_selectedIndex].c_str(), false);
+		_image = FUCK::Image(_refImagePaths[_selectedIndex].c_str(), false);
+
+		_currentWindowId = "RACE_Reference_" + _refImageNames[_selectedIndex];
+
 		_isOpen = true;
 	} else {
 		ClearImage();
@@ -69,7 +72,10 @@ void RaceReferenceManager::ClearImage()
 {
 	_image.Reset();
 	_selectedIndex = 0;
-	_isOpen        = false;
+
+	_currentWindowId = "RACE_Reference";
+
+	_isOpen = false;
 }
 
 void RaceReferenceManager::DrawWindow()

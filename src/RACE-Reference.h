@@ -15,6 +15,8 @@ public:
 	const std::vector<const char*>& GetComboStrings() const { return _refImageNamesCStr; }
 	int                             GetSelectedIndex() const { return _selectedIndex; }
 
+	const char* GetWindowId() const { return _currentWindowId.c_str(); }
+
 private:
 	FUCK::Image _image;
 	bool        _isOpen = false;
@@ -23,4 +25,6 @@ private:
 	std::vector<std::string> _refImagePaths;
 	std::vector<const char*> _refImageNamesCStr;
 	int                      _selectedIndex = 0;
+
+	std::string _currentWindowId = "RACE_Reference";
 };
