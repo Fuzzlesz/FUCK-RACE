@@ -61,6 +61,7 @@ void RaceReferenceManager::SelectReference(int a_index)
 		_image = FUCK::Image(_refImagePaths[_selectedIndex].c_str(), false);
 
 		_currentWindowId = "RACE_Reference_" + _refImageNames[_selectedIndex];
+		_currentWindowTitle = _refImageNames[_selectedIndex];
 
 		_isOpen = true;
 	} else {
@@ -74,6 +75,7 @@ void RaceReferenceManager::ClearImage()
 	_selectedIndex = 0;
 
 	_currentWindowId = "RACE_Reference";
+	_currentWindowTitle = "Reference";
 
 	_isOpen = false;
 }

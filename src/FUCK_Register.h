@@ -169,8 +169,7 @@ class RaceReferenceWindow : public FUCK::IWindow, public REX::Singleton<RaceRefe
 {
 public:
 	const char* Id() const override { return RaceReferenceManager::GetSingleton()->GetWindowId(); }
-
-	const char* Title() const override { return "$RACE_ReferenceTitle"_T; }
+	const char* Title() const override { return RaceReferenceManager::GetSingleton()->GetWindowTitle(); }
 
 	void Draw() override
 	{

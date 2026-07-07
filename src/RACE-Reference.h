@@ -16,6 +16,7 @@ public:
 	int                             GetSelectedIndex() const { return _selectedIndex; }
 
 	const char* GetWindowId() const { return _currentWindowId.c_str(); }
+	const char* GetWindowTitle() const { return _currentWindowTitle.c_str(); }
 
 private:
 	FUCK::Image _image;
@@ -26,5 +27,6 @@ private:
 	std::vector<const char*> _refImageNamesCStr;
 	int                      _selectedIndex = 0;
 
-	std::string _currentWindowId = "RACE_Reference";
+	std::string _currentWindowId    = "RACE_Reference";
+	std::string _currentWindowTitle = "Reference";
 };
