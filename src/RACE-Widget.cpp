@@ -875,9 +875,48 @@ void RaceWidget::DrawSculptPanel()
 	if (!SKEE64Compat::IsPresent())
 		return;
 
+	auto animManager = RaceAnimManager::GetSingleton();
+	auto refManager  = RaceReferenceManager::GetSingleton();
+
 	if (FUCK::Checkbox("$RACE_DisableMirror"_T, &_disableMirror, false)) {
 		SaveSettings();
-
 		ApplyMirrorLock();
 	}
+
+	FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
+
+	if (!refManager->IsWindowOpen() && refManager->GetSelectedIndex() > 0) {
+		refManager->ClearImage();
+	}
+
+	bool isGamepad = FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
+
+	if (!isGamepad && refManager->HasReferences()) {
+		float clusterScale = 0.8f;
+		float comboWidth   = FUCK::UIScale(360.0f * clusterScale);
+
+		FUCK::SetNextItemWidth(comboWidth);
+		int refIndex = refManager->GetSelectedIndex();
+
+		if (FUCK::Combo("##RACE_RefImage_Sculpt", &refIndex, refManager->GetComboStrings().data(), static_cast<int>(refManager->GetComboStrings().size()))) {
+			refManager->SelectReference(refIndex);
+		}
+		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
+	}
+
+	FUCK::Indent();
+	FUCK::Indent();
+
+	if (FUCK::Button("$RACE_Freeze"_T)) {
+		if (!animManager->IsFrozen())
+			animManager->SetPlayerFrozen(true);
+	}
+
+	FUCK::SameLine();
+	if (FUCK::Button("$RACE_Play"_T)) {
+		animManager->TogglePlay();
+	}
+
+	FUCK::Unindent();
+	FUCK::Unindent();
 }
