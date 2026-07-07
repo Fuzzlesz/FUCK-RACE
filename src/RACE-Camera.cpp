@@ -179,34 +179,54 @@ void RaceCamera::HandleInput(float a_interval, bool a_isFrozen)
 			if (isSecondaryKBM) {
 				if (isCameraTabOnly) {
 					// Camera Tab Secondary (Alt): Move Camera X/Z
-					if (FUCK::IsInputDown(RACE::Keys::kKB_W)) _camOffset.z += speed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_S)) _camOffset.z -= speed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_A)) _camOffset.x -= speed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_D)) _camOffset.x += speed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_W))
+						_camOffset.z += speed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_S))
+						_camOffset.z -= speed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_A))
+						_camOffset.x -= speed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_D))
+						_camOffset.x += speed;
 				} else {
 					// Global Secondary (Ctrl+Shift): Zoom, FOV & Roll
-					if (FUCK::IsInputDown(RACE::Keys::kKB_W)) _camOffset.y += speed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_S)) _camOffset.y -= speed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_A)) _fovOffset -= fovSpeed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_D)) _fovOffset += fovSpeed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_Q)) _camRoll -= rollSpeed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_E)) _camRoll += rollSpeed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_W))
+						_camOffset.y += speed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_S))
+						_camOffset.y -= speed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_A))
+						_fovOffset -= fovSpeed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_D))
+						_fovOffset += fovSpeed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_Q))
+						_camRoll -= rollSpeed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_E))
+						_camRoll += rollSpeed;
 				}
 			} else {
 				if (isCameraTabOnly) {
 					// Camera Tab Primary: Zoom & Rotate
-					if (FUCK::IsInputDown(RACE::Keys::kKB_W)) _camOffset.y += speed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_S)) _camOffset.y -= speed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_A)) _camRotZ -= rotSpeed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_D)) _camRotZ += rotSpeed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_W))
+						_camOffset.y += speed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_S))
+						_camOffset.y -= speed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_A))
+						_camRotZ -= rotSpeed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_D))
+						_camRotZ += rotSpeed;
 				} else {
 					// Global Primary (Ctrl): Move Camera X/Z & Rotate
-					if (FUCK::IsInputDown(RACE::Keys::kKB_W)) _camOffset.z += speed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_S)) _camOffset.z -= speed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_A)) _camOffset.x -= speed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_D)) _camOffset.x += speed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_Q)) _camRotZ -= rotSpeed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_E)) _camRotZ += rotSpeed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_W))
+						_camOffset.z += speed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_S))
+						_camOffset.z -= speed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_A))
+						_camOffset.x -= speed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_D))
+						_camOffset.x += speed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_Q))
+						_camRotZ -= rotSpeed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_E))
+						_camRotZ += rotSpeed;
 				}
 			}
 		}
