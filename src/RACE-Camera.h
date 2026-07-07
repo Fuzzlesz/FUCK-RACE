@@ -33,6 +33,7 @@ public:
 	void SaveSettings(CSimpleIniA& a_ini);
 
 	void ToggleQuickZoom();
+	void AccumulateScroll(float a_delta) { _pendingScroll += a_delta; }
 
 	bool HasAnyCamera() const
 	{
@@ -55,6 +56,8 @@ public:
 
 private:
 	CameraSettings _settings;
+
+	float _pendingScroll = 0.0f;
 
 	RE::NiPoint3 _camOffset{ 0.0f, 0.0f, 0.0f };
 	float        _camRotZ    = 0.0f;

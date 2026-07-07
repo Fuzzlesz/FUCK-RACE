@@ -74,21 +74,26 @@ void RaceCamera::HandleInput(float a_interval, bool a_isFrozen)
 	if (std::abs(_currentZoomSideOffset - _targetZoomSideOffset) < 0.05f)
 		_currentZoomSideOffset = _targetZoomSideOffset;
 
-	bool hasSkee     = SKEE64Compat::IsPresent();
-	int  mode        = hasSkee ? RaceWidget::GetSingleton()->GetCurrentMode() : 0;
-	bool isCameraTab = (mode == 2);
+	bool hasSkee       = SKEE64Compat::IsPresent();
+	int  mode          = hasSkee ? RaceWidget::GetSingleton()->GetCurrentMode() : 0;
+	bool isCameraTab   = (mode == 2);
 
-	bool ctrlDown    = FUCK::IsModifierPressed(FUCK::Modifier::kCtrl);
-	bool shiftDown   = FUCK::IsModifierPressed(FUCK::Modifier::kShift);
-	bool altDown     = FUCK::IsModifierPressed(FUCK::Modifier::kAlt);
+	bool ctrlDown      = FUCK::IsModifierPressed(FUCK::Modifier::kCtrl);
+	bool shiftDown     = FUCK::IsModifierPressed(FUCK::Modifier::kShift);
+	bool altDown       = FUCK::IsModifierPressed(FUCK::Modifier::kAlt);
 
-	bool lbDown      = FUCK::IsInputDown(RACE::Keys::kGP_LB);
-	bool rbDown      = FUCK::IsInputDown(RACE::Keys::kGP_RB);
+	bool lbDown        = FUCK::IsInputDown(RACE::Keys::kGP_LB);
+	bool rbDown        = FUCK::IsInputDown(RACE::Keys::kGP_RB);
 
-	bool isGlobalKBM = ctrlDown && !FUCK::IsAnyItemActive();
-	bool isGlobalGP  = rbDown && !FUCK::IsAnyItemActive();
+	bool mmbDown       = FUCK::IsMouseDown(2);
+	bool rmbDown       = FUCK::IsMouseDown(1);
+	bool isPopupOpen   = FUCK::IsPopupOpen(nullptr, FUCK::PopupFlags::kAnyPopup);
 
-	bool isCameraMode = isGlobalKBM || isGlobalGP || isCameraTab;
+	bool isGlobalKBM   = ctrlDown && !FUCK::IsAnyItemActive();
+	bool isGlobalGP    = rbDown && !FUCK::IsAnyItemActive();
+	bool isGlobalMouse = mmbDown && !FUCK::IsAnyItemActive();
+
+	bool isCameraMode  = isGlobalKBM || isGlobalGP || isCameraTab || isGlobalMouse;
 
 	if (isCameraMode) {
 		if (isCameraTab && hasSkee) {
@@ -154,6 +159,37 @@ void RaceCamera::HandleInput(float a_interval, bool a_isFrozen)
 
 		// Calculate scaled speeds based on the multiplier (UI default is 5.0f, which normalises back to 1.0f)
 		float rateMult = isCameraTab ? (_cameraRate / 5.0f) : 1.0f;
+
+		// --- Mouse Controls ---
+		if (ctrlDown && !FUCK::IsWindowHovered(0) && !isPopupOpen) {
+			if (_pendingScroll != 0.0f) {
+				_fovOffset -= _pendingScroll * (_settings.kbmFovSpeed * 0.2f);
+			}
+		}
+		_pendingScroll = 0.0f;
+
+		if (mmbDown && !FUCK::IsWindowHovered(0) && !isPopupOpen) {
+			ImVec2 mouseDelta = FUCK::GetMouseDelta();
+
+			float mPan  = mouseDelta.x * _settings.kbmPanSpeed  * rateMult * 0.015f;
+			float mZ    = mouseDelta.y * _settings.kbmPanSpeed  * rateMult * 0.015f;
+			float mZoom = mouseDelta.y * _settings.kbmPanSpeed  * rateMult * 0.015f;
+			float mRoll = mouseDelta.x * _settings.kbmRollSpeed * rateMult * 0.015f;
+			float mOrb  = mouseDelta.x * _settings.kbmRotSpeed  * rateMult * 0.015f;
+
+			if (rmbDown) {
+				// Orbit (Middle + Right)
+				_camRotZ += mOrb;
+			} else if (shiftDown) {
+				// Zoom & Roll (Middle + Shift)
+				_camOffset.y -= mZoom;
+				_camRoll += mRoll;
+			} else {
+				// Pan (Middle)
+				_camOffset.x -= mPan;
+				_camOffset.z -= mZ;
+			}
+		}
 
 		// --- KBM Logic ---
 		if (isGlobalKBM || (isCameraTab && FUCK::GetInputDevice() != FUCK::InputDevice::kGamepad)) {
@@ -304,7 +340,6 @@ void RaceCamera::HandleInput(float a_interval, bool a_isFrozen)
 	// Right-Click or Gamepad Character Rotation
 	bool isGP_Y      = FUCK::IsInputDown(RACE::Keys::kGP_Y);
 	bool isGP_X      = FUCK::IsInputDown(RACE::Keys::kGP_X);
-	bool isPopupOpen = FUCK::IsPopupOpen(nullptr, FUCK::PopupFlags::kAnyPopup);
 	bool isAnyActive = FUCK::IsAnyItemActive();
 
 	// Prevent input "bleed" when selecting UI items with the gamepad.
@@ -315,7 +350,7 @@ void RaceCamera::HandleInput(float a_interval, bool a_isFrozen)
 		s_lockoutGPRot = false;
 	}
 
-	bool allowMouseRot = FUCK::IsInputDown(RACE::Keys::kMouse_Right) && !FUCK::IsWindowHovered(0) && !isPopupOpen;
+	bool allowMouseRot = FUCK::IsInputDown(RACE::Keys::kMouse_Right) && !mmbDown && !FUCK::IsWindowHovered(0) && !isPopupOpen;
 	bool allowGPRot    = rbDown && (isGP_Y || isGP_X) && !s_lockoutGPRot;
 
 	bool isRotatingNow = (allowMouseRot || allowGPRot);

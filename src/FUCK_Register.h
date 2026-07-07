@@ -1,6 +1,7 @@
 #pragma once
 
 #include "RACE-Anims.h"
+#include "RACE-Camera.h"
 #include "RACE-Equip.h"
 #include "RACE-Inputs.h"
 #include "RACE-Reference.h"
@@ -45,6 +46,11 @@ public:
 
 	void Draw() override
 	{
+		float mouseWheel = FUCK::GetMouseWheel();
+		if (mouseWheel != 0.0f) {
+			RaceCamera::GetSingleton()->AccumulateScroll(mouseWheel);
+		}
+
 		RaceWidget::GetSingleton()->Draw();
 
 		_lastPos  = FUCK::GetWindowPos();
@@ -80,8 +86,9 @@ public:
 
 			bool ctrlDown = FUCK::IsModifierPressed(FUCK::Modifier::kCtrl);
 			bool rbDown   = FUCK::IsInputDown(RACE::Keys::kGP_RB);
+			bool mmbDown  = FUCK::IsInputDown(RACE::Keys::kMouse_Middle);
 
-			if (!hovered && !FUCK::IsAnyItemActive() && !isPopupOpen && !ctrlDown && !rbDown && !isHidden) {
+			if (!hovered && !FUCK::IsAnyItemActive() && !isPopupOpen && !ctrlDown && !rbDown && !mmbDown && !isHidden) {
 				flags = flags | FUCK::WindowFlags::kPassInputToGame;
 			}
 		}

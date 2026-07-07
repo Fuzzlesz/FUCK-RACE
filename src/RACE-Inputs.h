@@ -42,5 +42,8 @@ namespace RACE::Keys
 	inline constexpr uint32_t kKB_F11 = static_cast<uint32_t>(RE::BSWin32KeyboardDevice::Key::kF11);
 
 	// Mouse
-	inline constexpr uint32_t kMouse_Right = kMBBase + 1;
+	inline constexpr uint32_t kMouse_Right     = kMBBase + 1;
+	inline constexpr uint32_t kMouse_Middle    = kMBBase + 2;
+	inline constexpr uint32_t kMouse_WheelUp   = kMBBase + 8;
+	inline constexpr uint32_t kMouse_WheelDown = kMBBase + 9;
 }
