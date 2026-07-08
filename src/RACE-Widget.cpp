@@ -207,8 +207,7 @@ bool RaceWidget::IsOpen() const
 		RaceEquipManager::GetSingleton()->RestoreEquipped();
 		RaceEquipManager::GetSingleton()->Clear();
 
-		RaceReferenceManager::GetSingleton()->SetWindowOpen(false);
-		RaceReferenceManager::GetSingleton()->ClearImage();
+		RaceReferenceManager::GetSingleton()->CloseAllWindows();
 	}
 
 	bool journalOpen = ui && ui->IsMenuOpen(RE::JournalMenu::MENU_NAME);
@@ -527,10 +526,6 @@ void RaceWidget::DrawMainPanel()
 
 	auto refManager = RaceReferenceManager::GetSingleton();
 
-	if (!refManager->IsWindowOpen() && refManager->GetSelectedIndex() > 0) {
-		refManager->ClearImage();
-	}
-
 	if (!IsOnCameraTab() && !isGamepad && refManager->HasReferences()) {
 		if (requestFocus) {
 			FUCK::SetKeyboardFocusHere(0);
@@ -538,9 +533,11 @@ void RaceWidget::DrawMainPanel()
 		}
 
 		FUCK::SetNextItemWidth(comboWidth);
-		int refIndex = refManager->GetSelectedIndex();
-		if (FUCK::Combo("##RACE_RefImage", &refIndex, refManager->GetComboStrings().data(), static_cast<int>(refManager->GetComboStrings().size()))) {
-			refManager->SelectReference(refIndex);
+		int refIndex = 0;
+		if (FUCK::ComboWithFilter("##RACE_RefImage", &refIndex, refManager->GetComboStrings().data(), static_cast<int>(refManager->GetComboStrings().size()))) {
+			if (refIndex > 0) {
+				refManager->ToggleReference(refIndex - 1);
+			}
 		}
 		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
 	}
@@ -890,10 +887,6 @@ void RaceWidget::DrawSculptPanel()
 
 	FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
 
-	if (!refManager->IsWindowOpen() && refManager->GetSelectedIndex() > 0) {
-		refManager->ClearImage();
-	}
-
 	bool isGamepad = FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
 
 	if (!isGamepad && refManager->HasReferences()) {
@@ -901,10 +894,12 @@ void RaceWidget::DrawSculptPanel()
 		float comboWidth   = FUCK::UIScale(360.0f * clusterScale);
 
 		FUCK::SetNextItemWidth(comboWidth);
-		int refIndex = refManager->GetSelectedIndex();
+		int refIndex = 0;
 
-		if (FUCK::Combo("##RACE_RefImage_Sculpt", &refIndex, refManager->GetComboStrings().data(), static_cast<int>(refManager->GetComboStrings().size()))) {
-			refManager->SelectReference(refIndex);
+		if (FUCK::ComboWithFilter("##RACE_RefImage_Sculpt", &refIndex, refManager->GetComboStrings().data(), static_cast<int>(refManager->GetComboStrings().size()))) {
+			if (refIndex > 0) {
+				refManager->ToggleReference(refIndex - 1);
+			}
 		}
 		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
 	}

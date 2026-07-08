@@ -172,58 +172,6 @@ private:
 	ImVec2 _lastSize{};
 };
 
-class RaceReferenceWindow : public FUCK::IWindow, public REX::Singleton<RaceReferenceWindow>
-{
-public:
-	const char* Id() const override { return RaceReferenceManager::GetSingleton()->GetWindowId(); }
-	const char* Title() const override { return RaceReferenceManager::GetSingleton()->GetWindowTitle(); }
-
-	void Draw() override
-	{
-		RaceReferenceManager::GetSingleton()->DrawWindow();
-
-		_lastPos  = FUCK::GetWindowPos();
-		_lastSize = FUCK::GetWindowSize();
-	}
-
-	bool IsOpen() const override
-	{
-		return RaceReferenceManager::GetSingleton()->IsWindowOpen();
-	}
-
-	void SetOpen(bool a_open) override
-	{
-		RaceReferenceManager::GetSingleton()->SetWindowOpen(a_open);
-	}
-
-	ImVec2 GetDefaultSize() const override
-	{
-		return FUCK::Scale(350.0f, 500.0f);
-	}
-
-	FUCK::WindowFlags GetFlags() const override
-	{
-		FUCK::WindowFlags flags = FUCK::WindowFlags::kNone;
-
-		ImVec2 mouse   = FUCK::GetMousePos();
-		bool   hovered = mouse.x >= _lastPos.x && mouse.x <= _lastPos.x + _lastSize.x &&
-		               mouse.y >= _lastPos.y && mouse.y <= _lastPos.y + _lastSize.y;
-
-
-		bool isDraggingOrActive = FUCK::IsAnyItemActive();
-
-		if (!hovered && !isDraggingOrActive) {
-			flags = flags | FUCK::WindowFlags::kPassInputToGame;
-		}
-
-		return flags;
-	}
-
-private:
-	ImVec2 _lastPos{};
-	ImVec2 _lastSize{};
-};
-
 namespace FUCK_Register
 {
 	inline void Install()
@@ -234,6 +182,5 @@ namespace FUCK_Register
 
 		FUCK::RegisterWindow(RaceWidgetWindow::GetSingleton());
 		FUCK::RegisterWindow(RaceEquipWindow::GetSingleton());
-		FUCK::RegisterWindow(RaceReferenceWindow::GetSingleton());
 	}
 }
