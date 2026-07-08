@@ -726,9 +726,6 @@ void RaceWidget::DrawSettingsPanel()
 				changed |= ScaledSlider("$RACE_SpeedRoll"_T,     camSettings.kbmRollSpeed,        0.1f,   5.0f,   10.0f);
 				changed |= ScaledSlider("$RACE_SpeedFOV"_T,      camSettings.kbmFovSpeed,         5.0f, 100.0f,    1.0f);
 				changed |= ScaledSlider("$RACE_MouseOrbit"_T,    camSettings.mouseRotMult,      0.001f,  0.05f, 1000.0f);
-				changed |= ScaledSlider("$RACE_QuickZoomDist"_T, camSettings.quickZoomOffset,    10.0f, 300.0f,    1.0f);
-				changed |= ScaledSlider("$RACE_QuickZoomDown"_T, camSettings.quickZoomDownOffset,  0.0f, 150.0f,    1.0f);
-				changed |= ScaledSlider("$RACE_QuickZoomPan"_T,  camSettings.quickZoomSideOffset,-150.0f, 150.0f,    1.0f);
 
 				FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 				FUCK::PopID();
@@ -746,9 +743,6 @@ void RaceWidget::DrawSettingsPanel()
 				changed |= ScaledSlider("$RACE_SpeedRoll"_T,     camSettings.gpRollSpeed,          0.1f,  10.0f,  10.0f);
 				changed |= ScaledSlider("$RACE_SpeedCharRot"_T,  camSettings.gpCharRotSpeed,       0.1f,  10.0f,  10.0f);
 				changed |= ScaledSlider("$RACE_Deadzone"_T,      camSettings.gpDeadzone,           0.0f,   0.5f, 100.0f);
-				changed |= ScaledSlider("$RACE_QuickZoomDist"_T, camSettings.quickZoomOffset,     10.0f, 300.0f,   1.0f);
-				changed |= ScaledSlider("$RACE_QuickZoomDown"_T, camSettings.quickZoomDownOffset,  0.0f, 150.0f,   1.0f);
-				changed |= ScaledSlider("$RACE_QuickZoomPan"_T,  camSettings.quickZoomSideOffset,-150.0f, 150.0f,   1.0f);
 
 				FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 				FUCK::PopID();
@@ -756,6 +750,12 @@ void RaceWidget::DrawSettingsPanel()
 			}
 			FUCK::EndTabBar();
 		}
+
+		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
+
+		changed |= ScaledSlider("$RACE_QuickZoomDist"_T, camSettings.quickZoomOffset,      10.0f, 300.0f,    1.0f);
+		changed |= ScaledSlider("$RACE_QuickZoomDown"_T, camSettings.quickZoomDownOffset,   0.0f, 150.0f,    1.0f);
+		changed |= ScaledSlider("$RACE_QuickZoomPan"_T,  camSettings.quickZoomSideOffset,-150.0f, 150.0f,    1.0f);
 
 		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 
