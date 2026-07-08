@@ -191,7 +191,7 @@ void RaceCamera::HandleInput(float a_interval, bool a_isFrozen)
 			} else {
 				// Pan (Middle)
 				_camOffset.x -= mPan;
-				_camOffset.z -= mZ;
+				_camOffset.z += mZ;
 			}
 		}
 
