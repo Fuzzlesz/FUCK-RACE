@@ -5,46 +5,50 @@
 
 void RaceCamera::LoadSettings(CSimpleIniA& a_ini)
 {
-	_settings.kbmPanSpeed         = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMPanSpeed",          10.0f);
-	_settings.kbmRotSpeed         = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMRotSpeed",           1.5f);
-	_settings.kbmRollSpeed        = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMRollSpeed",          1.5f);
-	_settings.kbmFovSpeed         = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMFovSpeed",          30.0f);
-	_settings.mouseRotMult        = FUCK::INI::LoadFloat(a_ini, "Camera", "MouseRotMult",          0.015f);
-	_settings.mousePanMult        = FUCK::INI::LoadFloat(a_ini, "Camera", "MousePanMult",          0.012f);
+	CameraSettings def;
 
-	_settings.gpPanSpeed          = FUCK::INI::LoadFloat(a_ini, "Camera", "GPPanSpeed",          100.0f);
-	_settings.gpZoomSpeed         = FUCK::INI::LoadFloat(a_ini, "Camera", "GPZoomSpeed",         100.0f);
-	_settings.gpRotSpeed          = FUCK::INI::LoadFloat(a_ini, "Camera", "GPRotSpeed",            2.0f);
-	_settings.gpRollSpeed         = FUCK::INI::LoadFloat(a_ini, "Camera", "GPRollSpeed",           2.0f);
-	_settings.gpFovSpeed          = FUCK::INI::LoadFloat(a_ini, "Camera", "GPFovSpeed",           30.0f);
-	_settings.gpCharRotSpeed      = FUCK::INI::LoadFloat(a_ini, "Camera", "GPCharRotSpeed",        3.0f);
-	_settings.gpDeadzone          = FUCK::INI::LoadFloat(a_ini, "Camera", "GPDeadzone",            0.25f);
+	_settings.kbmPanSpeed         = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMPanSpeed",          def.kbmPanSpeed);
+	_settings.kbmRotSpeed         = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMRotSpeed",          def.kbmRotSpeed);
+	_settings.kbmRollSpeed        = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMRollSpeed",         def.kbmRollSpeed);
+	_settings.kbmFovSpeed         = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMFovSpeed",          def.kbmFovSpeed);
+	_settings.mouseRotMult        = FUCK::INI::LoadFloat(a_ini, "Camera", "MouseRotMult",         def.mouseRotMult);
+	_settings.mousePanMult        = FUCK::INI::LoadFloat(a_ini, "Camera", "MousePanMult",         def.mousePanMult);
 
-	_settings.quickZoomOffset     = FUCK::INI::LoadFloat(a_ini, "Camera", "QuickZoomOffset",     100.0f);
-	_settings.quickZoomDownOffset = FUCK::INI::LoadFloat(a_ini, "Camera", "QuickZoomDownOffset",  45.0f);
-	_settings.quickZoomSideOffset = FUCK::INI::LoadFloat(a_ini, "Camera", "QuickZoomSideOffset", -30.0f);
+	_settings.gpPanSpeed          = FUCK::INI::LoadFloat(a_ini, "Camera", "GPPanSpeed",           def.gpPanSpeed);
+	_settings.gpZoomSpeed         = FUCK::INI::LoadFloat(a_ini, "Camera", "GPZoomSpeed",          def.gpZoomSpeed);
+	_settings.gpRotSpeed          = FUCK::INI::LoadFloat(a_ini, "Camera", "GPRotSpeed",           def.gpRotSpeed);
+	_settings.gpRollSpeed         = FUCK::INI::LoadFloat(a_ini, "Camera", "GPRollSpeed",          def.gpRollSpeed);
+	_settings.gpFovSpeed          = FUCK::INI::LoadFloat(a_ini, "Camera", "GPFovSpeed",           def.gpFovSpeed);
+	_settings.gpCharRotSpeed      = FUCK::INI::LoadFloat(a_ini, "Camera", "GPCharRotSpeed",       def.gpCharRotSpeed);
+	_settings.gpDeadzone          = FUCK::INI::LoadFloat(a_ini, "Camera", "GPDeadzone",           def.gpDeadzone);
+
+	_settings.quickZoomOffset     = FUCK::INI::LoadFloat(a_ini, "Camera", "QuickZoomOffset",      def.quickZoomOffset);
+	_settings.quickZoomDownOffset = FUCK::INI::LoadFloat(a_ini, "Camera", "QuickZoomDownOffset",  def.quickZoomDownOffset);
+	_settings.quickZoomSideOffset = FUCK::INI::LoadFloat(a_ini, "Camera", "QuickZoomSideOffset",  def.quickZoomSideOffset);
 }
 
 void RaceCamera::SaveSettings(CSimpleIniA& a_ini)
 {
-	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMPanSpeed",         _settings.kbmPanSpeed,          10.0f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMRotSpeed",         _settings.kbmRotSpeed,           1.5f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMRollSpeed",        _settings.kbmRollSpeed,          1.5f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMFovSpeed",         _settings.kbmFovSpeed,          30.0f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "MouseRotMult",        _settings.mouseRotMult,          0.015f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "MousePanMult",        _settings.mousePanMult,          0.012f);
+	CameraSettings def;
 
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPPanSpeed",          _settings.gpPanSpeed,          100.0f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPZoomSpeed",         _settings.gpZoomSpeed,         100.0f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPRotSpeed",          _settings.gpRotSpeed,            2.0f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPRollSpeed",         _settings.gpRollSpeed,           2.0f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPFovSpeed",          _settings.gpFovSpeed,           30.0f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPCharRotSpeed",      _settings.gpCharRotSpeed,        3.0f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPDeadzone",          _settings.gpDeadzone,            0.25f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMPanSpeed",         _settings.kbmPanSpeed,          def.kbmPanSpeed);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMRotSpeed",         _settings.kbmRotSpeed,          def.kbmRotSpeed);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMRollSpeed",        _settings.kbmRollSpeed,         def.kbmRollSpeed);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMFovSpeed",         _settings.kbmFovSpeed,          def.kbmFovSpeed);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "MouseRotMult",        _settings.mouseRotMult,         def.mouseRotMult);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "MousePanMult",        _settings.mousePanMult,         def.mousePanMult);
 
-	FUCK::INI::SaveDouble(a_ini, "Camera", "QuickZoomOffset",     _settings.quickZoomOffset,     100.0f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "QuickZoomDownOffset", _settings.quickZoomDownOffset,  45.0f);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "QuickZoomSideOffset", _settings.quickZoomSideOffset, -30.0f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPPanSpeed",          _settings.gpPanSpeed,           def.gpPanSpeed);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPZoomSpeed",         _settings.gpZoomSpeed,          def.gpZoomSpeed);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPRotSpeed",          _settings.gpRotSpeed,           def.gpRotSpeed);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPRollSpeed",         _settings.gpRollSpeed,          def.gpRollSpeed);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPFovSpeed",          _settings.gpFovSpeed,           def.gpFovSpeed);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPCharRotSpeed",      _settings.gpCharRotSpeed,       def.gpCharRotSpeed);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPDeadzone",          _settings.gpDeadzone,           def.gpDeadzone);
+
+	FUCK::INI::SaveDouble(a_ini, "Camera", "QuickZoomOffset",     _settings.quickZoomOffset,      def.quickZoomOffset);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "QuickZoomDownOffset", _settings.quickZoomDownOffset,  def.quickZoomDownOffset);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "QuickZoomSideOffset", _settings.quickZoomSideOffset,  def.quickZoomSideOffset);
 }
 
 void RaceCamera::RevertCameraTransform(RE::NiNode* a_cameraRoot)
