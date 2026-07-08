@@ -61,6 +61,8 @@ void RaceCamera::HandleInput(float a_interval, bool a_isFrozen)
 		return;
 	}
 
+	a_interval = std::min(a_interval, 0.1f);
+
 	// Interpolate Quick Zoom swoop
 	_currentZoomOffset     = std::lerp(_currentZoomOffset,     _targetZoomOffset,     5.0f * a_interval);
 	_currentZoomDownOffset = std::lerp(_currentZoomDownOffset, _targetZoomDownOffset, 5.0f * a_interval);
@@ -477,6 +479,7 @@ void RaceCamera::ResetOffsets()
 	if (auto camera = RE::PlayerCamera::GetSingleton()) {
 		if (_baseFov != 0.0f)
 			camera->worldFOV = _baseFov;
+		RevertCameraTransform(camera->cameraRoot.get());
 	}
 	_camOffset             = { 0.0f, 0.0f, 0.0f };
 	_camRotZ               = 0.0f;
