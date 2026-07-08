@@ -51,6 +51,47 @@ void RaceCamera::SaveSettings(CSimpleIniA& a_ini)
 	FUCK::INI::SaveDouble(a_ini, "Camera", "QuickZoomSideOffset", _settings.quickZoomSideOffset,  def.quickZoomSideOffset);
 }
 
+bool RaceCamera::IsMouseOverWireframe() const
+{
+	if (!RaceWidget::GetSingleton()->IsOnSculptTab()) {
+		return false;
+	}
+
+	auto ui   = RE::UI::GetSingleton();
+	auto menu = ui ? ui->GetMenu(RE::RaceSexMenu::MENU_NAME) : nullptr;
+	if (!menu || !menu->uiMovie) {
+		return false;
+	}
+
+	RE::GFxValue menuInstance;
+	if (!RaceWidget::GetSingleton()->GetMenuInstance(menu->uiMovie.get(), menuInstance)) {
+		return false;
+	}
+
+	RE::GFxValue vertexEditor;
+	if (menuInstance.GetMember("vertexEditor", &vertexEditor) && vertexEditor.IsObject()) {
+		RE::GFxValue wireframeDisplay;
+		if (vertexEditor.GetMember("wireframeDisplay", &wireframeDisplay) && wireframeDisplay.IsObject()) {
+			RE::GFxValue isVisible;
+			if (wireframeDisplay.GetMember("_visible", &isVisible) && isVisible.GetBool()) {
+				RE::GFxValue root;
+				if (menu->uiMovie->GetVariable(&root, "_root")) {
+					RE::GFxValue x, y;
+					root.GetMember("_xmouse", &x);
+					root.GetMember("_ymouse", &y);
+					RE::GFxValue args[3] = { x, y, RE::GFxValue(true) };
+					RE::GFxValue hit;
+					wireframeDisplay.Invoke("hitTest", &hit, args, 3);
+					if (hit.IsBool() && hit.GetBool()) {
+						return true;
+					}
+				}
+			}
+		}
+	}
+	return false;
+}
+
 void RaceCamera::RevertCameraTransform(RE::NiNode* a_cameraRoot)
 {
 	if (a_cameraRoot && _wasModified) {
@@ -97,9 +138,23 @@ void RaceCamera::HandleInput(float a_interval)
 	bool rmbDown       = FUCK::IsMouseDown(1);
 	bool isPopupOpen   = FUCK::IsPopupOpen(nullptr, FUCK::PopupFlags::kAnyPopup);
 
+	// Lock out camera interaction if a mouse button was clicked down inside the sculpt wireframe
+	static bool s_wasInteractDown       = false;
+	static bool s_wireframeInteractLock = false;
+
+	bool isInteractDown = FUCK::IsInputDown(RACE::Keys::kMouse_Right) || mmbDown;
+	if (!isInteractDown) {
+		s_wireframeInteractLock = false;
+	} else if (isInteractDown && !s_wasInteractDown) {
+		if (IsMouseOverWireframe()) {
+			s_wireframeInteractLock = true;
+		}
+	}
+	s_wasInteractDown = isInteractDown;
+
 	bool isGlobalKBM   = ctrlDown && !FUCK::IsAnyItemActive();
 	bool isGlobalGP    = rbDown && !FUCK::IsAnyItemActive();
-	bool isGlobalMouse = mmbDown && !FUCK::IsAnyItemActive();
+	bool isGlobalMouse = mmbDown && !FUCK::IsAnyItemActive() && !s_wireframeInteractLock;
 
 	bool isCameraMode  = isGlobalKBM || isGlobalGP || isCameraTab || isGlobalMouse;
 
@@ -170,13 +225,13 @@ void RaceCamera::HandleInput(float a_interval)
 
 		// --- Mouse Controls ---
 		if (ctrlDown && !FUCK::IsWindowHovered(0) && !isPopupOpen) {
-			if (_pendingScroll != 0.0f) {
+			if (_pendingScroll != 0.0f && !IsMouseOverWireframe()) {
 				_fovOffset -= _pendingScroll * (_settings.kbmFovSpeed * 0.2f);
 			}
 		}
 		_pendingScroll = 0.0f;
 
-		if (mmbDown && !FUCK::IsWindowHovered(0) && !isPopupOpen) {
+		if (mmbDown && !FUCK::IsWindowHovered(0) && !isPopupOpen && !s_wireframeInteractLock) {
 			ImVec2 mouseDelta = FUCK::GetMouseDelta();
 
 			float mPan  = mouseDelta.x * _settings.kbmPanSpeed  * rateMult * _settings.mousePanMult;
@@ -358,7 +413,7 @@ void RaceCamera::HandleInput(float a_interval)
 		s_lockoutGPRot = false;
 	}
 
-	bool allowMouseRot = FUCK::IsInputDown(RACE::Keys::kMouse_Right) && !mmbDown && !FUCK::IsWindowHovered(0) && !isPopupOpen;
+	bool allowMouseRot = FUCK::IsInputDown(RACE::Keys::kMouse_Right) && !mmbDown && !FUCK::IsWindowHovered(0) && !isPopupOpen && !s_wireframeInteractLock;
 	bool allowGPRot    = rbDown && (isGP_Y || isGP_X) && !s_lockoutGPRot;
 
 	bool isRotatingNow = (allowMouseRot || allowGPRot);
