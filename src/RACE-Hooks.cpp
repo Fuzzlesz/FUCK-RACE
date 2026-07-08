@@ -34,7 +34,7 @@ namespace Hooks
 
 			RaceWidget::GetSingleton()->OnAdvanceMovie(a_this);
 
-			RaceCamera::GetSingleton()->HandleInput(a_interval, RaceAnimManager::GetSingleton()->IsFrozen());
+			RaceCamera::GetSingleton()->HandleInput(a_interval);
 			RaceCamera::GetSingleton()->ApplyTransform(root);
 		}
 

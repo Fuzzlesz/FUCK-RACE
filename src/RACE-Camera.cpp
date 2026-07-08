@@ -60,7 +60,7 @@ void RaceCamera::RevertCameraTransform(RE::NiNode* a_cameraRoot)
 	}
 }
 
-void RaceCamera::HandleInput(float a_interval, bool a_isFrozen)
+void RaceCamera::HandleInput(float a_interval)
 {
 	auto ui = RE::UI::GetSingleton();
 	if (ui && ui->IsMenuOpen(RE::JournalMenu::MENU_NAME)) {
@@ -378,19 +378,22 @@ void RaceCamera::HandleInput(float a_interval, bool a_isFrozen)
 		if (rotAmount != 0.0f) {
 			auto player = RE::PlayerCharacter::GetSingleton();
 			if (player && player->Is3DLoaded()) {
-				RE::NiPoint3 newAngle = player->data.angle;
-				newAngle.z -= rotAmount;
-				player->SetAngle(newAngle);
+				if (auto root = player->Get3D(false)) {
+					if (!_isCharAngleCaptured) {
+						root->local.rotate.ToEulerAnglesXYZ(_charAngle);
+						_isCharAngleCaptured = true;
+					}
 
-				if (a_isFrozen) {
-					player->EnableAI(true);
-					player->Update3DPosition(true);
-					player->EnableAI(false);
-				} else {
-					player->Update3DPosition(true);
+					_charAngle.z -= rotAmount;
+					root->local.rotate.SetEulerAnglesXYZ(_charAngle);
+
+					RE::NiUpdateData ctx;
+					root->UpdateWorldData(&ctx);
 				}
 			}
 		}
+	} else {
+		_isCharAngleCaptured = false;
 	}
 
 	if (auto camera = RE::PlayerCamera::GetSingleton()) {
@@ -500,4 +503,5 @@ void RaceCamera::ResetOffsets()
 	_currentZoomDownOffset = 0.0f;
 	_targetZoomSideOffset  = 0.0f;
 	_currentZoomSideOffset = 0.0f;
+	_isCharAngleCaptured   = false;
 }

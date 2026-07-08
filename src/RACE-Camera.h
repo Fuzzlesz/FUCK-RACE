@@ -25,7 +25,7 @@ struct CameraSettings
 class RaceCamera : public REX::Singleton<RaceCamera>
 {
 public:
-	void HandleInput(float a_interval, bool a_isFrozen);
+	void HandleInput(float a_interval);
 	void ApplyTransform(RE::NiNode* a_cameraRoot);
 	void RevertCameraTransform(RE::NiNode* a_cameraRoot);
 	void ResetOffsets();
@@ -80,4 +80,7 @@ private:
 	RE::NiPoint3  _originalTranslate;
 	RE::NiMatrix3 _originalRotate;
 	bool          _wasModified = false;
+
+	RE::NiPoint3  _charAngle{ 0.0f, 0.0f, 0.0f };
+	bool          _isCharAngleCaptured = false;
 };
