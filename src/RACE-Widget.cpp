@@ -383,9 +383,6 @@ void RaceWidget::Draw()
 	if (isGamepad && eqManager->HasItems()) {
 		float equipWidth = baseWidth * 1.5f;
 		alignOffset      = equipWidth - baseWidth;
-	} else if (_showSettings) {
-		float settingsWidth = FUCK::UIScale(440.0f * clusterScale);
-		alignOffset         = settingsWidth - baseWidth;
 	}
 
 	bool   isEditing   = FUCK::IsMenuOpen();
@@ -505,10 +502,6 @@ void RaceWidget::DrawMainPanel()
 				eqManager->ToggleItem(eqIndex - 1);
 		}
 		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
-		FUCK::Indent(alignOffset);
-	} else if (_showSettings) {
-		float settingsWidth = FUCK::UIScale(440.0f * clusterScale);
-		alignOffset         = settingsWidth - comboWidth;
 		FUCK::Indent(alignOffset);
 	}
 
@@ -676,10 +669,19 @@ void RaceWidget::DrawSettingsPanel()
 	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
 	FUCK::SeparatorText("$RACE_Settings"_T);
 
-	float clusterScale  = 0.8f; 
+	float panelScale    = 0.9f;
+	float clusterScale  = 0.8f * panelScale; 
 	float settingsWidth = FUCK::UIScale(440.0f * clusterScale);
 
-	FUCK::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0.0f, FUCK::Scale(4.0f)));
+	FUCK::PushFontScaled(nullptr, clusterScale);
+
+	ImVec2 currentSpacing = FUCK::GetStyleVarVec(ImGuiStyleVar_ItemSpacing);
+	FUCK::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(currentSpacing.x * panelScale, currentSpacing.y * panelScale));
+
+	ImVec2 currentFramePadding = FUCK::GetStyleVarVec(ImGuiStyleVar_FramePadding);
+	FUCK::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(currentFramePadding.x * panelScale, currentFramePadding.y * panelScale));
+
+	FUCK::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0.0f, FUCK::Scale(4.0f) * panelScale));
 
 	if (FUCK::BeginTable("SettingsWidthLocker", 1, FUCK::TableFlags::kSizingFixedFit, ImVec2(settingsWidth, 0.0f))) {
 		FUCK::TableSetupColumn("SettingsCol", FUCK::TableColumnFlags::kWidthFixed, settingsWidth);
@@ -796,7 +798,8 @@ void RaceWidget::DrawSettingsPanel()
 
 		FUCK::EndTable();
 	}
-	FUCK::PopStyleVar();
+	FUCK::PopStyleVar(3);
+	FUCK::PopFont();
 }
 
 void RaceWidget::ApplyMirrorLock()
