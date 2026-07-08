@@ -55,6 +55,8 @@ public:
 
 	CameraSettings& GetSettings() { return _settings; }
 
+	bool IsMouseOverWireframe() const;
+
 private:
 	CameraSettings _settings;
 
