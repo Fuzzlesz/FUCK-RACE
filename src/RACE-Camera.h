@@ -7,6 +7,7 @@ struct CameraSettings
 	float kbmRollSpeed   =   1.5f;
 	float kbmFovSpeed    =  30.0f;
 	float mouseRotMult   =   0.015f;
+	float mousePanMult   =   0.012f;
 
 	float gpPanSpeed     = 100.0f;
 	float gpZoomSpeed    = 100.0f;

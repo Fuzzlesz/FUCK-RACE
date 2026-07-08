@@ -726,6 +726,7 @@ void RaceWidget::DrawSettingsPanel()
 				changed |= ScaledSlider("$RACE_SpeedRoll"_T,     camSettings.kbmRollSpeed,        0.1f,   5.0f,   10.0f);
 				changed |= ScaledSlider("$RACE_SpeedFOV"_T,      camSettings.kbmFovSpeed,         5.0f, 100.0f,    1.0f);
 				changed |= ScaledSlider("$RACE_MouseOrbit"_T,    camSettings.mouseRotMult,      0.001f,  0.05f, 1000.0f);
+				changed |= ScaledSlider("$RACE_MousePan"_T,      camSettings.mousePanMult,      0.001f,  0.05f, 1000.0f);
 
 				FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 				FUCK::PopID();
@@ -775,6 +776,7 @@ void RaceWidget::DrawSettingsPanel()
 			std::abs(camSettings.kbmRotSpeed         - def.kbmRotSpeed)         > 0.001f  ||
 			std::abs(camSettings.kbmFovSpeed         - def.kbmFovSpeed)         > 0.001f  ||
 			std::abs(camSettings.mouseRotMult        - def.mouseRotMult)        > 0.0001f ||
+			std::abs(camSettings.mousePanMult        - def.mousePanMult)        > 0.0001f ||
 			std::abs(camSettings.gpPanSpeed          - def.gpPanSpeed)          > 0.001f  ||
 			std::abs(camSettings.gpZoomSpeed         - def.gpZoomSpeed)         > 0.001f  ||
 			std::abs(camSettings.gpRotSpeed          - def.gpRotSpeed)          > 0.001f  ||

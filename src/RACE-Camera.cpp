@@ -10,6 +10,7 @@ void RaceCamera::LoadSettings(CSimpleIniA& a_ini)
 	_settings.kbmRollSpeed        = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMRollSpeed",          1.5f);
 	_settings.kbmFovSpeed         = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMFovSpeed",          30.0f);
 	_settings.mouseRotMult        = FUCK::INI::LoadFloat(a_ini, "Camera", "MouseRotMult",          0.015f);
+	_settings.mousePanMult        = FUCK::INI::LoadFloat(a_ini, "Camera", "MousePanMult",          0.012f);
 
 	_settings.gpPanSpeed          = FUCK::INI::LoadFloat(a_ini, "Camera", "GPPanSpeed",          100.0f);
 	_settings.gpZoomSpeed         = FUCK::INI::LoadFloat(a_ini, "Camera", "GPZoomSpeed",         100.0f);
@@ -31,6 +32,7 @@ void RaceCamera::SaveSettings(CSimpleIniA& a_ini)
 	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMRollSpeed",        _settings.kbmRollSpeed,          1.5f);
 	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMFovSpeed",         _settings.kbmFovSpeed,          30.0f);
 	FUCK::INI::SaveDouble(a_ini, "Camera", "MouseRotMult",        _settings.mouseRotMult,          0.015f);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "MousePanMult",        _settings.mousePanMult,          0.012f);
 
 	FUCK::INI::SaveDouble(a_ini, "Camera", "GPPanSpeed",          _settings.gpPanSpeed,          100.0f);
 	FUCK::INI::SaveDouble(a_ini, "Camera", "GPZoomSpeed",         _settings.gpZoomSpeed,         100.0f);
@@ -173,9 +175,9 @@ void RaceCamera::HandleInput(float a_interval, bool a_isFrozen)
 		if (mmbDown && !FUCK::IsWindowHovered(0) && !isPopupOpen) {
 			ImVec2 mouseDelta = FUCK::GetMouseDelta();
 
-			float mPan  = mouseDelta.x * _settings.kbmPanSpeed  * rateMult * 0.015f;
-			float mZ    = mouseDelta.y * _settings.kbmPanSpeed  * rateMult * 0.015f;
-			float mZoom = mouseDelta.y * _settings.kbmPanSpeed  * rateMult * 0.015f;
+			float mPan  = mouseDelta.x * _settings.kbmPanSpeed  * rateMult * _settings.mousePanMult;
+			float mZ    = mouseDelta.y * _settings.kbmPanSpeed  * rateMult * _settings.mousePanMult;
+			float mZoom = mouseDelta.y * _settings.kbmPanSpeed  * rateMult * _settings.mousePanMult;
 			float mRoll = mouseDelta.x * _settings.kbmRollSpeed * rateMult * 0.015f;
 			float mOrb  = mouseDelta.x * _settings.kbmRotSpeed  * rateMult * 0.015f;
 
