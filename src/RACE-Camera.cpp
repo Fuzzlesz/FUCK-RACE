@@ -62,7 +62,7 @@ void RaceCamera::HandleInput(float a_interval, bool a_isFrozen)
 	}
 
 	// Interpolate Quick Zoom swoop
-	_currentZoomOffset     = std::lerp(_currentZoomOffset, _targetZoomOffset, 5.0f * a_interval);
+	_currentZoomOffset     = std::lerp(_currentZoomOffset,     _targetZoomOffset,     5.0f * a_interval);
 	_currentZoomDownOffset = std::lerp(_currentZoomDownOffset, _targetZoomDownOffset, 5.0f * a_interval);
 	_currentZoomSideOffset = std::lerp(_currentZoomSideOffset, _targetZoomSideOffset, 5.0f * a_interval);
 

@@ -38,7 +38,7 @@ public:
 	bool HasAnyCamera() const
 	{
 		return IsCameraModified() ||
-		       std::abs(_currentZoomOffset) > 0.01f ||
+		       std::abs(_currentZoomOffset)     > 0.01f ||
 		       std::abs(_currentZoomDownOffset) > 0.01f ||
 		       std::abs(_currentZoomSideOffset) > 0.01f;
 	}
