@@ -1,8 +1,9 @@
 #pragma once
 
 #include "PCH.h"
+#include "RACE-Widget.h"
 
-class RaceEquipManager : public REX::Singleton<RaceEquipManager>
+	class RaceEquipManager : public REX::Singleton<RaceEquipManager>
 {
 public:
 	void Initialize();
@@ -20,9 +21,9 @@ public:
 	// Window Controls (for KBM)
 	bool IsWindowOpen() const
 	{
-		auto ui            = RE::UI::GetSingleton();
-		bool isJournalOpen = ui && ui->IsMenuOpen(RE::JournalMenu::MENU_NAME);
-		return _isOpen && !isJournalOpen;
+		if (!_isOpen)
+			return false;
+		return !RaceWidget::GetSingleton()->IsJournalOpen();
 	}
 	void SetWindowOpen(bool a_open) { _isOpen = a_open; }
 	void ToggleWindow() { _isOpen = !_isOpen; }

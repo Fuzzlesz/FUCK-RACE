@@ -25,11 +25,26 @@ void RaceWidget::Initialize()
 	RaceReferenceManager::GetSingleton()->ScanReferences();
 
 	static FUCK::MenuEventListener listener([](const char* menuName, bool opening) {
-		if (opening && std::string_view(menuName) == RE::JournalMenu::MENU_NAME) {
-			if (auto ui = RE::UI::GetSingleton(); ui) {
-				if (ui->IsMenuOpen(RE::RaceSexMenu::MENU_NAME)) {
-					if (auto menu = ui->GetMenu(RE::JournalMenu::MENU_NAME); menu && menu->uiMovie) {
-						if (RE::GFxValue jMenu; menu->uiMovie->GetVariable(&jMenu, "_root.QuestJournalFader.Menu_mc")) {
+		auto widget = RaceWidget::GetSingleton();
+		std::string_view name(menuName);
+
+		if (name == RE::RaceSexMenu::MENU_NAME) {
+			widget->_isRaceMenuOpen = opening;
+			if (opening) {
+				if (auto ui = RE::UI::GetSingleton()) {
+					if (auto menu = ui->GetMenu(RE::RaceSexMenu::MENU_NAME)) {
+						widget->_cachedRaceMenuMovie = menu->uiMovie.get();
+					}
+				}
+			} else {
+				widget->_cachedRaceMenuMovie = nullptr;
+			}
+		} else if (name == RE::JournalMenu::MENU_NAME) {
+			widget->_isJournalOpen = opening;
+			if (opening && widget->_isRaceMenuOpen) {
+				if (auto ui = RE::UI::GetSingleton()) {
+					if (auto jMenuObj = ui->GetMenu(RE::JournalMenu::MENU_NAME); jMenuObj && jMenuObj->uiMovie) {
+						if (RE::GFxValue jMenu; jMenuObj->uiMovie->GetVariable(&jMenu, "_root.QuestJournalFader.Menu_mc")) {
 							RE::GFxValue args[2]{ RE::GFxValue(2), RE::GFxValue(false) };
 							jMenu.Invoke("RestoreSavedSettings", nullptr, args, 2);
 						}
@@ -188,10 +203,7 @@ void RaceWidget::SaveSettings()
 
 bool RaceWidget::IsOpen() const
 {
-	auto ui   = RE::UI::GetSingleton();
-	bool open = ui && ui->IsMenuOpen(RE::RaceSexMenu::MENU_NAME);
-
-	if (!open && _lastMode != -1) {
+	if (!_isRaceMenuOpen && _lastMode != -1) {
 		auto* self          = const_cast<RaceWidget*>(this);
 		auto  animManager   = RaceAnimManager::GetSingleton();
 		
@@ -212,8 +224,7 @@ bool RaceWidget::IsOpen() const
 		RaceReferenceManager::GetSingleton()->CloseAllWindows();
 	}
 
-	bool journalOpen = ui && ui->IsMenuOpen(RE::JournalMenu::MENU_NAME);
-	return open && !journalOpen;
+	return _isRaceMenuOpen && !_isJournalOpen;
 }
 
 void RaceWidget::HandlePositioning(ImVec2& expectedPos)
@@ -244,15 +255,12 @@ void RaceWidget::HandlePositioning(ImVec2& expectedPos)
 
 int RaceWidget::GetCurrentMode() const
 {
-	auto ui   = RE::UI::GetSingleton();
-	auto menu = ui ? ui->GetMenu(RE::RaceSexMenu::MENU_NAME) : nullptr;
-
-	if (!menu || !menu->uiMovie) {
+	if (!_cachedRaceMenuMovie) {
 		return -1;
 	}
 
 	RE::GFxValue menuInstance;
-	if (!GetMenuInstance(menu->uiMovie.get(), menuInstance)) {
+	if (!GetMenuInstance(_cachedRaceMenuMovie, menuInstance)) {
 		return -1;
 	}
 
@@ -294,11 +302,8 @@ void RaceWidget::Draw()
 		animManager->UpdateValidIdles();
 	}
 
-	auto ui   = RE::UI::GetSingleton();
-	auto menu = ui ? ui->GetMenu(RE::RaceSexMenu::MENU_NAME) : nullptr;
-
 	RE::GFxValue menuInstance;
-	bool         hasMenu = menu && menu->uiMovie && GetMenuInstance(menu->uiMovie.get(), menuInstance);
+	bool         hasMenu = _cachedRaceMenuMovie && GetMenuInstance(_cachedRaceMenuMovie, menuInstance);
 
 	if (hasMenu) {
 		// Sync to modeSelect's alpha safely using the IsFlagSet bitmask check.
@@ -351,7 +356,7 @@ void RaceWidget::Draw()
 		_uiHidden = !_uiHidden;
 		if (hasMenu) {
 			RE::GFxValue root;
-			if (menu->uiMovie->GetVariable(&root, "_root")) {
+			if (_cachedRaceMenuMovie->GetVariable(&root, "_root")) {
 				root.SetMember("_visible", RE::GFxValue(!_uiHidden));
 			}
 		}
@@ -567,9 +572,7 @@ void RaceWidget::DrawMainPanel()
 		FUCK::SameLine();
 		RE::GFxValue menuInstance;
 		bool         isLightOn = false;
-		auto         ui        = RE::UI::GetSingleton();
-		auto         menu      = ui ? ui->GetMenu(RE::RaceSexMenu::MENU_NAME) : nullptr;
-		if (menu && GetMenuInstance(menu->uiMovie.get(), menuInstance)) {
+		if (_cachedRaceMenuMovie && GetMenuInstance(_cachedRaceMenuMovie, menuInstance)) {
 			RE::GFxValue bShowLight;
 			if (menuInstance.GetMember("bShowLight", &bShowLight) && bShowLight.IsBool())
 				isLightOn = bShowLight.GetBool();
@@ -638,10 +641,8 @@ void RaceWidget::DrawMainPanel()
 			RaceCamera::GetSingleton()->ResetOffsets();
 
 			// Sync the ActionScript UI toggle so Quick Zoom doesn't require a double-press to re-engage
-			auto         ui   = RE::UI::GetSingleton();
-			auto         menu = ui ? ui->GetMenu(RE::RaceSexMenu::MENU_NAME) : nullptr;
 			RE::GFxValue menuInst;
-			if (menu && GetMenuInstance(menu->uiMovie.get(), menuInst)) {
+			if (_cachedRaceMenuMovie && GetMenuInstance(_cachedRaceMenuMovie, menuInst)) {
 				RE::GFxValue bPlayerZoom;
 				if (menuInst.GetMember("bPlayerZoom", &bPlayerZoom)) {
 					menuInst.SetMember("bPlayerZoom", RE::GFxValue(false));
@@ -805,21 +806,16 @@ void RaceWidget::DrawSettingsPanel()
 
 void RaceWidget::ApplyMirrorLock()
 {
-	if (!SKEE64Compat::IsPresent())
-		return;
-
-	auto ui   = RE::UI::GetSingleton();
-	auto menu = ui ? ui->GetMenu(RE::RaceSexMenu::MENU_NAME) : nullptr;
-	if (!menu || !menu->uiMovie)
+	if (!SKEE64Compat::IsPresent() || !_cachedRaceMenuMovie)
 		return;
 
 	double targetValue = _disableMirror ? 0.0 : 1.0;
 
 	RE::GFxValue charGen;
-	bool         hasCharGen = menu->uiMovie->GetVariable(&charGen, "_global.skse.plugins.CharGen");
+	bool         hasCharGen = _cachedRaceMenuMovie->GetVariable(&charGen, "_global.skse.plugins.CharGen");
 
 	RE::GFxValue menuInstance;
-	if (GetMenuInstance(menu->uiMovie.get(), menuInstance)) {
+	if (GetMenuInstance(_cachedRaceMenuMovie, menuInstance)) {
 		RE::GFxValue vertexEditor, brushWindow, brushList, entryList, brushesArr;
 
 		if (menuInstance.GetMember("vertexEditor", &vertexEditor) &&

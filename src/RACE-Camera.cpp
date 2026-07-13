@@ -53,18 +53,18 @@ void RaceCamera::SaveSettings(CSimpleIniA& a_ini)
 
 bool RaceCamera::IsMouseOverWireframe() const
 {
-	if (!RaceWidget::GetSingleton()->IsOnSculptTab()) {
+	auto widget = RaceWidget::GetSingleton();
+	if (!widget->IsOnSculptTab()) {
 		return false;
 	}
 
-	auto ui   = RE::UI::GetSingleton();
-	auto menu = ui ? ui->GetMenu(RE::RaceSexMenu::MENU_NAME) : nullptr;
-	if (!menu || !menu->uiMovie) {
+	auto movie = widget->GetCachedMenuMovie();
+	if (!movie) {
 		return false;
 	}
 
 	RE::GFxValue menuInstance;
-	if (!RaceWidget::GetSingleton()->GetMenuInstance(menu->uiMovie.get(), menuInstance)) {
+	if (!widget->GetMenuInstance(movie, menuInstance)) {
 		return false;
 	}
 
@@ -75,7 +75,7 @@ bool RaceCamera::IsMouseOverWireframe() const
 			RE::GFxValue isVisible;
 			if (wireframeDisplay.GetMember("_visible", &isVisible) && isVisible.GetBool()) {
 				RE::GFxValue root;
-				if (menu->uiMovie->GetVariable(&root, "_root")) {
+				if (movie->GetVariable(&root, "_root")) {
 					RE::GFxValue x, y;
 					root.GetMember("_xmouse", &x);
 					root.GetMember("_ymouse", &y);
@@ -103,8 +103,8 @@ void RaceCamera::RevertCameraTransform(RE::NiNode* a_cameraRoot)
 
 void RaceCamera::HandleInput(float a_interval)
 {
-	auto ui = RE::UI::GetSingleton();
-	if (ui && ui->IsMenuOpen(RE::JournalMenu::MENU_NAME)) {
+	auto widget = RaceWidget::GetSingleton();
+	if (widget->IsJournalOpen()) {
 		return;
 	}
 
@@ -124,7 +124,7 @@ void RaceCamera::HandleInput(float a_interval)
 		_currentZoomSideOffset = _targetZoomSideOffset;
 
 	bool hasSkee       = SKEE64Compat::IsPresent();
-	int  mode          = hasSkee ? RaceWidget::GetSingleton()->GetCurrentMode() : 0;
+	int  mode          = hasSkee ? widget->GetCurrentMode() : 0;
 	bool isCameraTab   = (mode == 2);
 
 	bool ctrlDown      = FUCK::IsModifierPressed(FUCK::Modifier::kCtrl);
@@ -160,12 +160,12 @@ void RaceCamera::HandleInput(float a_interval)
 
 	if (isCameraMode) {
 		if (isCameraTab && hasSkee) {
-			auto menu = ui ? ui->GetMenu(RE::RaceSexMenu::MENU_NAME) : nullptr;
+			auto movie = widget->GetCachedMenuMovie();
 
 			// Inject ActionScript sync to update the Camera Editor's bottom bar toggles natively
-			if (menu && menu->uiMovie) {
+			if (movie) {
 				RE::GFxValue menuInstance;
-				if (RaceWidget::GetSingleton()->GetMenuInstance(menu->uiMovie.get(), menuInstance)) {
+				if (widget->GetMenuInstance(movie, menuInstance)) {
 					RE::GFxValue cameraEditor;
 					if (menuInstance.GetMember("cameraEditor", &cameraEditor)) {
 						RE::GFxValue secVal;
@@ -192,9 +192,9 @@ void RaceCamera::HandleInput(float a_interval)
 
 			if (rateUp && !s_rateUpPressed) {
 				_cameraRate = std::min(10.0f, _cameraRate + 1.0f);
-				if (menu && menu->uiMovie) {
+				if (movie) {
 					RE::GFxValue menuInst;
-					if (RaceWidget::GetSingleton()->GetMenuInstance(menu->uiMovie.get(), menuInst)) {
+					if (widget->GetMenuInstance(movie, menuInst)) {
 						RE::GFxValue camEd;
 						if (menuInst.GetMember("cameraEditor", &camEd)) {
 							camEd.SetMember("movementRate", RE::GFxValue(_cameraRate));
@@ -205,9 +205,9 @@ void RaceCamera::HandleInput(float a_interval)
 			}
 			if (rateDown && !s_rateDownPressed) {
 				_cameraRate = std::max(1.0f, _cameraRate - 1.0f);
-				if (menu && menu->uiMovie) {
+				if (movie) {
 					RE::GFxValue menuInst;
-					if (RaceWidget::GetSingleton()->GetMenuInstance(menu->uiMovie.get(), menuInst)) {
+					if (widget->GetMenuInstance(movie, menuInst)) {
 						RE::GFxValue camEd;
 						if (menuInst.GetMember("cameraEditor", &camEd)) {
 							camEd.SetMember("movementRate", RE::GFxValue(_cameraRate));

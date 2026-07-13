@@ -25,9 +25,9 @@ public:
 
 			if (btn && btn->GetDevice() == RE::INPUT_DEVICE::kKeyboard && btn->GetIDCode() == static_cast<uint32_t>(RE::BSWin32KeyboardDevice::Key::kEscape)) {
 				if (btn->IsDown()) {
-					auto ui        = RE::UI::GetSingleton();
-					bool isRSM     = ui && ui->IsMenuOpen(RE::RaceSexMenu::MENU_NAME);
-					bool isJournal = ui && ui->IsMenuOpen(RE::JournalMenu::MENU_NAME);
+					auto widget    = RaceWidget::GetSingleton();
+					bool isRSM     = widget->IsRaceMenuOpen();
+					bool isJournal = widget->IsJournalOpen();
 
 					if (!s_eatingEscape && isRSM && !isJournal) {
 						RE::UIMessageQueue::GetSingleton()->AddMessage(RE::JournalMenu::MENU_NAME, RE::UI_MESSAGE_TYPE::kShow, nullptr);

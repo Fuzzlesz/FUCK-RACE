@@ -18,6 +18,10 @@ public:
 	bool IsSkee64Present() const { return _skee64Present; }
 	bool IsUIHidden() const { return _uiHidden; }
 
+	bool              IsRaceMenuOpen() const { return _isRaceMenuOpen; }
+	bool              IsJournalOpen() const { return _isJournalOpen; }
+	RE::GFxMovieView* GetCachedMenuMovie() const { return _cachedRaceMenuMovie; }
+
 	int  GetCurrentMode() const;
 	bool IsOnSculptTab() const { return GetCurrentMode() == 3; }
 	bool IsOnCameraTab() const { return GetCurrentMode() == 2; }
@@ -38,6 +42,10 @@ private:
 
 	bool _uiHidden      = false;
 	bool _skee64Present = false;
+
+	bool              _isRaceMenuOpen      = false;
+	bool              _isJournalOpen       = false;
+	RE::GFxMovieView* _cachedRaceMenuMovie = nullptr;
 
 	bool _showSettings       = false;
 	bool _settingsJustOpened = false;
