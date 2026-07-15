@@ -204,9 +204,9 @@ void RaceWidget::SaveSettings()
 bool RaceWidget::IsOpen() const
 {
 	if (!_isRaceMenuOpen && _lastMode != -1) {
-		auto* self          = const_cast<RaceWidget*>(this);
-		auto  animManager   = RaceAnimManager::GetSingleton();
-		
+		auto* self        = const_cast<RaceWidget*>(this);
+		auto  animManager = RaceAnimManager::GetSingleton();
+
 		animManager->InvalidateIdles();
 		self->_lastMode     = -1;
 		self->_uiHidden     = false;
