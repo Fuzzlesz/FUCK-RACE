@@ -2,7 +2,7 @@
 
 struct CameraSettings
 {
-	float kbmPanSpeed    =  10.0f;
+	float kbmPanSpeed    =  15.0f;
 	float kbmRotSpeed    =   1.5f;
 	float kbmRollSpeed   =   1.5f;
 	float kbmFovSpeed    =  30.0f;
