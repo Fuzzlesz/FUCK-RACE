@@ -244,6 +244,17 @@ void RaceLightManager::DrawWindow()
 			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
 			std::string btnText = std::string(ICON_FA_GEAR " ") + FUCK::Translate("$RACE_LightStudio");
 			if (FUCK::Button(btnText.c_str())) {
+				auto         widget = RaceWidget::GetSingleton();
+				RE::GFxValue menuInstance;
+				if (auto movie = widget->GetCachedMenuMovie()) {
+					if (widget->GetMenuInstance(movie, menuInstance)) {
+						RE::GFxValue bShowLight;
+						if (menuInstance.GetMember("bShowLight", &bShowLight) && bShowLight.IsBool() && bShowLight.GetBool()) {
+							menuInstance.Invoke("onLightClicked", nullptr, nullptr, 0);
+						}
+					}
+				}
+
 				SKSE::GetMessagingInterface()->Dispatch(0x1001, nullptr, 0, "FUCK-LIGHT");
 				_isOpen = false;
 			}
