@@ -123,20 +123,22 @@ void RaceCamera::HandleInput(float a_interval)
 	if (std::abs(_currentZoomSideOffset - _targetZoomSideOffset) < 0.05f)
 		_currentZoomSideOffset = _targetZoomSideOffset;
 
-	bool hasSkee       = SKEE64Compat::IsPresent();
-	int  mode          = hasSkee ? widget->GetCurrentMode() : 0;
-	bool isCameraTab   = (mode == 2);
+	bool hasSkee         = SKEE64Compat::IsPresent();
+	int  mode            = hasSkee ? widget->GetCurrentMode() : 0;
+	bool isCameraTab     = (mode == 2);
 
-	bool ctrlDown      = FUCK::IsModifierPressed(FUCK::Modifier::kCtrl);
-	bool shiftDown     = FUCK::IsModifierPressed(FUCK::Modifier::kShift);
-	bool altDown       = FUCK::IsModifierPressed(FUCK::Modifier::kAlt);
+	bool ctrlDown        = FUCK::IsModifierPressed(FUCK::Modifier::kCtrl);
+	bool shiftDown       = FUCK::IsModifierPressed(FUCK::Modifier::kShift);
+	bool altDown         = FUCK::IsModifierPressed(FUCK::Modifier::kAlt);
 
-	bool lbDown        = FUCK::IsInputDown(RACE::Keys::kGP_LB);
-	bool rbDown        = FUCK::IsInputDown(RACE::Keys::kGP_RB);
+	bool lbDown          = FUCK::IsInputDown(RACE::Keys::kGP_LB);
+	bool rbDown          = FUCK::IsInputDown(RACE::Keys::kGP_RB);
 
-	bool mmbDown       = FUCK::IsMouseDown(2);
-	bool rmbDown       = FUCK::IsMouseDown(1);
-	bool isPopupOpen   = FUCK::IsPopupOpen(nullptr, FUCK::PopupFlags::kAnyPopup);
+	bool mmbDown         = FUCK::IsMouseDown(2);
+	bool rmbDown         = FUCK::IsMouseDown(1);
+	bool isPopupOpen     = FUCK::IsPopupOpen(nullptr, FUCK::PopupFlags::kAnyPopup);
+
+	bool isAnyUIHovered  = FUCK::IsWindowHovered(1) || FUCK::IsAnyItemHovered();
 
 	// Lock out camera interaction if a mouse button was clicked down inside the sculpt wireframe
 	static bool s_wasInteractDown       = false;
@@ -154,7 +156,7 @@ void RaceCamera::HandleInput(float a_interval)
 
 	bool isGlobalKBM   = ctrlDown && !FUCK::IsAnyItemActive();
 	bool isGlobalGP    = rbDown && !FUCK::IsAnyItemActive();
-	bool isGlobalMouse = mmbDown && !FUCK::IsAnyItemActive() && !s_wireframeInteractLock;
+	bool isGlobalMouse = mmbDown && !FUCK::IsAnyItemActive() && !s_wireframeInteractLock && !isAnyUIHovered;
 
 	bool isCameraMode  = isGlobalKBM || isGlobalGP || isCameraTab || isGlobalMouse;
 
@@ -224,7 +226,7 @@ void RaceCamera::HandleInput(float a_interval)
 		float rateMult = isCameraTab ? (_cameraRate / 5.0f) : 1.0f;
 
 		// --- Mouse Controls ---
-		if (ctrlDown && !FUCK::IsWindowHovered(0) && !isPopupOpen) {
+		if (ctrlDown && !isAnyUIHovered && !isPopupOpen) {
 			if (_pendingScroll != 0.0f && !IsMouseOverWireframe()) {
 				if (shiftDown) {
 					// Zoom (CTRL + SHIFT + Scroll)
@@ -237,7 +239,7 @@ void RaceCamera::HandleInput(float a_interval)
 		}
 		_pendingScroll = 0.0f;
 
-		if (mmbDown && !FUCK::IsWindowHovered(0) && !isPopupOpen && !s_wireframeInteractLock) {
+		if (mmbDown && !isAnyUIHovered && !isPopupOpen && !s_wireframeInteractLock) {
 			ImVec2 mouseDelta = FUCK::GetMouseDelta();
 
 			float mPan  = mouseDelta.x * _settings.kbmPanSpeed  * rateMult * _settings.mousePanMult;
@@ -417,7 +419,8 @@ void RaceCamera::HandleInput(float a_interval)
 		s_lockoutGPRot = false;
 	}
 
-	bool allowMouseRot = FUCK::IsInputDown(RACE::Keys::kMouse_Right) && !mmbDown && !FUCK::IsWindowHovered(0) && !isPopupOpen && !s_wireframeInteractLock;
+	// Block mouse rotation if hovering ImGui windows, sculpt wireframe
+	bool allowMouseRot = FUCK::IsInputDown(RACE::Keys::kMouse_Right) && !mmbDown && !isAnyUIHovered && !isPopupOpen && !s_wireframeInteractLock;
 	bool allowGPRot    = rbDown && (isGP_Y || isGP_X) && !s_lockoutGPRot;
 
 	bool isRotatingNow = (allowMouseRot || allowGPRot);
