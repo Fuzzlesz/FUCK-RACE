@@ -49,6 +49,7 @@ private:
 
 	bool _showSettings       = false;
 	bool _settingsJustOpened = false;
+	bool _showLightSettings  = false;
 
 	bool _startFrozen   = false;
 	bool _hideIdles     = false;

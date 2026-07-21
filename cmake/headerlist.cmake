@@ -9,6 +9,7 @@ set(headers ${headers}
 	src/RACE-Equip.h
 	src/RACE-Hooks.h
 	src/RACE-Inputs.h
+	src/RACE-Light.h
 	src/RACE-Reference.h
 	src/RACE-Widget.h
 )

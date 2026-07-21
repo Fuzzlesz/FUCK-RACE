@@ -133,33 +133,53 @@ void RaceEquipManager::ToggleItem(int a_index)
 
 void RaceEquipManager::DrawWindow()
 {
-	FUCK::Dummy(ImVec2(FUCK::Scale(200.0f), 0.0f));
+	float clusterScale  = 0.8f;
+	float expectedWidth = FUCK::UIScale(360.0f * clusterScale);
 
-	FUCK::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "$RACE_EquipTitle"_T);
-	FUCK::Separator();
+	FUCK::PushFontScaled(nullptr, clusterScale);
 
-	if (_trackedItems.empty()) {
-		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
-		FUCK::TextDisabled("$RACE_EquipEmpty"_T);
-		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
-	} else {
-		for (size_t i = 0; i < _trackedItems.size(); ++i) {
-			bool selected = _trackedItems[i].isEquipped;
+	ImVec2 currentSpacing = FUCK::GetStyleVarVec(ImGuiStyleVar_ItemSpacing);
+	FUCK::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(currentSpacing.x * clusterScale, currentSpacing.y * clusterScale));
 
-			// Red color for unequipped items
-			if (!selected) {
-				FUCK::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
-			}
+	ImVec2 currentFramePadding = FUCK::GetStyleVarVec(ImGuiStyleVar_FramePadding);
+	FUCK::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(currentFramePadding.x * clusterScale, currentFramePadding.y * clusterScale));
 
-			if (FUCK::Selectable(_trackedItems[i].name.c_str(), selected, 0, ImVec2(0, 0))) {
-				ToggleItem(static_cast<int>(i));
-			}
+	if (FUCK::BeginTable("EquipWidthLocker", 1, FUCK::TableFlags::kSizingFixedFit, ImVec2(expectedWidth, 0.0f))) {
+		FUCK::TableSetupColumn("EquipCol", FUCK::TableColumnFlags::kWidthFixed, expectedWidth);
+		FUCK::TableNextRow();
+		FUCK::TableNextColumn();
 
-			if (!selected) {
-				FUCK::PopStyleColor(1);
+		FUCK::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "$RACE_EquipTitle"_T);
+		FUCK::Separator();
+
+		if (_trackedItems.empty()) {
+			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
+			FUCK::TextDisabled("$RACE_EquipEmpty"_T);
+			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
+		} else {
+			for (size_t i = 0; i < _trackedItems.size(); ++i) {
+				bool selected = _trackedItems[i].isEquipped;
+
+				// Red color for unequipped items
+				if (!selected) {
+					FUCK::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
+				}
+
+				if (FUCK::Selectable(_trackedItems[i].name.c_str(), selected, 0, ImVec2(0, 0))) {
+					ToggleItem(static_cast<int>(i));
+				}
+
+				if (!selected) {
+					FUCK::PopStyleColor(1);
+				}
 			}
 		}
+
+		FUCK::EndTable();
 	}
+
+	FUCK::PopStyleVar(2);
+	FUCK::PopFont();
 }
 
 void RaceEquipManager::RestoreEquipped()

@@ -7,6 +7,7 @@
 #include "RACE-Compat.h"
 #include "RACE-Equip.h"
 #include "RACE-Inputs.h"
+#include "RACE-Light.h"
 #include "RACE-Reference.h"
 #include "RACE-Widget.h"
 
@@ -208,9 +209,10 @@ bool RaceWidget::IsOpen() const
 		auto  animManager = RaceAnimManager::GetSingleton();
 
 		animManager->InvalidateIdles();
-		self->_lastMode     = -1;
-		self->_uiHidden     = false;
-		self->_showSettings = false;
+		self->_lastMode          = -1;
+		self->_uiHidden          = false;
+		self->_showSettings      = false;
+		self->_showLightSettings = false;
 
 		if (animManager->IsFrozen()) {
 			animManager->SetPlayerFrozen(false);
@@ -221,6 +223,7 @@ bool RaceWidget::IsOpen() const
 		RaceEquipManager::GetSingleton()->RestoreEquipped();
 		RaceEquipManager::GetSingleton()->Clear();
 
+		RaceLightManager::GetSingleton()->SetWindowOpen(false);
 		RaceReferenceManager::GetSingleton()->CloseAllWindows();
 	}
 
@@ -380,6 +383,9 @@ void RaceWidget::Draw()
 	auto eqManager = RaceEquipManager::GetSingleton();
 	eqManager->Update();
 
+	auto lightManager = RaceLightManager::GetSingleton();
+	lightManager->Update();
+
 	float clusterScale = 0.8f;
 	float alignOffset  = 0.0f;
 
@@ -488,20 +494,56 @@ void RaceWidget::DrawMainPanel()
 
 	bool  isGamepad    = FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
 	auto  eqManager    = RaceEquipManager::GetSingleton();
+	auto  lightManager = RaceLightManager::GetSingleton();
 	float clusterScale = 0.8f;
 	float alignOffset  = 0.0f;
+	float comboWidth   = FUCK::UIScale(360.0f * clusterScale);
+	float equipWidth   = comboWidth * 1.5f;
 
-	float comboWidth = FUCK::UIScale(360.0f * clusterScale);
+	// --- Gamepad Back Button Logic (Enforce Light ON) ---
+	static float s_backHoldTime             = 0.0f;
+	static bool  s_backLongPressedTriggered = false;
+
+	if (isGamepad) {
+		RE::GFxValue menuInstance;
+		bool         hasMenu = _cachedRaceMenuMovie && GetMenuInstance(_cachedRaceMenuMovie, menuInstance);
+
+		if (FUCK::IsInputDown(RACE::Keys::kGP_Back)) {
+			s_backHoldTime += FUCK::GetDeltaTime();
+
+			if (s_backHoldTime > 0.5f && !s_backLongPressedTriggered) {
+				_showLightSettings = !_showLightSettings;
+
+				if (_showLightSettings) {
+					_showSettings = false;
+					eqManager->SetWindowOpen(false);
+
+					if (hasMenu) {
+						RE::GFxValue bShowLight;
+						if (menuInstance.GetMember("bShowLight", &bShowLight) && bShowLight.IsBool()) {
+							if (!bShowLight.GetBool()) {
+								menuInstance.Invoke("onLightClicked", nullptr, nullptr, 0);
+							}
+						}
+					}
+				}
+				s_backLongPressedTriggered = true;
+			}
+		} else {
+			s_backHoldTime             = 0.0f;
+			s_backLongPressedTriggered = false;
+		}
+	}
 
 	if (isGamepad && eqManager->HasItems()) {
-		alignOffset = (comboWidth * 1.5f) - comboWidth;
+		alignOffset = equipWidth - comboWidth;
 
 		if (requestFocus) {
 			FUCK::SetKeyboardFocusHere(0);
 			requestFocus = false;
 		}
 
-		FUCK::SetNextItemWidth(comboWidth * 1.5f);
+		FUCK::SetNextItemWidth(equipWidth);
 		int eqIndex = 0;
 		if (FUCK::ComboWithFilter("##RACE_Equip", &eqIndex, eqManager->GetComboStrings().data(), static_cast<int>(eqManager->GetComboStrings().size()))) {
 			if (eqIndex > 0)
@@ -531,6 +573,30 @@ void RaceWidget::DrawMainPanel()
 		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
 	}
 
+	if (isGamepad && _showLightSettings) {
+		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
+
+		if (FUCK::BeginTable("LightTopSepLocker", 1, FUCK::TableFlags::kSizingFixedFit, ImVec2(comboWidth, 0.0f))) {
+			FUCK::TableSetupColumn("SepCol", FUCK::TableColumnFlags::kWidthFixed, comboWidth);
+			FUCK::TableNextRow();
+			FUCK::TableNextColumn();
+			FUCK::SeparatorText("$RACE_LightSettingsTitle"_T);
+			FUCK::EndTable();
+		}
+
+		lightManager->DrawInlineSettings();
+
+		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
+
+		if (FUCK::BeginTable("LightBottomSepLocker", 1, FUCK::TableFlags::kSizingFixedFit, ImVec2(comboWidth, 0.0f))) {
+			FUCK::TableSetupColumn("SepCol", FUCK::TableColumnFlags::kWidthFixed, comboWidth);
+			FUCK::TableNextRow();
+			FUCK::TableNextColumn();
+			FUCK::Separator();
+			FUCK::EndTable();
+		}
+	}
+
 	auto refManager = RaceReferenceManager::GetSingleton();
 
 	if (!IsOnCameraTab() && !isGamepad && refManager->HasReferences()) {
@@ -553,6 +619,8 @@ void RaceWidget::DrawMainPanel()
 		FUCK::SetKeyboardFocusHere(0);
 		requestFocus = false;
 	}
+
+	bool openLightKBM = false;
 
 	if (FUCK::Button("$RACE_Freeze"_T)) {
 		if (!animManager->IsFrozen())
@@ -582,10 +650,22 @@ void RaceWidget::DrawMainPanel()
 			FUCK::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.9f, 0.2f, 1.0f));
 			FUCK::PushStyleColor(ImGuiCol_TextDisabled, ImVec4(0.8f, 0.7f, 0.15f, 1.0f));
 		}
+
 		FUCK::PushID("RACE_LightToggle");
-		if (FUCK::Button(" " ICON_FA_LIGHTBULB " "))
+		if (FUCK::Button(" " ICON_FA_LIGHTBULB " ")) {
 			menuInstance.Invoke("onLightClicked", nullptr, nullptr, 0);
+		}
+
+		if (FUCK::IsItemClicked(1)) {
+			openLightKBM = true;  // Queue the open request
+		}
+
+		if (FUCK::IsItemHovered(0)) {
+			FUCK::SetTooltip("$RACE_LightTooltip"_T);
+		}
+
 		FUCK::PopID();
+
 		if (isLightOn)
 			FUCK::PopStyleColor(2);
 	}
@@ -595,6 +675,8 @@ void RaceWidget::DrawMainPanel()
 		_showSettings = !_showSettings;
 		if (_showSettings) {
 			_settingsJustOpened = true;
+			_showLightSettings  = false;
+			lightManager->SetWindowOpen(false);
 			eqManager->SetWindowOpen(false);
 		}
 	}
@@ -618,10 +700,13 @@ void RaceWidget::DrawMainPanel()
 		if (FUCK::Button("$RACE_EquipBtn"_T)) {
 			eqManager->ToggleWindow();
 			if (eqManager->IsWindowOpen()) {
-				ImVec2 minPos = FUCK::GetItemRectMin();
 				ImVec2 maxPos = FUCK::GetItemRectMax();
-				eqManager->SetSpawnPos(ImVec2(minPos.x, maxPos.y + FUCK::Scale(4.0f)));
-				_showSettings = false;
+				float  startX = FUCK::GetWindowPos().x + FUCK::Scale(15.0f);
+				eqManager->SetSpawnPos(ImVec2(startX, maxPos.y + FUCK::Scale(4.0f)));
+
+				_showSettings      = false;
+				_showLightSettings = false;
+				lightManager->SetWindowOpen(false);
 			}
 		}
 		itemsOnBottomLine = true;
@@ -652,7 +737,20 @@ void RaceWidget::DrawMainPanel()
 		}
 	}
 
+	ImVec2 bottomRowMax = FUCK::GetItemRectMax();
 	FUCK::Unindent();
+
+	if (openLightKBM) {
+		lightManager->ToggleWindow();
+		if (lightManager->IsWindowOpen()) {
+			float startX = FUCK::GetWindowPos().x + FUCK::Scale(15.0f);
+			lightManager->SetSpawnPos(ImVec2(startX, bottomRowMax.y + FUCK::Scale(4.0f)));
+
+			_showSettings      = false;
+			_showLightSettings = false;
+			eqManager->SetWindowOpen(false);
+		}
+	}
 
 	if (_showSettings) {
 		if (alignOffset > 0.0f) {
@@ -670,7 +768,7 @@ void RaceWidget::DrawSettingsPanel()
 	FUCK::SeparatorText("$RACE_Settings"_T);
 
 	float panelScale    = 0.9f;
-	float clusterScale  = 0.8f * panelScale; 
+	float clusterScale  = 0.8f * panelScale;
 	float settingsWidth = FUCK::UIScale(440.0f * clusterScale);
 
 	FUCK::PushFontScaled(nullptr, clusterScale);

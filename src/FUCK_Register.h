@@ -4,6 +4,7 @@
 #include "RACE-Camera.h"
 #include "RACE-Equip.h"
 #include "RACE-Inputs.h"
+#include "RACE-Light.h"
 #include "RACE-Reference.h"
 #include "RACE-Widget.h"
 
@@ -149,12 +150,73 @@ public:
 		bool   hovered = mouse.x >= _lastPos.x && mouse.x <= _lastPos.x + _lastSize.x &&
 		               mouse.y >= _lastPos.y && mouse.y <= _lastPos.y + _lastSize.y;
 
-			bool isPopupOpen = FUCK::IsPopupOpen(nullptr, FUCK::PopupFlags::kAnyPopup);
-			bool isHidden    = RaceWidget::GetSingleton()->IsUIHidden();
+		bool isPopupOpen = FUCK::IsPopupOpen(nullptr, FUCK::PopupFlags::kAnyPopup);
+		bool isHidden    = RaceWidget::GetSingleton()->IsUIHidden();
 
-			if (!hovered && !FUCK::IsAnyItemActive() && !isPopupOpen && !isHidden) {
-				flags = flags | FUCK::WindowFlags::kPassInputToGame;
-			}
+		if (!hovered && !FUCK::IsAnyItemActive() && !isPopupOpen && !isHidden) {
+			flags = flags | FUCK::WindowFlags::kPassInputToGame;
+		}
+
+		return flags;
+	}
+
+	ImVec2 GetDefaultSize() const override
+	{
+		return FUCK::Scale(250.0f, 350.0f);
+	}
+
+private:
+	ImVec2 _lastPos{};
+	ImVec2 _lastSize{};
+};
+
+class RaceLightWindow : public FUCK::IWindow, public REX::Singleton<RaceLightWindow>
+{
+public:
+	const char* Id() const override { return "RACE_LightSettings"; }
+	const char* Title() const override { return "$RACE_LightSettingsTitle"_T; }
+
+	void Draw() override
+	{
+		ImVec2 spawnPos;
+		if (RaceLightManager::GetSingleton()->ConsumeSpawnRequest(spawnPos)) {
+			FUCK::SetWindowPos(spawnPos, ImGuiCond_Always);
+		}
+
+		RaceLightManager::GetSingleton()->DrawWindow();
+
+		_lastPos  = FUCK::GetWindowPos();
+		_lastSize = FUCK::GetWindowSize();
+	}
+
+	bool IsOpen() const override
+	{
+		return RaceLightManager::GetSingleton()->IsWindowOpen();
+	}
+
+	void SetOpen(bool a_open) override
+	{
+		RaceLightManager::GetSingleton()->SetWindowOpen(a_open);
+	}
+
+	FUCK::WindowFlags GetFlags() const override
+	{
+		FUCK::WindowFlags flags =
+			FUCK::WindowFlags::kNoDecoration   |
+			FUCK::WindowFlags::kAutoResize     |
+			FUCK::WindowFlags::kNoResize       |
+			FUCK::WindowFlags::kCustomPosition |
+			FUCK::WindowFlags::kNoMove         ;
+
+		ImVec2 mouse   = FUCK::GetMousePos();
+		bool   hovered = mouse.x >= _lastPos.x && mouse.x <= _lastPos.x + _lastSize.x &&
+		               mouse.y >= _lastPos.y && mouse.y <= _lastPos.y + _lastSize.y;
+
+		bool isPopupOpen = FUCK::IsPopupOpen(nullptr, FUCK::PopupFlags::kAnyPopup);
+		bool isHidden    = RaceWidget::GetSingleton()->IsUIHidden();
+
+		if (!hovered && !FUCK::IsAnyItemActive() && !isPopupOpen && !isHidden) {
+			flags = flags | FUCK::WindowFlags::kPassInputToGame;
 		}
 
 		return flags;
@@ -176,9 +238,11 @@ namespace FUCK_Register
 	{
 		RaceAnimManager::GetSingleton()->Initialize();
 		RaceEquipManager::GetSingleton()->Initialize();
+		RaceLightManager::GetSingleton()->Initialize();
 		RaceWidget::GetSingleton()->Initialize();
 
 		FUCK::RegisterWindow(RaceWidgetWindow::GetSingleton());
 		FUCK::RegisterWindow(RaceEquipWindow::GetSingleton());
+		FUCK::RegisterWindow(RaceLightWindow::GetSingleton());
 	}
 }
