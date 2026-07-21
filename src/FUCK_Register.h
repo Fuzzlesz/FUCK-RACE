@@ -139,17 +139,15 @@ public:
 	FUCK::WindowFlags GetFlags() const override
 	{
 		FUCK::WindowFlags flags =
-			FUCK::WindowFlags::kNoDecoration  |
-			FUCK::WindowFlags::kAutoResize    |
-			FUCK::WindowFlags::kNoResize      |
-			FUCK::WindowFlags::kCustomPosition;
+			FUCK::WindowFlags::kNoDecoration   |
+			FUCK::WindowFlags::kAutoResize     |
+			FUCK::WindowFlags::kNoResize       |
+			FUCK::WindowFlags::kCustomPosition |
+			FUCK::WindowFlags::kNoMove         ;
 
-		if (!FUCK::IsMenuOpen()) {
-			flags = flags | FUCK::WindowFlags::kNoMove;
-
-			ImVec2 mouse   = FUCK::GetMousePos();
-			bool   hovered = mouse.x >= _lastPos.x && mouse.x <= _lastPos.x + _lastSize.x &&
-			               mouse.y >= _lastPos.y && mouse.y <= _lastPos.y + _lastSize.y;
+		ImVec2 mouse   = FUCK::GetMousePos();
+		bool   hovered = mouse.x >= _lastPos.x && mouse.x <= _lastPos.x + _lastSize.x &&
+		               mouse.y >= _lastPos.y && mouse.y <= _lastPos.y + _lastSize.y;
 
 			bool isPopupOpen = FUCK::IsPopupOpen(nullptr, FUCK::PopupFlags::kAnyPopup);
 			bool isHidden    = RaceWidget::GetSingleton()->IsUIHidden();
