@@ -229,11 +229,11 @@ void RaceCamera::HandleInput(float a_interval)
 		if (ctrlDown && !isAnyUIHovered && !isPopupOpen) {
 			if (_pendingScroll != 0.0f && !IsMouseOverWireframe()) {
 				if (shiftDown) {
-					// Zoom (CTRL + SHIFT + Scroll)
-					_camOffset.y += _pendingScroll * (_settings.kbmPanSpeed * rateMult * 0.5f);
-				} else {
-					// FOV (CTRL + Scroll)
+					// FOV (CTRL + SHIFT + Scroll)
 					_fovOffset -= _pendingScroll * (_settings.kbmFovSpeed * 0.2f);
+				} else {
+					// Zoom (CTRL + Scroll)
+					_camOffset.y += _pendingScroll * (_settings.kbmPanSpeed * rateMult * 0.5f);
 				}
 			}
 		}
