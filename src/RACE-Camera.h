@@ -63,10 +63,10 @@ private:
 	float _pendingScroll = 0.0f;
 
 	RE::NiPoint3 _camOffset{ 0.0f, 0.0f, 0.0f };
-	float        _camRotZ    = 0.0f;
-	float        _camRoll    = 0.0f;
-	float        _fovOffset  = 0.0f;
-	float        _baseFov    = 0.0f;
+	float        _camRotZ   = 0.0f;
+	float        _camRoll   = 0.0f;
+	float        _fovOffset = 0.0f;
+	float        _baseFov   = 0.0f;
 
 	float _currentZoomOffset     = 0.0f;
 	float _targetZoomOffset      = 0.0f;
@@ -76,13 +76,13 @@ private:
 	float _targetZoomSideOffset  = 0.0f;
 	bool  _isQuickZoomed         = false;
 
-	float _kbmAcceleration   = 1.0f;
-	float _cameraRate        = 5.0f;
+	float _kbmAcceleration = 1.0f;
+	float _cameraRate      = 5.0f;
 
 	RE::NiPoint3  _originalTranslate;
 	RE::NiMatrix3 _originalRotate;
 	bool          _wasModified = false;
 
-	RE::NiPoint3  _charAngle{ 0.0f, 0.0f, 0.0f };
-	bool          _isCharAngleCaptured = false;
+	RE::NiPoint3 _charAngle{ 0.0f, 0.0f, 0.0f };
+	bool         _isCharAngleCaptured = false;
 };
