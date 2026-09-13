@@ -242,14 +242,16 @@ void RaceCamera::HandleInput(float a_interval)
 		if (mmbDown && !isAnyUIHovered && !isPopupOpen && !s_wireframeInteractLock) {
 			ImVec2 mouseDelta = FUCK::GetMouseDelta();
 
-			float mPan  = mouseDelta.x * _settings.kbmPanSpeed  * rateMult * _settings.mousePanMult;
-			float mZ    = mouseDelta.y * _settings.kbmPanSpeed  * rateMult * _settings.mousePanMult;
-			float mRoll = mouseDelta.x * _settings.kbmRollSpeed * rateMult * 0.015f;
-			float mOrb  = mouseDelta.x * _settings.kbmRotSpeed  * rateMult * 0.015f;
+			float mPan   = mouseDelta.x * _settings.kbmPanSpeed  * rateMult * _settings.mousePanMult;
+			float mZ     = mouseDelta.y * _settings.kbmPanSpeed  * rateMult * _settings.mousePanMult;
+			float mRoll  = mouseDelta.x * _settings.kbmRollSpeed * rateMult * 0.015f;
+			float mOrb   = mouseDelta.x * _settings.kbmRotSpeed  * rateMult * 0.015f;
+			float mPitch = mouseDelta.y * _settings.kbmRotSpeed  * rateMult * 0.015f;
 
 			if (rmbDown) {
-				// Orbit (Middle + Right)
+				// Orbit & Pitch (Middle + Right)
 				_camRotZ += mOrb;
+				_camRotX += mPitch;
 			} else if (shiftDown) {
 				// Roll (Middle + Shift)
 				_camRoll += mRoll;
@@ -293,7 +295,7 @@ void RaceCamera::HandleInput(float a_interval)
 					if (FUCK::IsInputDown(RACE::Keys::kKB_D))
 						_camOffset.x += speed;
 				} else {
-					// Global Secondary (Ctrl+Shift): Zoom, FOV & Roll
+					// Global Secondary (Ctrl+Shift): Zoom, FOV, Roll & Tilt
 					if (FUCK::IsInputDown(RACE::Keys::kKB_W))
 						_camOffset.y += speed;
 					if (FUCK::IsInputDown(RACE::Keys::kKB_S))
@@ -306,10 +308,14 @@ void RaceCamera::HandleInput(float a_interval)
 						_camRoll -= rollSpeed;
 					if (FUCK::IsInputDown(RACE::Keys::kKB_E))
 						_camRoll += rollSpeed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_R))
+						_camRotX += rotSpeed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_F))
+						_camRotX -= rotSpeed;
 				}
 			} else {
 				if (isCameraTabOnly) {
-					// Camera Tab Primary: Zoom & Rotate
+					// Camera Tab Primary: Zoom, Orbit & Tilt
 					if (FUCK::IsInputDown(RACE::Keys::kKB_W))
 						_camOffset.y += speed;
 					if (FUCK::IsInputDown(RACE::Keys::kKB_S))
@@ -318,8 +324,12 @@ void RaceCamera::HandleInput(float a_interval)
 						_camRotZ -= rotSpeed;
 					if (FUCK::IsInputDown(RACE::Keys::kKB_D))
 						_camRotZ += rotSpeed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_Q))
+						_camRotX -= rotSpeed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_E))
+						_camRotX += rotSpeed;
 				} else {
-					// Global Primary (Ctrl): Move Camera X/Z & Rotate
+					// Global Primary (Ctrl): Move Camera X/Z, Orbit & Tilt
 					if (FUCK::IsInputDown(RACE::Keys::kKB_W))
 						_camOffset.z += speed;
 					if (FUCK::IsInputDown(RACE::Keys::kKB_S))
@@ -332,6 +342,10 @@ void RaceCamera::HandleInput(float a_interval)
 						_camRotZ -= rotSpeed;
 					if (FUCK::IsInputDown(RACE::Keys::kKB_E))
 						_camRotZ += rotSpeed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_R))
+						_camRotX += rotSpeed;
+					if (FUCK::IsInputDown(RACE::Keys::kKB_F))
+						_camRotX -= rotSpeed;
 				}
 			}
 		}
@@ -393,17 +407,21 @@ void RaceCamera::HandleInput(float a_interval)
 
 				_camOffset.z += (leftStickY * gpPanSpeed);
 				_camOffset.x += (leftStickX * gpPanSpeed);
-				_camOffset.y += (rightStickY * gpZoomSpeed);
-				_fovOffset += (rt - lt) * gpFovSpeed;
+				_fovOffset   += (rt - lt) * gpFovSpeed;
 
-				// Roll only activates if LB + RB is held
+				// Roll & Pitch activate if LB + RB is held
 				if (lbDown) {
 					_camRoll += (rightStickX * gpRollSpeed);
+					_camRotX -= (rightStickY * gpRotSpeed);
 				} else {
-					_camRotZ -= (rightStickX * gpRotSpeed);
+					_camRotZ     -= (rightStickX * gpRotSpeed);
+					_camOffset.y += (rightStickY * gpZoomSpeed);
 				}
 			}
 		}
+
+		// Clamp Pitch to prevent gimble flips when viewing directly from top/bottom
+		_camRotX = std::clamp(_camRotX, -1.55f, 1.55f);
 	}
 
 	// Right-Click or Gamepad Character Rotation
@@ -503,6 +521,21 @@ void RaceCamera::ApplyTransform(RE::NiNode* a_cameraRoot)
 		orbitedRotate.entry[2][i] = _originalRotate.entry[2][i];
 	}
 
+	// Pitch Matrix (Rotation around local X-axis / Right vector)
+	RE::NiMatrix3 pitchMat;
+	float         cosP = std::cos(_camRotX);
+	float         sinP = std::sin(_camRotX);
+
+	pitchMat.entry[0][0] = 1.0f;
+	pitchMat.entry[0][1] = 0.0f;
+	pitchMat.entry[0][2] = 0.0f;
+	pitchMat.entry[1][0] = 0.0f;
+	pitchMat.entry[1][1] = cosP;
+	pitchMat.entry[1][2] = -sinP;
+	pitchMat.entry[2][0] = 0.0f;
+	pitchMat.entry[2][1] = sinP;
+	pitchMat.entry[2][2] = cosP;
+
 	// Roll Matrix (Rotation around local Y-axis / Forward vector)
 	RE::NiMatrix3 rollMat;
 	float         cosR = std::cos(_camRoll);
@@ -525,7 +558,7 @@ void RaceCamera::ApplyTransform(RE::NiNode* a_cameraRoot)
 
 	RE::NiPoint3 finalOffset      = (orbitedRotate * localOffset);
 	a_cameraRoot->local.translate = orbitedTranslate + finalOffset;
-	a_cameraRoot->local.rotate    = orbitedRotate * rollMat;
+	a_cameraRoot->local.rotate    = orbitedRotate * pitchMat * rollMat;
 
 	RE::NiUpdateData ctx;
 	a_cameraRoot->UpdateWorldData(&ctx);
@@ -554,6 +587,7 @@ void RaceCamera::ResetOffsets()
 	}
 	_camOffset             = { 0.0f, 0.0f, 0.0f };
 	_camRotZ               = 0.0f;
+	_camRotX               = 0.0f;
 	_camRoll               = 0.0f;
 	_fovOffset             = 0.0f;
 	_baseFov               = 0.0f;

@@ -37,9 +37,11 @@ namespace RACE::Keys
 	inline constexpr uint32_t kKB_Q   = static_cast<uint32_t>(RE::BSWin32KeyboardDevice::Key::kQ);
 	inline constexpr uint32_t kKB_W   = static_cast<uint32_t>(RE::BSWin32KeyboardDevice::Key::kW);
 	inline constexpr uint32_t kKB_E   = static_cast<uint32_t>(RE::BSWin32KeyboardDevice::Key::kE);
+	inline constexpr uint32_t kKB_R   = static_cast<uint32_t>(RE::BSWin32KeyboardDevice::Key::kR);
 	inline constexpr uint32_t kKB_A   = static_cast<uint32_t>(RE::BSWin32KeyboardDevice::Key::kA);
 	inline constexpr uint32_t kKB_S   = static_cast<uint32_t>(RE::BSWin32KeyboardDevice::Key::kS);
 	inline constexpr uint32_t kKB_D   = static_cast<uint32_t>(RE::BSWin32KeyboardDevice::Key::kD);
+	inline constexpr uint32_t kKB_F   = static_cast<uint32_t>(RE::BSWin32KeyboardDevice::Key::kF);
 	inline constexpr uint32_t kKB_F11 = static_cast<uint32_t>(RE::BSWin32KeyboardDevice::Key::kF11);
 
 	// Mouse

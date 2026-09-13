@@ -47,8 +47,8 @@ public:
 	bool IsCameraModified() const
 	{
 		return std::abs(_camOffset.x) > 0.01f || std::abs(_camOffset.y) > 0.01f || std::abs(_camOffset.z) > 0.01f ||
-		       std::abs(_camRotZ) > 0.001f    || std::abs(_camRoll) > 0.001f    || std::abs(_fovOffset) > 0.01f   ||
-		       _isQuickZoomed;
+		       std::abs(_camRotZ) > 0.001f    || std::abs(_camRotX) > 0.001f || std::abs(_camRoll) > 0.001f       ||
+		       std::abs(_fovOffset) > 0.01f   || _isQuickZoomed;
 	}
 
 	float GetCameraRate() const { return _cameraRate; }
@@ -64,6 +64,7 @@ private:
 
 	RE::NiPoint3 _camOffset{ 0.0f, 0.0f, 0.0f };
 	float        _camRotZ   = 0.0f;
+	float        _camRotX   = 0.0f;
 	float        _camRoll   = 0.0f;
 	float        _fovOffset = 0.0f;
 	float        _baseFov   = 0.0f;
