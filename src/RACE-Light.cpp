@@ -178,7 +178,10 @@ void RaceLightManager::DrawInlineSettings()
 
 		FUCK::TableNextColumn();
 		FUCK::SetNextItemWidth(-1.0f);
-		if (FUCK::DragFloat("##Brightness", &_fade, 0.01f, 0.0f, 10.0f, "%.2f")) {
+		// Display fade as a whole number
+		float displayFade = _fade * 100.0f;
+		if (FUCK::DragFloat("##Brightness", &displayFade, 1.0f, 0.0f, 1000.0f, "%.0f")) {
+			_fade        = displayFade / 100.0f;  // Scale back down for internal use
 			_needsUpdate = true;
 		}
 
