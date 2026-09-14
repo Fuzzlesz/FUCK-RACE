@@ -428,7 +428,10 @@ void RaceWidget::Draw()
 
 	float pad = FUCK::Scale(15.0f);
 
-	FUCK::Dummy(ImVec2(0.0f, pad));
+	// Remove the top padding if we are on the Sculpt tab
+	if (currentMode != 3) {
+		FUCK::Dummy(ImVec2(0.0f, pad));
+	}
 
 	FUCK::Indent(pad);
 	FUCK::BeginGroup();
@@ -439,9 +442,6 @@ void RaceWidget::Draw()
 	}
 	FUCK::EndGroup();
 	FUCK::Unindent(pad);
-
-	FUCK::SameLine(0.0f, 0.0f);
-	FUCK::Dummy(ImVec2(pad, 0.0f));
 
 	FUCK::Dummy(ImVec2(0.0f, pad));
 
@@ -464,37 +464,7 @@ void RaceWidget::Draw()
 	}
 }
 
-void RaceWidget::DrawPlaybackControls()
-{
-	auto        animManager = RaceAnimManager::GetSingleton();
-	bool        isFrozen    = animManager->IsFrozen();
-	const char* playIcon    = isFrozen ? " " ICON_FA_PLAY " " : " " ICON_FA_PAUSE " ";
-
-	FUCK::PushID("RACE_PlayToggle");
-	if (FUCK::Button(playIcon)) {
-		if (isFrozen) {
-			animManager->TogglePlay();
-		} else {
-			animManager->SetPlayerFrozen(true);
-		}
-	}
-	if (FUCK::IsItemHovered(0)) {
-		FUCK::SetTooltip("$RACE_PlayPauseTooltip"_T);
-	}
-	FUCK::PopID();
-
-	FUCK::SameLine();
-	FUCK::PushID("RACE_StopToggle");
-	if (FUCK::Button(" " ICON_FA_STOP " ")) {
-		animManager->StopCurrentIdle();
-	}
-	if (FUCK::IsItemHovered(0)) {
-		FUCK::SetTooltip("$RACE_StopTooltip"_T);
-	}
-	FUCK::PopID();
-}
-
-void RaceWidget::DrawReferenceSelector(float a_comboWidth, bool* a_requestFocus)
+bool RaceWidget::DrawReferenceSelector(float a_comboWidth, bool* a_requestFocus)
 {
 	auto refManager = RaceReferenceManager::GetSingleton();
 	bool isGamepad  = FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
@@ -512,8 +482,39 @@ void RaceWidget::DrawReferenceSelector(float a_comboWidth, bool* a_requestFocus)
 				refManager->ToggleReference(refIndex - 1);
 			}
 		}
-		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
+		return true;
 	}
+	return false;
+}
+
+void RaceWidget::DrawPlaybackControls()
+{
+	auto        animManager = RaceAnimManager::GetSingleton();
+	bool        isFrozen    = animManager->IsFrozen();
+	const char* playIcon    = isFrozen ? ICON_FA_PLAY : ICON_FA_PAUSE;
+
+	FUCK::PushID("RACE_PlayToggle");
+	if (FUCK::Button(playIcon)) {
+		if (isFrozen) {
+			animManager->TogglePlay();
+		} else {
+			animManager->SetPlayerFrozen(true);
+		}
+	}
+	if (FUCK::IsItemHovered(0)) {
+		FUCK::SetTooltip("$RACE_PlayPauseTooltip"_T);
+	}
+	FUCK::PopID();
+
+	FUCK::SameLine();
+	FUCK::PushID("RACE_StopToggle");
+	if (FUCK::Button(ICON_FA_STOP)) {
+		animManager->StopCurrentIdle();
+	}
+	if (FUCK::IsItemHovered(0)) {
+		FUCK::SetTooltip("$RACE_StopTooltip"_T);
+	}
+	FUCK::PopID();
 }
 
 void RaceWidget::DrawMainPanel()
@@ -649,19 +650,65 @@ void RaceWidget::DrawMainPanel()
 		}
 	}
 
-	DrawReferenceSelector(comboWidth, &requestFocus);
+	if (DrawReferenceSelector(comboWidth, &requestFocus)) {
+		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
+	}
 
 	if (requestFocus) {
 		FUCK::SetKeyboardFocusHere(0);
 		requestFocus = false;
 	}
 
-	bool openLightKBM = false;
+	float  rowStartX    = FUCK::GetCursorPos().x;
+	bool   openLightKBM = false;
+	ImVec2 lightBtnMax;
 
 	DrawPlaybackControls();
 
-	if (SKEE64Compat::IsPresent() && !isGamepad) {
-		FUCK::SameLine(0.0f, FUCK::Scale(15.0f));
+	bool hasEquipBtn = (!isGamepad && eqManager->HasItems());
+	bool hasLight    = (SKEE64Compat::IsPresent() && !isGamepad);
+
+	ImVec2 framePad = FUCK::GetStyleVarVec(ImGuiStyleVar_FramePadding);
+	float  spacingX = FUCK::GetStyleVarVec(ImGuiStyleVar_ItemSpacing).x;
+
+	float helpWidth  = FUCK::Scale(2.0f) + FUCK::CalcTextSize("(?)").x;
+	float gearWidth  = FUCK::CalcTextSize(ICON_FA_GEAR).x + framePad.x * 2.0f;
+	float toolsWidth = gearWidth + helpWidth;
+
+	if (hasLight) {
+		toolsWidth += spacingX + FUCK::CalcTextSize(ICON_FA_LIGHTBULB).x + framePad.x * 2.0f;
+	}
+	if (hasEquipBtn) {
+		toolsWidth += spacingX + FUCK::CalcTextSize("$RACE_EquipBtn"_T).x + framePad.x * 2.0f;
+	}
+
+	FUCK::SameLine();
+	float currentX = FUCK::GetCursorPos().x;
+
+	float rightNudge = isGamepad ? FUCK::Scale(18.0f) : FUCK::Scale(5.0f);
+	float targetX    = rowStartX + comboWidth - toolsWidth + rightNudge;
+
+	if (targetX > currentX) {
+		FUCK::SetCursorPosX(targetX);
+	}
+
+	if (hasEquipBtn) {
+		if (FUCK::Button("$RACE_EquipBtn"_T)) {
+			eqManager->ToggleWindow();
+			if (eqManager->IsWindowOpen()) {
+				ImVec2 maxPos = FUCK::GetItemRectMax();
+				float  startX = FUCK::GetWindowPos().x + FUCK::Scale(15.0f);
+				eqManager->SetSpawnPos(ImVec2(startX, maxPos.y + FUCK::Scale(4.0f)));
+
+				_showSettings      = false;
+				_showLightSettings = false;
+				lightManager->SetWindowOpen(false);
+			}
+		}
+		FUCK::SameLine();
+	}
+
+	if (hasLight) {
 		RE::GFxValue menuInstance;
 		bool         isLightOn = false;
 		if (_cachedRaceMenuMovie && GetMenuInstance(_cachedRaceMenuMovie, menuInstance)) {
@@ -676,9 +723,11 @@ void RaceWidget::DrawMainPanel()
 		}
 
 		FUCK::PushID("RACE_LightToggle");
-		if (FUCK::Button(" " ICON_FA_LIGHTBULB " ")) {
+		if (FUCK::Button(ICON_FA_LIGHTBULB)) {
 			menuInstance.Invoke("onLightClicked", nullptr, nullptr, 0);
 		}
+
+		lightBtnMax = FUCK::GetItemRectMax();
 
 		if (FUCK::IsItemClicked(1)) {
 			openLightKBM = true;  // Queue the open request
@@ -694,11 +743,9 @@ void RaceWidget::DrawMainPanel()
 			FUCK::PopStyleColor(2);
 
 		FUCK::SameLine();
-	} else {
-		FUCK::SameLine(0.0f, FUCK::Scale(15.0f));
 	}
 
-	if (FUCK::Button(" " ICON_FA_GEAR " ")) {
+	if (FUCK::Button(ICON_FA_GEAR)) {
 		_showSettings = !_showSettings;
 		if (_showSettings) {
 			_settingsJustOpened = true;
@@ -708,47 +755,22 @@ void RaceWidget::DrawMainPanel()
 		}
 	}
 
+	// Pull the help marker inwards
+	FUCK::SameLine(0.0f, FUCK::Scale(2.0f));
 	if (isGamepad) {
-		FUCK::SameLine();
 		FUCK::HelpMarker("$RACE_CamTooltip_GP"_T);
-	}
-
-	bool hasCam      = RaceCamera::GetSingleton()->IsCameraModified();
-	bool hasEquipBtn = (!isGamepad && eqManager->HasItems());
-
-	if (hasCam || hasEquipBtn) {
-		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
-	}
-
-	FUCK::Indent();
-	bool itemsOnBottomLine = false;
-
-	if (hasEquipBtn) {
-		if (FUCK::Button("$RACE_EquipBtn"_T)) {
-			eqManager->ToggleWindow();
-			if (eqManager->IsWindowOpen()) {
-				ImVec2 maxPos = FUCK::GetItemRectMax();
-				float  startX = FUCK::GetWindowPos().x + FUCK::Scale(15.0f);
-				eqManager->SetSpawnPos(ImVec2(startX, maxPos.y + FUCK::Scale(4.0f)));
-
-				_showSettings      = false;
-				_showLightSettings = false;
-				lightManager->SetWindowOpen(false);
-			}
-		}
-		itemsOnBottomLine = true;
-	}
-
-	if (!isGamepad) {
-		if (itemsOnBottomLine)
-			FUCK::SameLine();
+	} else {
 		FUCK::HelpMarker("$RACE_CamTooltip_KBM"_T);
-		itemsOnBottomLine = true;
 	}
+
+	bool hasCam = RaceCamera::GetSingleton()->IsCameraModified();
 
 	if (hasCam) {
-		if (itemsOnBottomLine)
-			FUCK::SameLine();
+		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
+
+		float resetWidth = FUCK::CalcTextSize("$RACE_ResetCam"_T).x + framePad.x * 2.0f;
+		FUCK::SetCursorPosX(rowStartX + (comboWidth - resetWidth) * 0.5f);
+
 		if (FUCK::Button("$RACE_ResetCam"_T)) {
 			RaceCamera::GetSingleton()->ResetOffsets();
 
@@ -764,14 +786,11 @@ void RaceWidget::DrawMainPanel()
 		}
 	}
 
-	ImVec2 bottomRowMax = FUCK::GetItemRectMax();
-	FUCK::Unindent();
-
 	if (openLightKBM) {
 		lightManager->ToggleWindow();
 		if (lightManager->IsWindowOpen()) {
 			float startX = FUCK::GetWindowPos().x + FUCK::Scale(15.0f);
-			lightManager->SetSpawnPos(ImVec2(startX, bottomRowMax.y + FUCK::Scale(4.0f)));
+			lightManager->SetSpawnPos(ImVec2(startX, lightBtnMax.y + FUCK::Scale(4.0f)));
 
 			_showSettings      = false;
 			_showLightSettings = false;
@@ -1000,23 +1019,38 @@ void RaceWidget::DrawSculptPanel()
 	if (!SKEE64Compat::IsPresent())
 		return;
 
+	float clusterScale = 0.8f;
+	float comboWidth   = FUCK::UIScale(360.0f * clusterScale);
+	float rowStartX    = FUCK::GetCursorPos().x;
+
+	ImVec2 framePad = FUCK::GetStyleVarVec(ImGuiStyleVar_FramePadding);
+	float  spacingX = FUCK::GetStyleVarVec(ImGuiStyleVar_ItemSpacing).x;
+
+	// Calculate checkbox width: Checkbox Square + Spacing + Text
+	float cbSquare = FUCK::GetFrameHeight();
+	float cbText   = FUCK::CalcTextSize("$RACE_DisableMirror"_T).x;
+	float cbWidth  = cbSquare + spacingX + cbText;
+
+	FUCK::SetCursorPosX(rowStartX + comboWidth - cbWidth);
 	if (FUCK::Checkbox("$RACE_DisableMirror"_T, &_disableMirror, false)) {
 		SaveSettings();
 		ApplyMirrorLock();
 	}
 
-	FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
-
-	float clusterScale = 0.8f;
-	float comboWidth   = FUCK::UIScale(360.0f * clusterScale);
-
 	DrawReferenceSelector(comboWidth);
 
-	FUCK::Indent();
-	FUCK::Indent();
+	FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
 
+	// Calculate width: Play Btn + Spacing + Stop Btn
+	auto        animManager = RaceAnimManager::GetSingleton();
+	const char* playIcon    = animManager->IsFrozen() ? ICON_FA_PLAY : ICON_FA_PAUSE;
+
+	float playWidth     = FUCK::CalcTextSize(playIcon).x + framePad.x * 2.0f;
+	float stopWidth     = FUCK::CalcTextSize(ICON_FA_STOP).x + framePad.x * 2.0f;
+	float controlsWidth = playWidth + spacingX + stopWidth;
+
+	// Nudge left to correct overhang
+	float playbackNudge = FUCK::Scale(10.0f);
+	FUCK::SetCursorPosX(rowStartX + comboWidth - controlsWidth - playbackNudge);
 	DrawPlaybackControls();
-
-	FUCK::Unindent();
-	FUCK::Unindent();
 }
