@@ -464,6 +464,58 @@ void RaceWidget::Draw()
 	}
 }
 
+void RaceWidget::DrawPlaybackControls()
+{
+	auto        animManager = RaceAnimManager::GetSingleton();
+	bool        isFrozen    = animManager->IsFrozen();
+	const char* playIcon    = isFrozen ? " " ICON_FA_PLAY " " : " " ICON_FA_PAUSE " ";
+
+	FUCK::PushID("RACE_PlayToggle");
+	if (FUCK::Button(playIcon)) {
+		if (isFrozen) {
+			animManager->TogglePlay();
+		} else {
+			animManager->SetPlayerFrozen(true);
+		}
+	}
+	if (FUCK::IsItemHovered(0)) {
+		FUCK::SetTooltip("$RACE_PlayPauseTooltip"_T);
+	}
+	FUCK::PopID();
+
+	FUCK::SameLine();
+	FUCK::PushID("RACE_StopToggle");
+	if (FUCK::Button(" " ICON_FA_STOP " ")) {
+		animManager->StopCurrentIdle();
+	}
+	if (FUCK::IsItemHovered(0)) {
+		FUCK::SetTooltip("$RACE_StopTooltip"_T);
+	}
+	FUCK::PopID();
+}
+
+void RaceWidget::DrawReferenceSelector(float a_comboWidth, bool* a_requestFocus)
+{
+	auto refManager = RaceReferenceManager::GetSingleton();
+	bool isGamepad  = FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
+
+	if (!IsOnCameraTab() && !isGamepad && refManager->HasReferences()) {
+		if (a_requestFocus && *a_requestFocus) {
+			FUCK::SetKeyboardFocusHere(0);
+			*a_requestFocus = false;
+		}
+
+		FUCK::SetNextItemWidth(a_comboWidth);
+		int refIndex = 0;
+		if (FUCK::ComboWithFilter("##RACE_RefImage", &refIndex, refManager->GetComboStrings().data(), static_cast<int>(refManager->GetComboStrings().size()))) {
+			if (refIndex > 0) {
+				refManager->ToggleReference(refIndex - 1);
+			}
+		}
+		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
+	}
+}
+
 void RaceWidget::DrawMainPanel()
 {
 	static bool s_wasRbDown  = false;
@@ -597,23 +649,7 @@ void RaceWidget::DrawMainPanel()
 		}
 	}
 
-	auto refManager = RaceReferenceManager::GetSingleton();
-
-	if (!IsOnCameraTab() && !isGamepad && refManager->HasReferences()) {
-		if (requestFocus) {
-			FUCK::SetKeyboardFocusHere(0);
-			requestFocus = false;
-		}
-
-		FUCK::SetNextItemWidth(comboWidth);
-		int refIndex = 0;
-		if (FUCK::ComboWithFilter("##RACE_RefImage", &refIndex, refManager->GetComboStrings().data(), static_cast<int>(refManager->GetComboStrings().size()))) {
-			if (refIndex > 0) {
-				refManager->ToggleReference(refIndex - 1);
-			}
-		}
-		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
-	}
+	DrawReferenceSelector(comboWidth, &requestFocus);
 
 	if (requestFocus) {
 		FUCK::SetKeyboardFocusHere(0);
@@ -622,31 +658,7 @@ void RaceWidget::DrawMainPanel()
 
 	bool openLightKBM = false;
 
-	bool        isFrozen = animManager->IsFrozen();
-	const char* playIcon = isFrozen ? " " ICON_FA_PLAY " " : " " ICON_FA_PAUSE " ";
-
-	FUCK::PushID("RACE_PlayToggle");
-	if (FUCK::Button(playIcon)) {
-		if (isFrozen) {
-			animManager->TogglePlay();
-		} else {
-			animManager->SetPlayerFrozen(true);
-		}
-	}
-	if (FUCK::IsItemHovered(0)) {
-		FUCK::SetTooltip("$RACE_PlayPauseTooltip"_T);
-	}
-	FUCK::PopID();
-
-	FUCK::SameLine();
-	FUCK::PushID("RACE_StopToggle");
-	if (FUCK::Button(" " ICON_FA_STOP " ")) {
-		animManager->StopCurrentIdle();
-	}
-	if (FUCK::IsItemHovered(0)) {
-		FUCK::SetTooltip("$RACE_StopTooltip"_T);
-	}
-	FUCK::PopID();
+	DrawPlaybackControls();
 
 	if (SKEE64Compat::IsPresent() && !isGamepad) {
 		FUCK::SameLine(0.0f, FUCK::Scale(15.0f));
@@ -988,9 +1000,6 @@ void RaceWidget::DrawSculptPanel()
 	if (!SKEE64Compat::IsPresent())
 		return;
 
-	auto animManager = RaceAnimManager::GetSingleton();
-	auto refManager  = RaceReferenceManager::GetSingleton();
-
 	if (FUCK::Checkbox("$RACE_DisableMirror"_T, &_disableMirror, false)) {
 		SaveSettings();
 		ApplyMirrorLock();
@@ -998,51 +1007,15 @@ void RaceWidget::DrawSculptPanel()
 
 	FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
 
-	bool isGamepad = FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
+	float clusterScale = 0.8f;
+	float comboWidth   = FUCK::UIScale(360.0f * clusterScale);
 
-	if (!isGamepad && refManager->HasReferences()) {
-		float clusterScale = 0.8f;
-		float comboWidth   = FUCK::UIScale(360.0f * clusterScale);
-
-		FUCK::SetNextItemWidth(comboWidth);
-		int refIndex = 0;
-
-		if (FUCK::ComboWithFilter("##RACE_RefImage_Sculpt", &refIndex, refManager->GetComboStrings().data(), static_cast<int>(refManager->GetComboStrings().size()))) {
-			if (refIndex > 0) {
-				refManager->ToggleReference(refIndex - 1);
-			}
-		}
-		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
-	}
+	DrawReferenceSelector(comboWidth);
 
 	FUCK::Indent();
 	FUCK::Indent();
 
-	bool        isFrozen = animManager->IsFrozen();
-	const char* playIcon = isFrozen ? " " ICON_FA_PLAY " " : " " ICON_FA_PAUSE " ";
-
-	FUCK::PushID("RACE_SculptPlayToggle");
-	if (FUCK::Button(playIcon)) {
-		if (isFrozen) {
-			animManager->TogglePlay();
-		} else {
-			animManager->SetPlayerFrozen(true);
-		}
-	}
-	if (FUCK::IsItemHovered(0)) {
-		FUCK::SetTooltip("$RACE_PlayPauseTooltip"_T);
-	}
-	FUCK::PopID();
-
-	FUCK::SameLine();
-	FUCK::PushID("RACE_SculptStopToggle");
-	if (FUCK::Button(" " ICON_FA_STOP " ")) {
-		animManager->StopCurrentIdle();
-	}
-	if (FUCK::IsItemHovered(0)) {
-		FUCK::SetTooltip("$RACE_StopTooltip"_T);
-	}
-	FUCK::PopID();
+	DrawPlaybackControls();
 
 	FUCK::Unindent();
 	FUCK::Unindent();

@@ -12,6 +12,9 @@ public:
 	void DrawSettingsPanel();
 	void DrawSculptPanel();
 
+	void DrawPlaybackControls();
+	void DrawReferenceSelector(float a_comboWidth, bool* a_requestFocus = nullptr);
+
 	void OnAdvanceMovie(RE::RaceSexMenu* a_menu);
 
 	void SetSkee64Present(bool a_present) { _skee64Present = a_present; }
