@@ -12,8 +12,11 @@ public:
 	void DrawSettingsPanel();
 	void DrawSculptPanel();
 
+	void DrawIdleSelector(float a_comboWidth, bool& a_requestFocus);
 	bool DrawReferenceSelector(float a_comboWidth, bool* a_requestFocus = nullptr);
 	void DrawPlaybackControls();
+	void DrawToolButtons(float a_comboWidth, float a_rowStartX);
+	void DrawCameraReset(float a_comboWidth, float a_rowStartX);
 
 	void OnAdvanceMovie(RE::RaceSexMenu* a_menu);
 
