@@ -622,22 +622,34 @@ void RaceWidget::DrawMainPanel()
 
 	bool openLightKBM = false;
 
-	if (FUCK::Button("$RACE_Freeze"_T)) {
-		if (!animManager->IsFrozen())
+	bool        isFrozen = animManager->IsFrozen();
+	const char* playIcon = isFrozen ? " " ICON_FA_PLAY " " : " " ICON_FA_PAUSE " ";
+
+	FUCK::PushID("RACE_PlayToggle");
+	if (FUCK::Button(playIcon)) {
+		if (isFrozen) {
+			animManager->TogglePlay();
+		} else {
 			animManager->SetPlayerFrozen(true);
+		}
 	}
+	if (FUCK::IsItemHovered(0)) {
+		FUCK::SetTooltip("$RACE_PlayPauseTooltip"_T);
+	}
+	FUCK::PopID();
 
 	FUCK::SameLine();
-	if (FUCK::Button("$RACE_Play"_T)) {
-		animManager->TogglePlay();
-	}
-	FUCK::SameLine();
-	if (FUCK::Button("$RACE_Default"_T)) {
+	FUCK::PushID("RACE_StopToggle");
+	if (FUCK::Button(" " ICON_FA_STOP " ")) {
 		animManager->StopCurrentIdle();
 	}
+	if (FUCK::IsItemHovered(0)) {
+		FUCK::SetTooltip("$RACE_StopTooltip"_T);
+	}
+	FUCK::PopID();
 
 	if (SKEE64Compat::IsPresent() && !isGamepad) {
-		FUCK::SameLine();
+		FUCK::SameLine(0.0f, FUCK::Scale(15.0f));
 		RE::GFxValue menuInstance;
 		bool         isLightOn = false;
 		if (_cachedRaceMenuMovie && GetMenuInstance(_cachedRaceMenuMovie, menuInstance)) {
@@ -668,10 +680,13 @@ void RaceWidget::DrawMainPanel()
 
 		if (isLightOn)
 			FUCK::PopStyleColor(2);
+
+		FUCK::SameLine();
+	} else {
+		FUCK::SameLine(0.0f, FUCK::Scale(15.0f));
 	}
 
-	FUCK::SameLine();
-	if (FUCK::Button(ICON_FA_GEAR)) {
+	if (FUCK::Button(" " ICON_FA_GEAR " ")) {
 		_showSettings = !_showSettings;
 		if (_showSettings) {
 			_settingsJustOpened = true;
@@ -1003,15 +1018,31 @@ void RaceWidget::DrawSculptPanel()
 	FUCK::Indent();
 	FUCK::Indent();
 
-	if (FUCK::Button("$RACE_Freeze"_T)) {
-		if (!animManager->IsFrozen())
+	bool        isFrozen = animManager->IsFrozen();
+	const char* playIcon = isFrozen ? " " ICON_FA_PLAY " " : " " ICON_FA_PAUSE " ";
+
+	FUCK::PushID("RACE_SculptPlayToggle");
+	if (FUCK::Button(playIcon)) {
+		if (isFrozen) {
+			animManager->TogglePlay();
+		} else {
 			animManager->SetPlayerFrozen(true);
+		}
 	}
+	if (FUCK::IsItemHovered(0)) {
+		FUCK::SetTooltip("$RACE_PlayPauseTooltip"_T);
+	}
+	FUCK::PopID();
 
 	FUCK::SameLine();
-	if (FUCK::Button("$RACE_Play"_T)) {
-		animManager->TogglePlay();
+	FUCK::PushID("RACE_SculptStopToggle");
+	if (FUCK::Button(" " ICON_FA_STOP " ")) {
+		animManager->StopCurrentIdle();
 	}
+	if (FUCK::IsItemHovered(0)) {
+		FUCK::SetTooltip("$RACE_StopTooltip"_T);
+	}
+	FUCK::PopID();
 
 	FUCK::Unindent();
 	FUCK::Unindent();
