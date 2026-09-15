@@ -512,10 +512,7 @@ void RaceWidget::Draw()
 
 	float pad = FUCK::Scale(15.0f);
 
-	// Remove the top padding if we are on the Sculpt tab
-	if (currentMode != 3) {
-		FUCK::Dummy(ImVec2(0.0f, pad));
-	}
+	FUCK::Dummy(ImVec2(0.0f, pad));
 
 	FUCK::Indent(pad);
 	FUCK::BeginGroup();
@@ -1170,10 +1167,14 @@ void RaceWidget::DrawSculptPanel()
 	ImVec2 framePad = FUCK::GetStyleVarVec(ImGuiStyleVar_FramePadding);
 	float  spacingX = FUCK::GetStyleVarVec(ImGuiStyleVar_ItemSpacing).x;
 
-	DrawReferenceSelector(comboWidth);
+	if (DrawReferenceSelector(comboWidth)) {
+		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
+	}
+
+	FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(5.0f)));
 
 	// Calculate checkbox width: Checkbox Square + Spacing + Text
-	float  cbSquare = FUCK::GetFrameHeight();
+	float cbSquare = FUCK::GetFrameHeight();
 
 	float cbTextMirror  = FUCK::CalcTextSize("$RACE_DisableMirror"_T).x;
 	float cbWidthMirror = cbSquare + spacingX + cbTextMirror;
@@ -1191,18 +1192,27 @@ void RaceWidget::DrawSculptPanel()
 
 	if (FUCK::Checkbox("$RACE_FreezeWireframe"_T, &_freezeWireframe, false)) {}
 
-	FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
-
-	// Calculate width: Play Btn + Spacing + Stop Btn
+	// Calculate width: Play Btn + Spacing + Stop Btn + Help Marker
 	auto        animManager = RaceAnimManager::GetSingleton();
 	const char* playIcon    = animManager->IsFrozen() ? ICON_FA_PLAY : ICON_FA_PAUSE;
 
 	float playWidth     = FUCK::CalcTextSize(playIcon).x + framePad.x * 2.0f;
 	float stopWidth     = FUCK::CalcTextSize(ICON_FA_STOP).x + framePad.x * 2.0f;
-	float controlsWidth = playWidth + spacingX + stopWidth;
+	float helpWidth     = FUCK::Scale(2.0f) + FUCK::CalcTextSize("(?)").x;
+	float controlsWidth = playWidth + spacingX + stopWidth + helpWidth;
 
-	// Nudge left to correct overhang
-	float playbackNudge = FUCK::Scale(10.0f);
+	// Nudge right to correct underhang
+	float playbackNudge = FUCK::Scale(-11.5f);
 	FUCK::SetCursorPosX(rowStartX + comboWidth - controlsWidth - playbackNudge);
 	DrawPlaybackControls();
+
+	FUCK::SameLine(0.0f, FUCK::Scale(2.0f));
+	bool isGamepad = FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
+	if (isGamepad) {
+		FUCK::HelpMarker("$RACE_CamTooltip_GP"_T);
+	} else {
+		FUCK::HelpMarker("$RACE_CamTooltip_KBM"_T);
+	}
+
+	DrawCameraReset(comboWidth, rowStartX, false);
 }
