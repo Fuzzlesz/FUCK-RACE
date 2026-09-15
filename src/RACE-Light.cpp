@@ -5,6 +5,8 @@
 
 void RaceLightManager::Initialize()
 {
+	_hasLightStudio = (GetModuleHandleW(L"FUCK-LIGHT.dll") != nullptr);
+
 	FUCK::AddMenuListener(this, [](const char* menuName, bool opening, void* userdata) {
 		if (std::string_view(menuName) == RE::RaceSexMenu::MENU_NAME) {
 			auto mgr = static_cast<RaceLightManager*>(userdata);
@@ -241,7 +243,7 @@ void RaceLightManager::DrawWindow()
 
 		DrawInlineSettings();
 
-		if (GetModuleHandleW(L"FUCK-LIGHT.dll")) {
+		if (HasLightStudio()) {
 			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(8.0f)));
 			FUCK::Separator();
 			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));

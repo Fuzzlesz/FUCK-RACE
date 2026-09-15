@@ -19,11 +19,15 @@ public:
 	void OnRaceMenuOpen();
 	void OnRaceMenuClose();
 
+	bool HasLightStudio() const { return _hasLightStudio; }
+
 private:
 	void ScanForRaceMenuLight();
 	void ApplyToLight();
 
-	bool   _isOpen = false;
+	bool   _isOpen         = false;
+	bool   _hasLightStudio = false;
+
 	ImVec2 _spawnPos{};
 	bool   _requestSpawnPos = false;
 
