@@ -226,12 +226,12 @@ void RaceCamera::HandleInput(float a_interval)
 		float rateMult = isCameraTab ? (_cameraRate / 5.0f) : 1.0f;
 
 		// --- Mouse Controls ---
-		if (ctrlDown && !isAnyUIHovered && !isPopupOpen) {
+		if ((ctrlDown || shiftDown) && !isAnyUIHovered && !isPopupOpen) {
 			if (_pendingScroll != 0.0f && !IsMouseOverWireframe()) {
 				if (shiftDown) {
-					// FOV (CTRL + SHIFT + Scroll)
+					// FOV (SHIFT + Scroll)
 					_fovOffset -= _pendingScroll * (_settings.kbmFovSpeed * 0.2f);
-				} else {
+				} else if (ctrlDown) {
 					// Zoom (CTRL + Scroll)
 					_camOffset.y += _pendingScroll * (_settings.kbmPanSpeed * rateMult * 0.5f);
 				}
@@ -248,10 +248,12 @@ void RaceCamera::HandleInput(float a_interval)
 			float mOrb   = mouseDelta.x * _settings.kbmRotSpeed  * rateMult * 0.015f;
 			float mPitch = mouseDelta.y * _settings.kbmRotSpeed  * rateMult * 0.015f;
 
-			if (rmbDown) {
-				// Orbit & Pitch (Middle + Right)
-				_camRotZ += mOrb;
+			if (ctrlDown) {
+				// Pitch (Middle + Ctrl)
 				_camRotX += mPitch;
+			} else if (rmbDown) {
+				// Orbit (Middle + Right)
+				_camRotZ += mOrb;
 			} else if (shiftDown) {
 				// Roll (Middle + Shift)
 				_camRoll += mRoll;
