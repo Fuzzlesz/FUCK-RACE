@@ -130,6 +130,44 @@ void RaceWidget::OnAdvanceMovie(RE::RaceSexMenu* a_menu)
 
 					menuInstance.SetMember("FUCK_HooksApplied", RE::GFxValue(true));
 				}
+
+				// Apply Sculpt Panel Hooks
+				if (GetCurrentMode() == 3) {
+					RE::GFxValue vertexEditor;
+					if (menuInstance.GetMember("vertexEditor", &vertexEditor) && vertexEditor.IsObject()) {
+						// Hook Wireframe
+						RE::GFxValue wireframeDisplay, foreground;
+						if (vertexEditor.GetMember("wireframeDisplay", &wireframeDisplay) && wireframeDisplay.GetMember("foreground", &foreground)) {
+							RE::GFxValue currentBeginRotate;
+							if (foreground.GetMember("beginRotateMesh", &currentBeginRotate) && currentBeginRotate.IsObject()) {
+								if (!currentBeginRotate.HasMember("FUCK_IsHooked")) {
+									foreground.SetMember("FUCK_origBeginRotateMesh", currentBeginRotate);
+
+									class BeginRotateHandler : public RE::GFxFunctionHandler
+									{
+									public:
+										void Call(Params& a_params) override
+										{
+											if (RaceWidget::GetSingleton()->IsWireframeFrozen())
+												return;  // Block execution
+											if (a_params.thisPtr) {
+												a_params.thisPtr->Invoke("FUCK_origBeginRotateMesh", a_params.retVal, a_params.args, a_params.argCount);
+											}
+										}
+									};
+
+									RE::GFxValue newBeginRotate;
+									a_menu->uiMovie->CreateFunction(&newBeginRotate, new BeginRotateHandler());
+
+									newBeginRotate.SetMember("FUCK_IsHooked", RE::GFxValue(true));
+
+									foreground.SetMember("beginRotateMesh", newBeginRotate);
+									foreground.SetMember("onPressAux", newBeginRotate);
+								}
+							}
+						}
+					}
+				}
 			}
 
 			// Hide Light Control using the textField clearing trick so layout collapses properly
@@ -177,7 +215,7 @@ void RaceWidget::LoadSettings()
 
 		_startFrozen   = FUCK::INI::LoadBool(ini, "Widget", "StartFrozen",   false);
 		_hideIdles     = FUCK::INI::LoadBool(ini, "Widget", "HideIdles",     false);
-		_disableMirror = FUCK::INI::LoadBool(ini, "Widget", "DisableMirror", false);  
+		_disableMirror = FUCK::INI::LoadBool(ini, "Widget", "DisableMirror", false);
 
 		RaceCamera::GetSingleton()->LoadSettings(ini);
 	});
@@ -1046,18 +1084,26 @@ void RaceWidget::DrawSculptPanel()
 	ImVec2 framePad = FUCK::GetStyleVarVec(ImGuiStyleVar_FramePadding);
 	float  spacingX = FUCK::GetStyleVarVec(ImGuiStyleVar_ItemSpacing).x;
 
-	// Calculate checkbox width: Checkbox Square + Spacing + Text
-	float cbSquare = FUCK::GetFrameHeight();
-	float cbText   = FUCK::CalcTextSize("$RACE_DisableMirror"_T).x;
-	float cbWidth  = cbSquare + spacingX + cbText;
+	DrawReferenceSelector(comboWidth);
 
-	FUCK::SetCursorPosX(rowStartX + comboWidth - cbWidth);
+	// Calculate checkbox width: Checkbox Square + Spacing + Text
+	float  cbSquare = FUCK::GetFrameHeight();
+
+	float cbTextMirror  = FUCK::CalcTextSize("$RACE_DisableMirror"_T).x;
+	float cbWidthMirror = cbSquare + spacingX + cbTextMirror;
+
+	FUCK::SetCursorPosX(rowStartX + comboWidth - cbWidthMirror);
 	if (FUCK::Checkbox("$RACE_DisableMirror"_T, &_disableMirror, false)) {
 		SaveSettings();
 		ApplyMirrorLock();
 	}
 
-	DrawReferenceSelector(comboWidth);
+	float cbTextFreeze  = FUCK::CalcTextSize("$RACE_FreezeWireframe"_T).x;
+	float cbWidthFreeze = cbSquare + spacingX + cbTextFreeze;
+
+	FUCK::SetCursorPosX(rowStartX + comboWidth - cbWidthFreeze);
+
+	if (FUCK::Checkbox("$RACE_FreezeWireframe"_T, &_freezeWireframe, false)) {}
 
 	FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
 
