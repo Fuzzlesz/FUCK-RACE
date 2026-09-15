@@ -128,6 +128,32 @@ void RaceWidget::OnAdvanceMovie(RE::RaceSexMenu* a_menu)
 						cameraEditor.SetMember("movementRate", RE::GFxValue(RaceCamera::GetSingleton()->GetCameraRate()));
 					}
 
+					// Intercept ShowRaceDescription to collapse stats and extend the list
+					RE::GFxValue origShowRaceDesc;
+					if (menuInstance.GetMember("ShowRaceDescription", &origShowRaceDesc) && origShowRaceDesc.IsObject()) {
+						menuInstance.SetMember("FUCK_origShowRaceDescription", origShowRaceDesc);
+
+						class ShowRaceDescHandler : public RE::GFxFunctionHandler
+						{
+						public:
+							void Call(Params& a_params) override
+							{
+								if (a_params.argCount > 0 && a_params.thisPtr) {
+									bool show = a_params.args[0].GetBool();
+									if (RaceWidget::GetSingleton()->IsRaceStatsHidden()) {
+										show = false;
+									}
+									RE::GFxValue arg(show);
+									a_params.thisPtr->Invoke("FUCK_origShowRaceDescription", a_params.retVal, &arg, 1);
+								}
+							}
+						};
+
+						RE::GFxValue newShowRaceDesc;
+						a_menu->uiMovie->CreateFunction(&newShowRaceDesc, new ShowRaceDescHandler());
+						menuInstance.SetMember("ShowRaceDescription", newShowRaceDesc);
+					}
+
 					menuInstance.SetMember("FUCK_HooksApplied", RE::GFxValue(true));
 				}
 
@@ -216,6 +242,7 @@ void RaceWidget::LoadSettings()
 		_startFrozen   = FUCK::INI::LoadBool(ini, "Widget", "StartFrozen",   false);
 		_hideIdles     = FUCK::INI::LoadBool(ini, "Widget", "HideIdles",     false);
 		_disableMirror = FUCK::INI::LoadBool(ini, "Widget", "DisableMirror", false);
+		_hideRaceStats = FUCK::INI::LoadBool(ini, "Widget", "HideRaceStats", false);
 
 		RaceCamera::GetSingleton()->LoadSettings(ini);
 	});
@@ -234,7 +261,8 @@ void RaceWidget::SaveSettings()
 
 		FUCK::INI::SaveBool(ini, "Widget", "StartFrozen",   _startFrozen,   false);
 		FUCK::INI::SaveBool(ini, "Widget", "HideIdles",     _hideIdles,     false);
-		FUCK::INI::SaveBool(ini, "Widget", "DisableMirror", _disableMirror, false); 
+		FUCK::INI::SaveBool(ini, "Widget", "DisableMirror", _disableMirror, false);
+		FUCK::INI::SaveBool(ini, "Widget", "HideRaceStats", _hideRaceStats, false);
 
 		RaceCamera::GetSingleton()->SaveSettings(ini);
 	});
@@ -318,6 +346,24 @@ int RaceWidget::GetCurrentMode() const
 	}
 
 	return static_cast<int>(mode.GetNumber());
+}
+
+bool RaceWidget::IsOnRaceTab() const
+{
+	if (GetCurrentMode() != 0 || !_cachedRaceMenuMovie)
+		return false;
+
+	RE::GFxValue menuInstance;
+	if (GetMenuInstance(_cachedRaceMenuMovie, menuInstance)) {
+		RE::GFxValue categoryList, selectedEntry, filterFlag;
+		if (menuInstance.GetMember("categoryList", &categoryList) &&
+			categoryList.GetMember("selectedEntry", &selectedEntry) &&
+			selectedEntry.GetMember("flag", &filterFlag) &&
+			filterFlag.IsNumber()) {
+			return static_cast<int>(filterFlag.GetNumber()) == 2;  // CATEGORY_RACE
+		}
+	}
+	return false;
 }
 
 void RaceWidget::Draw()
@@ -698,29 +744,47 @@ void RaceWidget::DrawToolButtons(float a_comboWidth, float a_rowStartX)
 	}
 }
 
-void RaceWidget::DrawCameraReset(float a_comboWidth, float a_rowStartX)
+void RaceWidget::DrawCameraReset(float a_comboWidth, float a_rowStartX, bool a_isRaceTab)
 {
-	bool hasCam = RaceCamera::GetSingleton()->IsCameraModified();
-	if (!hasCam)
+	bool hasCam       = RaceCamera::GetSingleton()->IsCameraModified();
+	bool drawCheckbox = a_isRaceTab;
+
+	if (!hasCam && !drawCheckbox)
 		return;
 
 	FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
 
-	ImVec2 framePad   = FUCK::GetStyleVarVec(ImGuiStyleVar_FramePadding);
-	float  resetWidth = FUCK::CalcTextSize("$RACE_ResetCam"_T).x + framePad.x * 2.0f;
+	if (drawCheckbox) {
+		FUCK::SetCursorPosX(a_rowStartX);
+		if (FUCK::Checkbox("$RACE_HideRaceStats"_T, &_hideRaceStats, false)) {
+			SaveSettings();
+			ToggleRaceStats();
+		}
+	}
 
-	FUCK::SetCursorPosX(a_rowStartX + (a_comboWidth - resetWidth) * 0.5f);
+	if (hasCam) {
+		ImVec2 framePad   = FUCK::GetStyleVarVec(ImGuiStyleVar_FramePadding);
+		float  resetWidth = FUCK::CalcTextSize("$RACE_ResetCam"_T).x + framePad.x * 2.0f;
 
-	if (FUCK::Button("$RACE_ResetCam"_T)) {
-		RaceCamera::GetSingleton()->ResetOffsets();
+		float resetNudge = FUCK::Scale(7.0f);  // Nudge left to correct the overhang
 
-		// Sync the ActionScript UI toggle so Quick Zoom doesn't require a double-press to re-engage
-		RE::GFxValue menuInst;
-		if (_cachedRaceMenuMovie && GetMenuInstance(_cachedRaceMenuMovie, menuInst)) {
-			RE::GFxValue bPlayerZoom;
-			if (menuInst.GetMember("bPlayerZoom", &bPlayerZoom)) {
-				menuInst.SetMember("bPlayerZoom", RE::GFxValue(false));
-				menuInst.Invoke("updateBottomBar", nullptr, nullptr, 0);
+		if (drawCheckbox) {
+			FUCK::SameLine();
+		}
+
+		FUCK::SetCursorPosX(a_rowStartX + a_comboWidth - resetWidth - resetNudge);
+
+		if (FUCK::Button("$RACE_ResetCam"_T)) {
+			RaceCamera::GetSingleton()->ResetOffsets();
+
+			// Sync the ActionScript UI toggle so Quick Zoom doesn't require a double-press to re-engage
+			RE::GFxValue menuInst;
+			if (_cachedRaceMenuMovie && GetMenuInstance(_cachedRaceMenuMovie, menuInst)) {
+				RE::GFxValue bPlayerZoom;
+				if (menuInst.GetMember("bPlayerZoom", &bPlayerZoom)) {
+					menuInst.SetMember("bPlayerZoom", RE::GFxValue(false));
+					menuInst.Invoke("updateBottomBar", nullptr, nullptr, 0);
+				}
 			}
 		}
 	}
@@ -758,9 +822,9 @@ void RaceWidget::DrawMainPanel()
 	auto  eqManager    = RaceEquipManager::GetSingleton();
 	auto  lightManager = RaceLightManager::GetSingleton();
 	float clusterScale = 0.8f;
-	float alignOffset  = 0.0f;
 	float comboWidth   = FUCK::UIScale(360.0f * clusterScale);
 	float equipWidth   = comboWidth * 1.5f;
+	bool  isRaceTab    = IsOnRaceTab();
 
 	// --- Gamepad Back Button Logic (Enforce Light ON) ---
 	static float s_backHoldTime             = 0.0f;
@@ -798,7 +862,7 @@ void RaceWidget::DrawMainPanel()
 	}
 
 	if (isGamepad && eqManager->HasItems()) {
-		alignOffset = equipWidth - comboWidth;
+		float alignOffset = equipWidth - comboWidth;
 
 		if (requestFocus) {
 			FUCK::SetKeyboardFocusHere(0);
@@ -854,15 +918,37 @@ void RaceWidget::DrawMainPanel()
 
 	DrawPlaybackControls();
 	DrawToolButtons(comboWidth, rowStartX);
-	DrawCameraReset(comboWidth, rowStartX);
+	DrawCameraReset(comboWidth, rowStartX, isRaceTab);
 
 	if (_showSettings) {
-		if (alignOffset > 0.0f) {
-			FUCK::Unindent(alignOffset);
+		if (isGamepad && eqManager->HasItems()) {
+			FUCK::Unindent(equipWidth - comboWidth);
 		}
 		DrawSettingsPanel();
-	} else if (alignOffset > 0.0f) {
-		FUCK::Unindent(alignOffset);
+	} else if (isGamepad && eqManager->HasItems()) {
+		FUCK::Unindent(equipWidth - comboWidth);
+	}
+}
+
+void RaceWidget::ToggleRaceStats()
+{
+	if (!_cachedRaceMenuMovie)
+		return;
+
+	RE::GFxValue menuInstance;
+	if (GetMenuInstance(_cachedRaceMenuMovie, menuInstance)) {
+		RE::GFxValue itemList;
+		if (menuInstance.GetMember("itemList", &itemList) && itemList.IsObject()) {
+			RE::GFxValue eventObj, selectedIndex;
+			_cachedRaceMenuMovie->CreateObject(&eventObj);
+			if (itemList.GetMember("selectedIndex", &selectedIndex)) {
+				eventObj.SetMember("index", selectedIndex);
+				menuInstance.Invoke("onSelectionChange", nullptr, &eventObj, 1);
+
+				itemList.Invoke("validateNow", nullptr, nullptr, 0);
+				itemList.Invoke("UpdateList", nullptr, nullptr, 0);
+			}
+		}
 	}
 }
 

@@ -16,7 +16,7 @@ public:
 	bool DrawReferenceSelector(float a_comboWidth, bool* a_requestFocus = nullptr);
 	void DrawPlaybackControls();
 	void DrawToolButtons(float a_comboWidth, float a_rowStartX);
-	void DrawCameraReset(float a_comboWidth, float a_rowStartX);
+	void DrawCameraReset(float a_comboWidth, float a_rowStartX, bool a_isRaceTab);
 
 	void OnAdvanceMovie(RE::RaceSexMenu* a_menu);
 
@@ -32,10 +32,14 @@ public:
 	bool IsOnSculptTab() const { return GetCurrentMode() == 3; }
 	bool IsOnCameraTab() const { return GetCurrentMode() == 2; }
 	bool IsOnSlidersTab() const { return GetCurrentMode() == 0; }
+	bool IsOnRaceTab() const;
 
 	bool GetMenuInstance(RE::GFxMovieView* a_movie, RE::GFxValue& a_outInstance) const;
 
 	bool IsWireframeFrozen() const { return _freezeWireframe; }
+	bool IsRaceStatsHidden() const { return _hideRaceStats; }
+
+	void ToggleRaceStats();
 
 private:
 	void LoadSettings();
@@ -63,6 +67,7 @@ private:
 	bool _hideIdles       = false;
 	bool _disableMirror   = false;
 	bool _freezeWireframe = false;
+	bool _hideRaceStats   = false;
 
 	int _lastMode = -1;
 };
