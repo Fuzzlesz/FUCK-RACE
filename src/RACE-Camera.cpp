@@ -114,6 +114,8 @@ void RaceCamera::HandleInput(float a_interval)
 	
 	constexpr float LERP_SNAP_TOLERANCE = 0.05f;
 	constexpr float PITCH_CLAMP_LIMIT   = 1.55f;
+	constexpr float SCROLL_SMOOTH_SPEED = 15.0f;
+	constexpr float EPSILON             = 0.001f;
 
 	// Interpolate Quick Zoom swoop
 	_currentZoomOffset     = std::lerp(_currentZoomOffset,     _targetZoomOffset,     5.0f * a_interval);
@@ -235,14 +237,33 @@ void RaceCamera::HandleInput(float a_interval)
 			if (_pendingScroll != 0.0f && !IsMouseOverWireframe()) {
 				if (shiftDown) {
 					// FOV (SHIFT + Scroll)
-					_fovOffset -= _pendingScroll * (_settings.kbmZoomFovSpeed * rateMult * MOUSE_WHEEL_MULT);
+					_smoothScrollFov += _pendingScroll * (_settings.kbmZoomFovSpeed * rateMult * MOUSE_WHEEL_MULT);
 				} else if (ctrlDown) {
 					// Zoom (CTRL + Scroll)
-					_camOffset.y += _pendingScroll * (_settings.kbmZoomFovSpeed * rateMult * MOUSE_WHEEL_MULT);
+					_smoothScrollZoom += _pendingScroll * (_settings.kbmZoomFovSpeed * rateMult * MOUSE_WHEEL_MULT);
 				}
 			}
 		}
 		_pendingScroll = 0.0f;
+
+		// Apply smoothed scrolling
+		if (std::abs(_smoothScrollZoom) > EPSILON) {
+			float step = std::lerp(0.0f, _smoothScrollZoom, SCROLL_SMOOTH_SPEED * a_interval);
+			_camOffset.y += step;
+			_smoothScrollZoom -= step;
+		} else {
+			_camOffset.y += _smoothScrollZoom;
+			_smoothScrollZoom = 0.0f;
+		}
+
+		if (std::abs(_smoothScrollFov) > EPSILON) {
+			float step = std::lerp(0.0f, _smoothScrollFov, SCROLL_SMOOTH_SPEED * a_interval);
+			_fovOffset -= step;
+			_smoothScrollFov -= step;
+		} else {
+			_fovOffset -= _smoothScrollFov;
+			_smoothScrollFov = 0.0f;
+		}
 
 		if (mmbDown && !isAnyUIHovered && !isPopupOpen && !s_wireframeInteractLock) {
 			ImVec2 mouseDelta = FUCK::GetMouseDelta();
@@ -607,4 +628,6 @@ void RaceCamera::ResetOffsets()
 	_targetZoomSideOffset  = 0.0f;
 	_currentZoomSideOffset = 0.0f;
 	_isCharAngleCaptured   = false;
+	_smoothScrollZoom      = 0.0f;
+	_smoothScrollFov       = 0.0f;
 }

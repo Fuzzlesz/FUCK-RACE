@@ -75,6 +75,9 @@ private:
 	float _targetZoomSideOffset  = 0.0f;
 	bool  _isQuickZoomed         = false;
 
+	float _smoothScrollZoom = 0.0f;
+	float _smoothScrollFov  = 0.0f;
+
 	float _kbmAcceleration = 1.0f;
 	float _cameraRate      = 5.0f;
 
