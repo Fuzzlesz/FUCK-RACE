@@ -556,12 +556,12 @@ void RaceWidget::DrawIdleSelector(float a_comboWidth, bool& a_requestFocus)
 		}
 
 		FUCK::SetNextItemWidth(a_comboWidth);
-		if (FUCK::ComboWithFilter("##RACE_PluginFilter", &animManager->GetSelectedPluginIndex(), animManager->GetPluginNamesCStr().data(), static_cast<int>(animManager->GetPluginNamesCStr().size())))
+		if (FUCK::ComboWithFilter("##RACE_PluginFilter", &animManager->GetSelectedPluginIndex(), animManager->GetPluginNamesCStr().data(), static_cast<int>(animManager->GetPluginNamesCStr().size()), 15))
 			animManager->InvalidateIdles();
 		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
 
 		FUCK::SetNextItemWidth(a_comboWidth);
-		if (FUCK::ComboWithFilter("##RACE_Idles", &animManager->GetSelectedIndex(), animManager->GetIdleNames().data(), static_cast<int>(animManager->GetIdleNames().size()))) {
+		if (FUCK::ComboWithFilter("##RACE_Idles", &animManager->GetSelectedIndex(), animManager->GetIdleNames().data(), static_cast<int>(animManager->GetIdleNames().size()), 15)) {
 			animManager->PlaySelectedIdle();
 		}
 		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
@@ -581,7 +581,7 @@ bool RaceWidget::DrawReferenceSelector(float a_comboWidth, bool* a_requestFocus)
 
 		FUCK::SetNextItemWidth(a_comboWidth);
 		int refIndex = 0;
-		if (FUCK::ComboWithFilter("##RACE_RefImage", &refIndex, refManager->GetComboStrings().data(), static_cast<int>(refManager->GetComboStrings().size()))) {
+		if (FUCK::ComboWithFilter("##RACE_RefImage", &refIndex, refManager->GetComboStrings().data(), static_cast<int>(refManager->GetComboStrings().size()), 15)) {
 			if (refIndex > 0) {
 				refManager->ToggleReference(refIndex - 1);
 			}
@@ -868,7 +868,7 @@ void RaceWidget::DrawMainPanel()
 
 		FUCK::SetNextItemWidth(equipWidth);
 		int eqIndex = 0;
-		if (FUCK::ComboWithFilter("##RACE_Equip", &eqIndex, eqManager->GetComboStrings().data(), static_cast<int>(eqManager->GetComboStrings().size()))) {
+		if (FUCK::ComboWithFilter("##RACE_Equip", &eqIndex, eqManager->GetComboStrings().data(), static_cast<int>(eqManager->GetComboStrings().size()), 15)) {
 			if (eqIndex > 0)
 				eqManager->ToggleItem(eqIndex - 1);
 		}
@@ -985,7 +985,6 @@ void RaceWidget::DrawSettingsPanel()
 			} else {
 				flagsKBM = 2;  // ImGuiTabItemFlags_SetSelected
 			}
-			_settingsJustOpened = false;
 		}
 
 		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
