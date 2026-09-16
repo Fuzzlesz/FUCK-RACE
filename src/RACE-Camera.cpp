@@ -233,12 +233,12 @@ void RaceCamera::HandleInput(float a_interval)
 		float rateMult = isCameraTab ? (_cameraRate / 5.0f) : 1.0f;
 
 		// --- Mouse Controls ---
-		if ((ctrlDown || shiftDown) && !isAnyUIHovered && !isPopupOpen) {
+		if (ctrlDown && !isAnyUIHovered && !isPopupOpen) {
 			if (_pendingScroll != 0.0f && !IsMouseOverWireframe()) {
 				if (shiftDown) {
-					// FOV (SHIFT + Scroll)
+					// FOV (CTRL + SHIFT + Scroll)
 					_smoothScrollFov += _pendingScroll * (_settings.kbmZoomFovSpeed * rateMult * MOUSE_WHEEL_MULT);
-				} else if (ctrlDown) {
+				} else {
 					// Zoom (CTRL + Scroll)
 					_smoothScrollZoom += _pendingScroll * (_settings.kbmZoomFovSpeed * rateMult * MOUSE_WHEEL_MULT);
 				}
