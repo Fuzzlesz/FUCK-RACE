@@ -1008,9 +1008,7 @@ void RaceWidget::DrawSettingsPanel()
 				changed |= ScaledSlider("$RACE_SpeedPan"_T,      camSettings.kbmPanSpeed,         1.0f,  50.0f,    1.0f);
 				changed |= ScaledSlider("$RACE_SpeedOrbit"_T,    camSettings.kbmRotSpeed,         0.1f,   3.0f,   10.0f);
 				changed |= ScaledSlider("$RACE_SpeedRoll"_T,     camSettings.kbmRollSpeed,        0.1f,   3.0f,   10.0f);
-				changed |= ScaledSlider("$RACE_SpeedFOV"_T,      camSettings.kbmFovSpeed,         5.0f,  60.0f,    1.0f);
-				changed |= ScaledSlider("$RACE_MouseOrbit"_T,    camSettings.mouseRotMult,      0.001f,  0.03f, 1000.0f);
-				changed |= ScaledSlider("$RACE_MousePan"_T,      camSettings.mousePanMult,      0.001f,  0.03f, 1000.0f);
+				changed |= ScaledSlider("$RACE_SpeedFOV"_T,      camSettings.kbmZoomFovSpeed,     5.0f,  60.0f,    1.0f);
 
 				FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 				FUCK::PopID();
@@ -1054,22 +1052,22 @@ void RaceWidget::DrawSettingsPanel()
 
 		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 
+		constexpr float EPSILON = 0.001f;
+
 		CameraSettings def;
 		bool           isModified =
-			std::abs(camSettings.kbmPanSpeed         - def.kbmPanSpeed)         > 0.001f  ||
-			std::abs(camSettings.kbmRotSpeed         - def.kbmRotSpeed)         > 0.001f  ||
-			std::abs(camSettings.kbmFovSpeed         - def.kbmFovSpeed)         > 0.001f  ||
-			std::abs(camSettings.mouseRotMult        - def.mouseRotMult)        > 0.0001f ||
-			std::abs(camSettings.mousePanMult        - def.mousePanMult)        > 0.0001f ||
-			std::abs(camSettings.gpPanSpeed          - def.gpPanSpeed)          > 0.001f  ||
-			std::abs(camSettings.gpZoomSpeed         - def.gpZoomSpeed)         > 0.001f  ||
-			std::abs(camSettings.gpRotSpeed          - def.gpRotSpeed)          > 0.001f  ||
-			std::abs(camSettings.gpFovSpeed          - def.gpFovSpeed)          > 0.001f  ||
-			std::abs(camSettings.gpCharRotSpeed      - def.gpCharRotSpeed)      > 0.001f  ||
-			std::abs(camSettings.quickZoomOffset     - def.quickZoomOffset)     > 0.001f  ||
-			std::abs(camSettings.quickZoomDownOffset - def.quickZoomDownOffset) > 0.001f  ||
-			std::abs(camSettings.quickZoomSideOffset - def.quickZoomSideOffset) > 0.001f  ||
-			std::abs(camSettings.gpDeadzone          - def.gpDeadzone)          > 0.001f   ;
+			std::abs(camSettings.kbmPanSpeed         - def.kbmPanSpeed)         > EPSILON ||
+			std::abs(camSettings.kbmRotSpeed         - def.kbmRotSpeed)         > EPSILON ||
+			std::abs(camSettings.kbmZoomFovSpeed     - def.kbmZoomFovSpeed)     > EPSILON ||
+			std::abs(camSettings.gpPanSpeed          - def.gpPanSpeed)          > EPSILON ||
+			std::abs(camSettings.gpZoomSpeed         - def.gpZoomSpeed)         > EPSILON ||
+			std::abs(camSettings.gpRotSpeed          - def.gpRotSpeed)          > EPSILON ||
+			std::abs(camSettings.gpFovSpeed          - def.gpFovSpeed)          > EPSILON ||
+			std::abs(camSettings.gpCharRotSpeed      - def.gpCharRotSpeed)      > EPSILON ||
+			std::abs(camSettings.quickZoomOffset     - def.quickZoomOffset)     > EPSILON ||
+			std::abs(camSettings.quickZoomDownOffset - def.quickZoomDownOffset) > EPSILON ||
+			std::abs(camSettings.quickZoomSideOffset - def.quickZoomSideOffset) > EPSILON ||
+			std::abs(camSettings.gpDeadzone          - def.gpDeadzone)          > EPSILON ;
 
 		if (isModified) {
 			if (FUCK::Button("$RACE_RestoreDefaults"_T)) {

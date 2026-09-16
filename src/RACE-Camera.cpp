@@ -10,9 +10,7 @@ void RaceCamera::LoadSettings(CSimpleIniA& a_ini)
 	_settings.kbmPanSpeed         = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMPanSpeed",          def.kbmPanSpeed);
 	_settings.kbmRotSpeed         = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMRotSpeed",          def.kbmRotSpeed);
 	_settings.kbmRollSpeed        = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMRollSpeed",         def.kbmRollSpeed);
-	_settings.kbmFovSpeed         = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMFovSpeed",          def.kbmFovSpeed);
-	_settings.mouseRotMult        = FUCK::INI::LoadFloat(a_ini, "Camera", "MouseRotMult",         def.mouseRotMult);
-	_settings.mousePanMult        = FUCK::INI::LoadFloat(a_ini, "Camera", "MousePanMult",         def.mousePanMult);
+	_settings.kbmZoomFovSpeed     = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMFovSpeed",          def.kbmZoomFovSpeed);
 
 	_settings.gpPanSpeed          = FUCK::INI::LoadFloat(a_ini, "Camera", "GPPanSpeed",           def.gpPanSpeed);
 	_settings.gpZoomSpeed         = FUCK::INI::LoadFloat(a_ini, "Camera", "GPZoomSpeed",          def.gpZoomSpeed);
@@ -34,9 +32,7 @@ void RaceCamera::SaveSettings(CSimpleIniA& a_ini)
 	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMPanSpeed",         _settings.kbmPanSpeed,          def.kbmPanSpeed);
 	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMRotSpeed",         _settings.kbmRotSpeed,          def.kbmRotSpeed);
 	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMRollSpeed",        _settings.kbmRollSpeed,         def.kbmRollSpeed);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMFovSpeed",         _settings.kbmFovSpeed,          def.kbmFovSpeed);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "MouseRotMult",        _settings.mouseRotMult,         def.mouseRotMult);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "MousePanMult",        _settings.mousePanMult,         def.mousePanMult);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMFovSpeed",         _settings.kbmZoomFovSpeed,      def.kbmZoomFovSpeed);
 
 	FUCK::INI::SaveDouble(a_ini, "Camera", "GPPanSpeed",          _settings.gpPanSpeed,           def.gpPanSpeed);
 	FUCK::INI::SaveDouble(a_ini, "Camera", "GPZoomSpeed",         _settings.gpZoomSpeed,          def.gpZoomSpeed);
@@ -110,17 +106,26 @@ void RaceCamera::HandleInput(float a_interval)
 
 	a_interval = std::min(a_interval, 0.1f);
 
+	// Multipliers & Magic Numbers
+	constexpr float MOUSE_WHEEL_MULT    = 0.1f;
+	constexpr float MOUSE_MOVE_MULT     = 0.002f;
+	constexpr float MOUSE_ROT_MULT      = 0.010f;
+	constexpr float GP_DPAD_MULT        = 0.5f;
+	
+	constexpr float LERP_SNAP_TOLERANCE = 0.05f;
+	constexpr float PITCH_CLAMP_LIMIT   = 1.55f;
+
 	// Interpolate Quick Zoom swoop
 	_currentZoomOffset     = std::lerp(_currentZoomOffset,     _targetZoomOffset,     5.0f * a_interval);
 	_currentZoomDownOffset = std::lerp(_currentZoomDownOffset, _targetZoomDownOffset, 5.0f * a_interval);
 	_currentZoomSideOffset = std::lerp(_currentZoomSideOffset, _targetZoomSideOffset, 5.0f * a_interval);
 
 	// Snap to target to prevent floating point drift keeping the reset button active
-	if (std::abs(_currentZoomOffset - _targetZoomOffset) < 0.05f)
+	if (std::abs(_currentZoomOffset - _targetZoomOffset) < LERP_SNAP_TOLERANCE)
 		_currentZoomOffset = _targetZoomOffset;
-	if (std::abs(_currentZoomDownOffset - _targetZoomDownOffset) < 0.05f)
+	if (std::abs(_currentZoomDownOffset - _targetZoomDownOffset) < LERP_SNAP_TOLERANCE)
 		_currentZoomDownOffset = _targetZoomDownOffset;
-	if (std::abs(_currentZoomSideOffset - _targetZoomSideOffset) < 0.05f)
+	if (std::abs(_currentZoomSideOffset - _targetZoomSideOffset) < LERP_SNAP_TOLERANCE)
 		_currentZoomSideOffset = _targetZoomSideOffset;
 
 	bool hasSkee         = SKEE64Compat::IsPresent();
@@ -230,10 +235,10 @@ void RaceCamera::HandleInput(float a_interval)
 			if (_pendingScroll != 0.0f && !IsMouseOverWireframe()) {
 				if (shiftDown) {
 					// FOV (SHIFT + Scroll)
-					_fovOffset -= _pendingScroll * (_settings.kbmFovSpeed * 0.2f);
+					_fovOffset -= _pendingScroll * (_settings.kbmZoomFovSpeed * rateMult * MOUSE_WHEEL_MULT);
 				} else if (ctrlDown) {
 					// Zoom (CTRL + Scroll)
-					_camOffset.y += _pendingScroll * (_settings.kbmPanSpeed * rateMult * 0.5f);
+					_camOffset.y += _pendingScroll * (_settings.kbmZoomFovSpeed * rateMult * MOUSE_WHEEL_MULT);
 				}
 			}
 		}
@@ -242,11 +247,11 @@ void RaceCamera::HandleInput(float a_interval)
 		if (mmbDown && !isAnyUIHovered && !isPopupOpen && !s_wireframeInteractLock) {
 			ImVec2 mouseDelta = FUCK::GetMouseDelta();
 
-			float mPan   = mouseDelta.x * _settings.kbmPanSpeed  * rateMult * _settings.mousePanMult;
-			float mZ     = mouseDelta.y * _settings.kbmPanSpeed  * rateMult * _settings.mousePanMult;
-			float mRoll  = mouseDelta.x * _settings.kbmRollSpeed * rateMult * 0.015f;
-			float mOrb   = mouseDelta.x * _settings.kbmRotSpeed  * rateMult * 0.015f;
-			float mPitch = mouseDelta.y * _settings.kbmRotSpeed  * rateMult * 0.015f;
+			float mPan   = mouseDelta.x * _settings.kbmPanSpeed  * rateMult * MOUSE_MOVE_MULT;
+			float mZ     = mouseDelta.y * _settings.kbmPanSpeed  * rateMult * MOUSE_MOVE_MULT;
+			float mRoll  = mouseDelta.x * _settings.kbmRollSpeed * rateMult * MOUSE_MOVE_MULT;
+			float mOrb   = mouseDelta.x * _settings.kbmRotSpeed  * rateMult * MOUSE_MOVE_MULT;
+			float mPitch = mouseDelta.y * _settings.kbmRotSpeed  * rateMult * MOUSE_MOVE_MULT;
 
 			if (ctrlDown) {
 				// Pitch (Middle + Ctrl)
@@ -276,10 +281,10 @@ void RaceCamera::HandleInput(float a_interval)
 				_kbmAcceleration = 1.0f;
 			}
 
-			float speed     = _settings.kbmPanSpeed  * _kbmAcceleration * rateMult * a_interval;
-			float rotSpeed  = _settings.kbmRotSpeed  * rateMult * a_interval;
-			float rollSpeed = _settings.kbmRollSpeed * rateMult * a_interval;
-			float fovSpeed  = _settings.kbmFovSpeed  * rateMult * a_interval;
+			float speed        = _settings.kbmPanSpeed     * _kbmAcceleration * rateMult * a_interval;
+			float rotSpeed     = _settings.kbmRotSpeed     * rateMult * a_interval;
+			float rollSpeed    = _settings.kbmRollSpeed    * rateMult * a_interval;
+			float zoomFovSpeed = _settings.kbmZoomFovSpeed * rateMult * a_interval;
 
 			// Support both Global modifiers (Ctrl+Shift) and Camera Tab specific modifiers (Alt)
 			bool isCameraTabOnly = isCameraTab && !isGlobalKBM;
@@ -299,13 +304,13 @@ void RaceCamera::HandleInput(float a_interval)
 				} else {
 					// Global Secondary (Ctrl+Shift): Zoom, FOV, Roll & Tilt
 					if (FUCK::IsInputDown(RACE::Keys::kKB_W))
-						_camOffset.y += speed;
+						_camOffset.y += zoomFovSpeed;
 					if (FUCK::IsInputDown(RACE::Keys::kKB_S))
-						_camOffset.y -= speed;
+						_camOffset.y -= zoomFovSpeed;
 					if (FUCK::IsInputDown(RACE::Keys::kKB_A))
-						_fovOffset -= fovSpeed;
+						_fovOffset -= zoomFovSpeed;
 					if (FUCK::IsInputDown(RACE::Keys::kKB_D))
-						_fovOffset += fovSpeed;
+						_fovOffset += zoomFovSpeed;
 					if (FUCK::IsInputDown(RACE::Keys::kKB_Q))
 						_camRoll -= rollSpeed;
 					if (FUCK::IsInputDown(RACE::Keys::kKB_E))
@@ -319,9 +324,9 @@ void RaceCamera::HandleInput(float a_interval)
 				if (isCameraTabOnly) {
 					// Camera Tab Primary: Zoom, Orbit & Tilt
 					if (FUCK::IsInputDown(RACE::Keys::kKB_W))
-						_camOffset.y += speed;
+						_camOffset.y += zoomFovSpeed;
 					if (FUCK::IsInputDown(RACE::Keys::kKB_S))
-						_camOffset.y -= speed;
+						_camOffset.y -= zoomFovSpeed;
 					if (FUCK::IsInputDown(RACE::Keys::kKB_A))
 						_camRotZ -= rotSpeed;
 					if (FUCK::IsInputDown(RACE::Keys::kKB_D))
@@ -379,22 +384,22 @@ void RaceCamera::HandleInput(float a_interval)
 
 				if (lbDown) {
 					if (up)
-						_camOffset.y += gpZoomSpeed * 0.5f;
+						_camOffset.y += gpZoomSpeed * GP_DPAD_MULT;
 					if (down)
-						_camOffset.y -= gpZoomSpeed * 0.5f;
+						_camOffset.y -= gpZoomSpeed * GP_DPAD_MULT;
 					if (left)
-						_camRotZ -= gpRotSpeed * 0.5f;
+						_camRotZ     -= gpRotSpeed  * GP_DPAD_MULT;
 					if (right)
-						_camRotZ += gpRotSpeed * 0.5f;
+						_camRotZ     += gpRotSpeed  * GP_DPAD_MULT;
 				} else {
 					if (up)
-						_camOffset.z += gpPanSpeed * 0.5f;
+						_camOffset.z += gpPanSpeed * GP_DPAD_MULT;
 					if (down)
-						_camOffset.z -= gpPanSpeed * 0.5f;
+						_camOffset.z -= gpPanSpeed * GP_DPAD_MULT;
 					if (left)
-						_camOffset.x -= gpPanSpeed * 0.5f;
+						_camOffset.x -= gpPanSpeed * GP_DPAD_MULT;
 					if (right)
-						_camOffset.x += gpPanSpeed * 0.5f;
+						_camOffset.x += gpPanSpeed * GP_DPAD_MULT;
 				}
 			}
 
@@ -423,7 +428,7 @@ void RaceCamera::HandleInput(float a_interval)
 		}
 
 		// Clamp Pitch to prevent gimble flips when viewing directly from top/bottom
-		_camRotX = std::clamp(_camRotX, -1.55f, 1.55f);
+		_camRotX = std::clamp(_camRotX, -PITCH_CLAMP_LIMIT, PITCH_CLAMP_LIMIT);
 	}
 
 	// Right-Click or Gamepad Character Rotation
@@ -449,7 +454,7 @@ void RaceCamera::HandleInput(float a_interval)
 		float rotAmount = 0.0f;
 
 		if (allowMouseRot) {
-			rotAmount = FUCK::GetMouseDelta().x * _settings.mouseRotMult;
+			rotAmount = FUCK::GetMouseDelta().x * MOUSE_ROT_MULT;
 		} else if (allowGPRot) {
 			if (isGP_Y)
 				rotAmount -= _settings.gpCharRotSpeed * a_interval;
