@@ -985,7 +985,10 @@ void RaceWidget::DrawSettingsPanel()
 			} else {
 				flagsKBM = 2;  // ImGuiTabItemFlags_SetSelected
 			}
+			_settingsJustOpened = false;
 		}
+
+		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
 
 		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
 
