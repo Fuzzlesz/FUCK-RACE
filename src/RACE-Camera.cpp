@@ -253,15 +253,15 @@ void RaceCamera::HandleInput(float a_interval)
 			float mOrb   = mouseDelta.x * _settings.kbmRotSpeed  * rateMult * MOUSE_MOVE_MULT;
 			float mPitch = mouseDelta.y * _settings.kbmRotSpeed  * rateMult * MOUSE_MOVE_MULT;
 
-			if (ctrlDown) {
+			if (ctrlDown && shiftDown) {
+				// Roll (Middle + Ctrl + Shift)
+				_camRoll += mRoll;
+			} else if (ctrlDown) {
 				// Pitch (Middle + Ctrl)
 				_camRotX += mPitch;
 			} else if (rmbDown) {
 				// Orbit (Middle + Right)
 				_camRotZ += mOrb;
-			} else if (shiftDown) {
-				// Roll (Middle + Shift)
-				_camRoll += mRoll;
 			} else {
 				// Pan (Middle)
 				_camOffset.x -= mPan;
