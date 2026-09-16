@@ -558,7 +558,7 @@ void RaceCamera::ApplyTransform(RE::NiNode* a_cameraRoot)
 	localOffset.z -= _currentZoomDownOffset;
 	localOffset.x += _currentZoomSideOffset;
 
-	RE::NiPoint3 finalOffset      = (orbitedRotate * localOffset);
+	RE::NiPoint3 finalOffset      = orbitedRotate * (pitchMat * localOffset);
 	a_cameraRoot->local.translate = orbitedTranslate + finalOffset;
 	a_cameraRoot->local.rotate    = orbitedRotate * pitchMat * rollMat;
 
