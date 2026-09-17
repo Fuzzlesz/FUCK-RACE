@@ -54,6 +54,20 @@ public:
 
 		RaceWidget::GetSingleton()->Draw();
 
+		// Detect click outside to close the inline settings panel
+		bool isMouseDown = FUCK::IsInputDown(RACE::Keys::kMBBase) || FUCK::IsInputDown(RACE::Keys::kMouse_Right);
+		bool clicked = isMouseDown && !_wasMouseDown;
+		_wasMouseDown = isMouseDown;
+
+		if (clicked && !FUCK::IsPopupOpen(nullptr, FUCK::PopupFlags::kAnyPopup)) {
+			ImVec2 mouse = FUCK::GetMousePos();
+			bool inBounds = mouse.x >= _lastPos.x && mouse.x <= _lastPos.x + _lastSize.x &&
+			                mouse.y >= _lastPos.y && mouse.y <= _lastPos.y + _lastSize.y;
+			if (!inBounds) {
+				RaceWidget::GetSingleton()->CloseSettings();
+			}
+		}
+
 		_lastPos  = FUCK::GetWindowPos();
 		_lastSize = FUCK::GetWindowSize();
 	}
@@ -107,6 +121,7 @@ public:
 private:
 	ImVec2 _lastPos{};
 	ImVec2 _lastSize{};
+	bool _wasMouseDown = false;
 };
 
 class RaceEquipWindow : public FUCK::IWindow, public REX::Singleton<RaceEquipWindow>
@@ -117,12 +132,15 @@ public:
 
 	void Draw() override
 	{
+		auto manager = RaceEquipManager::GetSingleton();
 		ImVec2 spawnPos;
-		if (RaceEquipManager::GetSingleton()->ConsumeSpawnRequest(spawnPos)) {
+		if (manager->ConsumeSpawnRequest(spawnPos)) {
 			FUCK::SetWindowPos(spawnPos, ImGuiCond_Always);
+			FUCK::SetWindowFocus();
 		}
 
-		RaceEquipManager::GetSingleton()->DrawWindow();
+		manager->DrawWindow();
+
 		_lastPos  = FUCK::GetWindowPos();
 		_lastSize = FUCK::GetWindowSize();
 	}
@@ -140,11 +158,12 @@ public:
 	FUCK::WindowFlags GetFlags() const override
 	{
 		FUCK::WindowFlags flags =
-			FUCK::WindowFlags::kNoDecoration   |
-			FUCK::WindowFlags::kAutoResize     |
-			FUCK::WindowFlags::kNoResize       |
-			FUCK::WindowFlags::kCustomPosition |
-			FUCK::WindowFlags::kNoMove         ;
+			FUCK::WindowFlags::kNoDecoration        |
+			FUCK::WindowFlags::kAutoResize          |
+			FUCK::WindowFlags::kNoResize            |
+			FUCK::WindowFlags::kCustomPosition      |
+			FUCK::WindowFlags::kNoMove              |
+			FUCK::WindowFlags::kCloseOnClickOutside ;
 
 		ImVec2 mouse   = FUCK::GetMousePos();
 		bool   hovered = mouse.x >= _lastPos.x && mouse.x <= _lastPos.x + _lastSize.x &&
@@ -178,12 +197,14 @@ public:
 
 	void Draw() override
 	{
+		auto manager = RaceLightManager::GetSingleton();
 		ImVec2 spawnPos;
-		if (RaceLightManager::GetSingleton()->ConsumeSpawnRequest(spawnPos)) {
+		if (manager->ConsumeSpawnRequest(spawnPos)) {
 			FUCK::SetWindowPos(spawnPos, ImGuiCond_Always);
+			FUCK::SetWindowFocus();
 		}
 
-		RaceLightManager::GetSingleton()->DrawWindow();
+		manager->DrawWindow();
 
 		_lastPos  = FUCK::GetWindowPos();
 		_lastSize = FUCK::GetWindowSize();
@@ -202,11 +223,12 @@ public:
 	FUCK::WindowFlags GetFlags() const override
 	{
 		FUCK::WindowFlags flags =
-			FUCK::WindowFlags::kNoDecoration   |
-			FUCK::WindowFlags::kAutoResize     |
-			FUCK::WindowFlags::kNoResize       |
-			FUCK::WindowFlags::kCustomPosition |
-			FUCK::WindowFlags::kNoMove         ;
+			FUCK::WindowFlags::kNoDecoration        |
+			FUCK::WindowFlags::kAutoResize          |
+			FUCK::WindowFlags::kNoResize            |
+			FUCK::WindowFlags::kCustomPosition      |
+			FUCK::WindowFlags::kNoMove              |
+			FUCK::WindowFlags::kCloseOnClickOutside ;
 
 		ImVec2 mouse   = FUCK::GetMousePos();
 		bool   hovered = mouse.x >= _lastPos.x && mouse.x <= _lastPos.x + _lastSize.x &&
