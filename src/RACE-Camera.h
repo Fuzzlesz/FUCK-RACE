@@ -84,7 +84,4 @@ private:
 	RE::NiPoint3  _originalTranslate;
 	RE::NiMatrix3 _originalRotate;
 	bool          _wasModified = false;
-
-	RE::NiPoint3 _charAngle{ 0.0f, 0.0f, 0.0f };
-	bool         _isCharAngleCaptured = false;
 };

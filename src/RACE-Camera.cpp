@@ -471,11 +471,15 @@ void RaceCamera::HandleInput(float a_interval)
 
 	bool isRotatingNow = (allowMouseRot || allowGPRot);
 
+	static bool s_wasMouseRot = false;
+
 	if (isRotatingNow) {
 		float rotAmount = 0.0f;
 
 		if (allowMouseRot) {
-			rotAmount = FUCK::GetMouseDelta().x * MOUSE_ROT_MULT;
+			if (s_wasMouseRot) { // Ignore the very first frame to prevent delta spikes
+				rotAmount = FUCK::GetMouseDelta().x * MOUSE_ROT_MULT;
+			}
 		} else if (allowGPRot) {
 			if (isGP_Y)
 				rotAmount -= _settings.gpCharRotSpeed * a_interval;
@@ -487,22 +491,18 @@ void RaceCamera::HandleInput(float a_interval)
 			auto player = RE::PlayerCharacter::GetSingleton();
 			if (player && player->Is3DLoaded()) {
 				if (auto root = player->Get3D(false)) {
-					if (!_isCharAngleCaptured) {
-						root->local.rotate.ToEulerAnglesXYZ(_charAngle);
-						_isCharAngleCaptured = true;
-					}
-
-					_charAngle.z -= rotAmount;
-					root->local.rotate.SetEulerAnglesXYZ(_charAngle);
+					RE::NiMatrix3 deltaMat;
+					deltaMat.SetEulerAnglesXYZ(0.0f, 0.0f, -rotAmount);
+					
+					root->local.rotate = deltaMat * root->local.rotate;
 
 					RE::NiUpdateData ctx;
 					root->UpdateWorldData(&ctx);
 				}
 			}
 		}
-	} else {
-		_isCharAngleCaptured = false;
 	}
+	s_wasMouseRot = allowMouseRot;
 
 	if (auto camera = RE::PlayerCamera::GetSingleton()) {
 		if (_baseFov == 0.0f && camera->worldFOV != 0.0f)
@@ -627,7 +627,6 @@ void RaceCamera::ResetOffsets()
 	_currentZoomDownOffset = 0.0f;
 	_targetZoomSideOffset  = 0.0f;
 	_currentZoomSideOffset = 0.0f;
-	_isCharAngleCaptured   = false;
 	_smoothScrollZoom      = 0.0f;
 	_smoothScrollFov       = 0.0f;
 }
