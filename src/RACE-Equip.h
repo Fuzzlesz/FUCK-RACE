@@ -3,7 +3,7 @@
 #include "PCH.h"
 #include "RACE-Widget.h"
 
-	class RaceEquipManager : public REX::Singleton<RaceEquipManager>
+class RaceEquipManager : public REX::Singleton<RaceEquipManager>
 {
 public:
 	void Initialize();
