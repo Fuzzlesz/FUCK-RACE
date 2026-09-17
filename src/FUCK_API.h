@@ -17,7 +17,7 @@
 // ==================================================
 
 #ifndef FUCK_API_ENABLE_SIMPLEINI
-	struct FUCK_SimpleIni_Opaque;
+struct FUCK_SimpleIni_Opaque;
 #	define FUCK_SIMPLEINI_TYPE FUCK_SimpleIni_Opaque
 #else
 #	define FUCK_SIMPLEINI_TYPE CSimpleIniA
@@ -2359,7 +2359,23 @@ namespace FUCK
 	{
 		return GetInterface() ? GetInterface()->VSliderButton(label, slider_size, v, v_min, v_max, format, draw_top_button, draw_bottom_button, out_top_pressed, out_bottom_pressed) : false;
 	}
-} 
+
+	// --------------------------------------------------
+	// Version 5
+	// --------------------------------------------------
+
+	/// @brief A slider that displays values scaled by a multiplier (e.g., displaying 1.5 as "150").
+	/// The underlying float value remains unchanged in memory.
+	inline bool ScaledSliderFloat(const char* label, float* v, float min, float max, float visualScaleMultiplier, const char* fmt = "%.0f")
+	{
+		float display = *v * visualScaleMultiplier;
+		if (SliderFloat(label, &display, min * visualScaleMultiplier, max * visualScaleMultiplier, fmt)) {
+			*v = display / visualScaleMultiplier;
+			return true;
+		}
+		return false;
+	}
+}
 
 // ==================================================
 // [ SECTION 5 ] GLOBAL LITERALS

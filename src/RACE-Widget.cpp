@@ -990,28 +990,16 @@ void RaceWidget::DrawSettingsPanel()
 
 		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
 
-		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
-
-		// --- Helper to normalise displayed settings to whole numbers ---
-		auto ScaledSlider = [](const char* label, float& value, float min, float max, float scale) {
-			float display = value * scale;
-			if (FUCK::SliderFloat(label, &display, min * scale, max * scale, "%.0f")) {
-				value = display / scale;
-				return true;
-			}
-			return false;
-		};
-
 		if (FUCK::BeginTabBar("RaceSettingsTabs", 0)) {
 			// Keyboard & Mouse Tab
 			if (FUCK::BeginTabItem("$RACE_CamSettings_KBM"_T, flagsKBM)) {
 				FUCK::PushID("KBM");
 				FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 
-				changed |= ScaledSlider("$RACE_SpeedPan"_T,      camSettings.kbmPanSpeed,         1.0f,  50.0f,    1.0f);
-				changed |= ScaledSlider("$RACE_SpeedOrbit"_T,    camSettings.kbmRotSpeed,         0.1f,   3.0f,   10.0f);
-				changed |= ScaledSlider("$RACE_SpeedRoll"_T,     camSettings.kbmRollSpeed,        0.1f,   3.0f,   10.0f);
-				changed |= ScaledSlider("$RACE_SpeedFOV"_T,      camSettings.kbmZoomFovSpeed,     5.0f,  60.0f,    1.0f);
+				changed |= FUCK::ScaledSliderFloat("$RACE_SpeedPan"_T,      &camSettings.kbmPanSpeed,         1.0f,  50.0f,    1.0f);
+				changed |= FUCK::ScaledSliderFloat("$RACE_SpeedOrbit"_T,    &camSettings.kbmRotSpeed,         0.1f,   3.0f,   10.0f);
+				changed |= FUCK::ScaledSliderFloat("$RACE_SpeedRoll"_T,     &camSettings.kbmRollSpeed,        0.1f,   3.0f,   10.0f);
+				changed |= FUCK::ScaledSliderFloat("$RACE_SpeedFOV"_T,      &camSettings.kbmZoomFovSpeed,     5.0f,  60.0f,    1.0f);
 
 				FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 				FUCK::PopID();
@@ -1023,12 +1011,12 @@ void RaceWidget::DrawSettingsPanel()
 				FUCK::PushID("GP");
 				FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 
-				changed |= ScaledSlider("$RACE_SpeedPan"_T,      camSettings.gpPanSpeed,          10.0f, 200.0f,   1.0f);
-				changed |= ScaledSlider("$RACE_SpeedZoom"_T,     camSettings.gpZoomSpeed,         10.0f, 200.0f,   1.0f);
-				changed |= ScaledSlider("$RACE_SpeedOrbit"_T,    camSettings.gpRotSpeed,           0.1f,   5.0f,  10.0f);
-				changed |= ScaledSlider("$RACE_SpeedRoll"_T,     camSettings.gpRollSpeed,          0.1f,   5.0f,  10.0f);
-				changed |= ScaledSlider("$RACE_SpeedCharRot"_T,  camSettings.gpCharRotSpeed,       0.1f,   5.0f,  10.0f);
-				changed |= ScaledSlider("$RACE_Deadzone"_T,      camSettings.gpDeadzone,           0.0f,   0.5f, 100.0f);
+				changed |= FUCK::ScaledSliderFloat("$RACE_SpeedPan"_T,      &camSettings.gpPanSpeed,          10.0f, 200.0f,   1.0f);
+				changed |= FUCK::ScaledSliderFloat("$RACE_SpeedZoom"_T,     &camSettings.gpZoomSpeed,         10.0f, 200.0f,   1.0f);
+				changed |= FUCK::ScaledSliderFloat("$RACE_SpeedOrbit"_T,    &camSettings.gpRotSpeed,           0.1f,   5.0f,  10.0f);
+				changed |= FUCK::ScaledSliderFloat("$RACE_SpeedRoll"_T,     &camSettings.gpRollSpeed,          0.1f,   5.0f,  10.0f);
+				changed |= FUCK::ScaledSliderFloat("$RACE_SpeedCharRot"_T,  &camSettings.gpCharRotSpeed,       0.1f,   5.0f,  10.0f);
+				changed |= FUCK::ScaledSliderFloat("$RACE_Deadzone"_T,      &camSettings.gpDeadzone,           0.0f,   0.5f, 100.0f);
 
 				FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 				FUCK::PopID();
@@ -1039,9 +1027,9 @@ void RaceWidget::DrawSettingsPanel()
 
 		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 
-		changed |= ScaledSlider("$RACE_QuickZoomDist"_T, camSettings.quickZoomOffset,      10.0f, 200.0f,    1.0f);
-		changed |= ScaledSlider("$RACE_QuickZoomDown"_T, camSettings.quickZoomDownOffset,   0.0f, 100.0f,    1.0f);
-		changed |= ScaledSlider("$RACE_QuickZoomPan"_T,  camSettings.quickZoomSideOffset,-100.0f, 100.0f,    1.0f);
+		changed |= FUCK::ScaledSliderFloat("$RACE_QuickZoomDist"_T, &camSettings.quickZoomOffset,      10.0f, 200.0f,    1.0f);
+		changed |= FUCK::ScaledSliderFloat("$RACE_QuickZoomDown"_T, &camSettings.quickZoomDownOffset,   0.0f, 100.0f,    1.0f);
+		changed |= FUCK::ScaledSliderFloat("$RACE_QuickZoomPan"_T,  &camSettings.quickZoomSideOffset,-100.0f, 100.0f,    1.0f);
 
 		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 
