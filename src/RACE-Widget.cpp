@@ -1014,11 +1014,14 @@ void RaceWidget::DrawSettingsPanel()
 
 		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
 
+		bool isGamepad = FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
+
 		if (FUCK::BeginTabBar("RaceSettingsTabs", 0)) {
 			// Keyboard & Mouse Tab
-			if (FUCK::BeginTabItem("$RACE_CamSettings_KBM"_T, flagsKBM)) {
-				FUCK::PushID("KBM");
-				FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
+			if (!isGamepad) {
+				if (FUCK::BeginTabItem("$RACE_CamSettings_KBM"_T, flagsKBM)) {
+					FUCK::PushID("KBM");
+					FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 
 				changed |= FUCK::ScaledSliderFloat("$RACE_SpeedPan"_T,      &camSettings.kbmPanSpeed,         1.0f,  50.0f,    1.0f);
 				changed |= FUCK::ScaledSliderFloat("$RACE_SpeedOrbit"_T,    &camSettings.kbmRotSpeed,         0.1f,   3.0f,   10.0f);
@@ -1028,6 +1031,7 @@ void RaceWidget::DrawSettingsPanel()
 				FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 				FUCK::PopID();
 				FUCK::EndTabItem();
+				}
 			}
 
 			// Gamepad Tab
