@@ -610,6 +610,18 @@ void RaceWidget::DrawPlaybackControls()
 	}
 	FUCK::PopID();
 
+	if (!_hideIdles && !IsOnSculptTab()) {
+		FUCK::SameLine();
+		FUCK::PushID("RACE_Replay");
+		if (FUCK::Button(ICON_FA_BACKWARD)) {
+			animManager->PlaySelectedIdle();
+		}
+		if (FUCK::IsItemHovered(0)) {
+			FUCK::SetTooltip("$RACE_ReplayTooltip"_T);
+		}
+		FUCK::PopID();
+	}
+
 	FUCK::SameLine();
 	FUCK::PushID("RACE_StopToggle");
 	if (FUCK::Button(ICON_FA_STOP)) {

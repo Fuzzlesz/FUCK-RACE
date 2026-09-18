@@ -15,6 +15,7 @@
 #define ICON_FA_GEAR      "\xef\x80\x93"  // U+f013
 #define ICON_FA_LIGHTBULB "\xef\x83\xab"  // U+f0eb
 
-#define ICON_FA_PLAY "\xef\x81\x8b"  // U+f04b
-#define ICON_FA_PAUSE "\xef\x81\x8c"  // U+f04c
-#define ICON_FA_STOP  "\xef\x81\x8d"  // U+f04d
+#define ICON_FA_BACKWARD "\xef\x81\x8a"  // U+f04a
+#define ICON_FA_PLAY     "\xef\x81\x8b"  // U+f04b
+#define ICON_FA_PAUSE    "\xef\x81\x8c"  // U+f04c
+#define ICON_FA_STOP     "\xef\x81\x8d"  // U+f04d
