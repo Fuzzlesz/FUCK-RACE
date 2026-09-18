@@ -163,6 +163,7 @@ public:
 			FUCK::WindowFlags::kNoResize            |
 			FUCK::WindowFlags::kCustomPosition      |
 			FUCK::WindowFlags::kNoMove              |
+			FUCK::WindowFlags::kIgnoreUserScale     |
 			FUCK::WindowFlags::kCloseOnClickOutside ;
 
 		ImVec2 mouse   = FUCK::GetMousePos();
@@ -228,6 +229,7 @@ public:
 			FUCK::WindowFlags::kNoResize            |
 			FUCK::WindowFlags::kCustomPosition      |
 			FUCK::WindowFlags::kNoMove              |
+			FUCK::WindowFlags::kIgnoreUserScale     |
 			FUCK::WindowFlags::kCloseOnClickOutside ;
 
 		ImVec2 mouse   = FUCK::GetMousePos();

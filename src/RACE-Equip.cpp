@@ -134,7 +134,7 @@ void RaceEquipManager::ToggleItem(int a_index)
 void RaceEquipManager::DrawWindow()
 {
 	float clusterScale  = 0.8f;
-	float expectedWidth = FUCK::UIScale(360.0f * clusterScale);
+	float expectedWidth = FUCK::Scale(360.0f * clusterScale);
 
 	FUCK::PushFontScaled(nullptr, clusterScale);
 

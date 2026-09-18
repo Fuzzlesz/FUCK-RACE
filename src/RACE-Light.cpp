@@ -167,7 +167,7 @@ void RaceLightManager::DrawInlineSettings()
 	}
 
 	float clusterScale  = 0.8f;
-	float settingsWidth = FUCK::UIScale(360.0f * clusterScale);
+	float settingsWidth = FUCK::Scale(360.0f * clusterScale);
 
 	if (FUCK::BeginTable("LightInlineTable", 2, FUCK::TableFlags::kSizingStretchProp, ImVec2(settingsWidth, 0.0f))) {
 		FUCK::TableSetupColumn("Labels", FUCK::TableColumnFlags::kWidthStretch, 0.35f);
@@ -222,7 +222,7 @@ void RaceLightManager::DrawInlineSettings()
 void RaceLightManager::DrawWindow()
 {
 	float clusterScale  = 0.8f;
-	float expectedWidth = FUCK::UIScale(360.0f * clusterScale);
+	float expectedWidth = FUCK::Scale(360.0f * clusterScale);
 
 	FUCK::PushFontScaled(nullptr, clusterScale);
 

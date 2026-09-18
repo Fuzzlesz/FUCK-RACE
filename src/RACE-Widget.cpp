@@ -473,7 +473,7 @@ void RaceWidget::Draw()
 	float clusterScale = 0.8f;
 	float alignOffset  = 0.0f;
 
-	float baseWidth = FUCK::UIScale(360.0f * clusterScale);
+	float baseWidth = FUCK::Scale(360.0f * clusterScale);
 
 	// Calculate alignment shift so the right edge stays firmly anchored to the screen edge
 	if (isGamepad && eqManager->HasItems()) {
@@ -535,7 +535,7 @@ void RaceWidget::Draw()
 		ImVec2 winMin = FUCK::GetItemRectMin();
 		ImVec2 winMax = FUCK::GetItemRectMax();
 
-		float padding = FUCK::UIScale(4.0f);
+		float padding = FUCK::Scale(4.0f);
 		winMin.x -= padding;
 		winMin.y -= padding;
 		winMax.x += padding;
@@ -558,13 +558,13 @@ void RaceWidget::DrawIdleSelector(float a_comboWidth, bool& a_requestFocus)
 		FUCK::SetNextItemWidth(a_comboWidth);
 		if (FUCK::ComboWithFilter("##RACE_PluginFilter", &animManager->GetSelectedPluginIndex(), animManager->GetPluginNamesCStr().data(), static_cast<int>(animManager->GetPluginNamesCStr().size()), 15))
 			animManager->InvalidateIdles();
-		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
+		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
 
 		FUCK::SetNextItemWidth(a_comboWidth);
 		if (FUCK::ComboWithFilter("##RACE_Idles", &animManager->GetSelectedIndex(), animManager->GetIdleNames().data(), static_cast<int>(animManager->GetIdleNames().size()), 15)) {
 			animManager->PlaySelectedIdle();
 		}
-		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
+		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
 	}
 }
 
@@ -749,7 +749,7 @@ void RaceWidget::DrawCameraReset(float a_comboWidth, float a_rowStartX, bool a_i
 	if (!hasCam && !drawCheckbox)
 		return;
 
-	FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
+	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
 
 	if (drawCheckbox) {
 		FUCK::SetCursorPosX(a_rowStartX);
@@ -819,7 +819,7 @@ void RaceWidget::DrawMainPanel()
 	auto  eqManager    = RaceEquipManager::GetSingleton();
 	auto  lightManager = RaceLightManager::GetSingleton();
 	float clusterScale = 0.8f;
-	float comboWidth   = FUCK::UIScale(360.0f * clusterScale);
+	float comboWidth   = FUCK::Scale(360.0f * clusterScale);
 	float equipWidth   = comboWidth * 1.5f;
 	bool  isRaceTab    = IsOnRaceTab();
 
@@ -872,7 +872,7 @@ void RaceWidget::DrawMainPanel()
 			if (eqIndex > 0)
 				eqManager->ToggleItem(eqIndex - 1);
 		}
-		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
+		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
 		FUCK::Indent(alignOffset);
 	}
 
@@ -903,7 +903,7 @@ void RaceWidget::DrawMainPanel()
 	}
 
 	if (DrawReferenceSelector(comboWidth, &requestFocus)) {
-		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
+		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
 	}
 
 	if (requestFocus) {
@@ -956,7 +956,7 @@ void RaceWidget::DrawSettingsPanel()
 
 	float panelScale    = 0.9f;
 	float clusterScale  = 0.8f * panelScale;
-	float settingsWidth = FUCK::UIScale(440.0f * clusterScale);
+	float settingsWidth = FUCK::Scale(440.0f * clusterScale);
 
 	FUCK::PushFontScaled(nullptr, clusterScale);
 
@@ -1149,17 +1149,17 @@ void RaceWidget::DrawSculptPanel()
 		return;
 
 	float clusterScale = 0.8f;
-	float comboWidth   = FUCK::UIScale(360.0f * clusterScale);
+	float comboWidth   = FUCK::Scale(360.0f * clusterScale);
 	float rowStartX    = FUCK::GetCursorPos().x;
 
 	ImVec2 framePad = FUCK::GetStyleVarVec(ImGuiStyleVar_FramePadding);
 	float  spacingX = FUCK::GetStyleVarVec(ImGuiStyleVar_ItemSpacing).x;
 
 	if (DrawReferenceSelector(comboWidth)) {
-		FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(2.0f)));
+		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
 	}
 
-	FUCK::Dummy(ImVec2(0.0f, FUCK::UIScale(5.0f)));
+	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
 
 	// Calculate checkbox width: Checkbox Square + Spacing + Text
 	float cbSquare = FUCK::GetFrameHeight();
