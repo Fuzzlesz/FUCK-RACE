@@ -16,6 +16,8 @@ public:
 	void SetSpawnPos(const ImVec2& a_pos);
 	bool ConsumeSpawnRequest(ImVec2& outPos);
 
+	double GetLastCloseTime() const { return _lastCloseTime; }
+
 	void OnRaceMenuOpen();
 	void OnRaceMenuClose();
 
@@ -30,6 +32,7 @@ private:
 
 	ImVec2 _spawnPos{};
 	bool   _requestSpawnPos = false;
+	double _lastCloseTime   = 0.0;
 
 	RE::ObjectRefHandle _rmLightRef;
 	bool                _lightFound = false;

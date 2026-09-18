@@ -18,31 +18,14 @@ public:
 	bool                            HasItems() const { return !_trackedItems.empty(); }
 	const std::vector<const char*>& GetComboStrings() const { return _comboStringsCStr; }
 
-	// Window Controls (for KBM)
-	bool IsWindowOpen() const
-	{
-		if (!_isOpen)
-			return false;
-		return !RaceWidget::GetSingleton()->IsJournalOpen();
-	}
-	void SetWindowOpen(bool a_open) { _isOpen = a_open; }
-	void ToggleWindow() { _isOpen = !_isOpen; }
+	bool IsWindowOpen() const;
+	void SetWindowOpen(bool a_open);
+	void ToggleWindow();
 
-	void SetSpawnPos(const ImVec2& a_pos)
-	{
-		_spawnPos        = a_pos;
-		_requestSpawnPos = true;
-	}
+	void SetSpawnPos(const ImVec2& a_pos);
+	bool ConsumeSpawnRequest(ImVec2& outPos);
 
-	bool ConsumeSpawnRequest(ImVec2& outPos)
-	{
-		if (_requestSpawnPos) {
-			outPos           = _spawnPos;
-			_requestSpawnPos = false;
-			return true;
-		}
-		return false;
-	}
+	double GetLastCloseTime() const { return _lastCloseTime; }
 
 private:
 	struct TrackedItem
@@ -64,5 +47,6 @@ private:
 	ImVec2 _spawnPos{};
 	bool   _requestSpawnPos = false;
 
-	float _scanTimer = 0.0f;
+	float  _scanTimer     = 0.0f;
+	double _lastCloseTime = 0.0;
 };

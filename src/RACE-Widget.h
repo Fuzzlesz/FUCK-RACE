@@ -39,14 +39,9 @@ public:
 	bool IsWireframeFrozen() const { return _freezeWireframe; }
 	bool IsRaceStatsHidden() const { return _hideRaceStats; }
 
-	void CloseSettings()
-	{
-		_showSettings      = false;
-		_showLightSettings = false;
-	}
-
+	void CloseSettings();
 	void ToggleRaceStats();
-
+	
 private:
 	void LoadSettings();
 	void SaveSettings();

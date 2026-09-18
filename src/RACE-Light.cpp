@@ -138,9 +138,18 @@ bool RaceLightManager::IsWindowOpen() const
 	return RaceWidget::GetSingleton()->IsRaceMenuOpen() && !RaceWidget::GetSingleton()->IsJournalOpen();
 }
 
-void RaceLightManager::SetWindowOpen(bool a_open) { _isOpen = a_open; }
+void RaceLightManager::SetWindowOpen(bool a_open)
+{
+	if (!a_open && _isOpen) {
+		_lastCloseTime = FUCK::GetTime();
+	}
+	_isOpen = a_open;
+}
 
-void RaceLightManager::ToggleWindow() { _isOpen = !_isOpen; }
+void RaceLightManager::ToggleWindow()
+{
+	SetWindowOpen(!_isOpen);
+}
 
 void RaceLightManager::SetSpawnPos(const ImVec2& a_pos)
 {

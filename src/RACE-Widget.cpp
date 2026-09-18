@@ -668,15 +668,17 @@ void RaceWidget::DrawToolButtons(float a_comboWidth, float a_rowStartX)
 
 	if (hasEquipBtn) {
 		if (FUCK::Button("$RACE_EquipBtn"_T)) {
-			eqManager->ToggleWindow();
-			if (eqManager->IsWindowOpen()) {
-				ImVec2 maxPos = FUCK::GetItemRectMax();
-				float  startX = FUCK::GetWindowPos().x + FUCK::Scale(15.0f);
-				eqManager->SetSpawnPos(ImVec2(startX, maxPos.y + FUCK::Scale(4.0f)));
+			if (FUCK::GetTime() - eqManager->GetLastCloseTime() > 0.25) {
+				eqManager->ToggleWindow();
+				if (eqManager->IsWindowOpen()) {
+					ImVec2 maxPos = FUCK::GetItemRectMax();
+					float  startX = FUCK::GetWindowPos().x + FUCK::Scale(15.0f);
+					eqManager->SetSpawnPos(ImVec2(startX, maxPos.y + FUCK::Scale(4.0f)));
 
-				_showSettings      = false;
-				_showLightSettings = false;
-				lightManager->SetWindowOpen(false);
+					_showSettings      = false;
+					_showLightSettings = false;
+					lightManager->SetWindowOpen(false);
+				}
 			}
 		}
 		FUCK::SameLine();
@@ -741,14 +743,16 @@ void RaceWidget::DrawToolButtons(float a_comboWidth, float a_rowStartX)
 	}
 
 	if (openLightKBM) {
-		lightManager->ToggleWindow();
-		if (lightManager->IsWindowOpen()) {
-			float startX = FUCK::GetWindowPos().x + FUCK::Scale(15.0f);
-			lightManager->SetSpawnPos(ImVec2(startX, lightBtnMax.y + FUCK::Scale(4.0f)));
+		if (FUCK::GetTime() - lightManager->GetLastCloseTime() > 0.25) {
+			lightManager->ToggleWindow();
+			if (lightManager->IsWindowOpen()) {
+				float startX = FUCK::GetWindowPos().x + FUCK::Scale(15.0f);
+				lightManager->SetSpawnPos(ImVec2(startX, lightBtnMax.y + FUCK::Scale(4.0f)));
 
-			_showSettings      = false;
-			_showLightSettings = false;
-			eqManager->SetWindowOpen(false);
+				_showSettings      = false;
+				_showLightSettings = false;
+				eqManager->SetWindowOpen(false);
+			}
 		}
 	}
 }
@@ -937,6 +941,12 @@ void RaceWidget::DrawMainPanel()
 	} else if (isGamepad && eqManager->HasItems()) {
 		FUCK::Unindent(equipWidth - comboWidth);
 	}
+}
+
+void RaceWidget::CloseSettings()
+{
+	_showSettings      = false;
+	_showLightSettings = false;
 }
 
 void RaceWidget::ToggleRaceStats()

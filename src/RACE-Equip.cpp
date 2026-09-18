@@ -209,6 +209,43 @@ void RaceEquipManager::RestoreEquipped()
 	});
 }
 
+// Window Controls (for KBM)
+bool RaceEquipManager::IsWindowOpen() const
+{
+	if (!_isOpen)
+		return false;
+	return !RaceWidget::GetSingleton()->IsJournalOpen();
+}
+
+void RaceEquipManager::SetWindowOpen(bool a_open)
+{
+	if (!a_open && _isOpen) {
+		_lastCloseTime = FUCK::GetTime();
+	}
+	_isOpen = a_open;
+}
+
+void RaceEquipManager::ToggleWindow()
+{
+	SetWindowOpen(!_isOpen);
+}
+
+void RaceEquipManager::SetSpawnPos(const ImVec2& a_pos)
+{
+	_spawnPos        = a_pos;
+	_requestSpawnPos = true;
+}
+
+bool RaceEquipManager::ConsumeSpawnRequest(ImVec2& outPos)
+{
+	if (_requestSpawnPos) {
+		outPos           = _spawnPos;
+		_requestSpawnPos = false;
+		return true;
+	}
+	return false;
+}
+
 void RaceEquipManager::Clear()
 {
 	_trackedItems.clear();
