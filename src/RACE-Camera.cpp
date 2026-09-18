@@ -161,8 +161,11 @@ void RaceCamera::HandleInput(float a_interval)
 	}
 	s_wasInteractDown = isInteractDown;
 
+	bool isGamepad = FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
+	bool disableGP = isGamepad && widget->IsOnSculptTab();
+
 	bool isGlobalKBM   = ctrlDown && !FUCK::IsAnyItemActive();
-	bool isGlobalGP    = rbDown && !FUCK::IsAnyItemActive();
+	bool isGlobalGP    = rbDown && !FUCK::IsAnyItemActive() && !disableGP;
 	bool isGlobalMouse = mmbDown && !FUCK::IsAnyItemActive() && !s_wireframeInteractLock && !isAnyUIHovered;
 
 	bool isCameraMode  = isGlobalKBM || isGlobalGP || isCameraTab || isGlobalMouse;
@@ -179,7 +182,6 @@ void RaceCamera::HandleInput(float a_interval)
 					if (menuInstance.GetMember("cameraEditor", &cameraEditor)) {
 						RE::GFxValue secVal;
 						cameraEditor.GetMember("_secondary", &secVal);
-						bool isGamepad = FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
 
 						// UI toggle reflects the Camera Tab's specific secondary modifiers (LB for GP, Alt for KBM)
 						bool desiredSecondary = isGamepad ? lbDown : altDown;

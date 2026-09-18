@@ -517,7 +517,9 @@ void RaceWidget::Draw()
 	FUCK::Indent(pad);
 	FUCK::BeginGroup();
 	if (currentMode == 3) {
-		DrawSculptPanel();
+		if (!isGamepad) {
+			DrawSculptPanel();
+		}
 	} else {
 		DrawMainPanel();
 	}
