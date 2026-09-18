@@ -187,13 +187,20 @@ void RaceLightManager::DrawInlineSettings()
 		FUCK::AlignTextToFramePadding();
 		FUCK::Text("$RACE_LightFade"_T);
 
+		bool isGamepad = FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
+
 		FUCK::TableNextColumn();
 		FUCK::SetNextItemWidth(-1.0f);
-		// Display fade as a whole number
-		float displayFade = _fade * 100.0f;
-		if (FUCK::SliderFloat("##Brightness", &displayFade, 0.0f, 1000.0f, "%.0f")) {
-			_fade        = displayFade / 100.0f;  // Scale back down for internal use
-			_needsUpdate = true;
+		if (isGamepad) {
+			float displayFade = _fade * 100.0f;
+			if (FUCK::DragFloat("##Brightness", &displayFade, 1.0f, 0.0f, 1000.0f, "%.0f")) {
+				_fade        = displayFade / 100.0f;
+				_needsUpdate = true;
+			}
+		} else {
+			if (FUCK::ScaledSliderFloat("##Brightness", &_fade, 0.0f, 10.0f, 100.0f, "%.0f")) {
+				_needsUpdate = true;
+			}
 		}
 
 		FUCK::TableNextRow();
@@ -204,9 +211,16 @@ void RaceLightManager::DrawInlineSettings()
 		FUCK::TableNextColumn();
 		FUCK::SetNextItemWidth(-1.0f);
 		int rad = static_cast<int>(_radius);
-		if (FUCK::SliderInt("##Radius", &rad, 1, 2000)) {
-			_radius      = static_cast<std::uint32_t>(rad);
-			_needsUpdate = true;
+		if (isGamepad) {
+			if (FUCK::DragInt("##Radius", &rad, 1.0f, 1, 2000)) {
+				_radius      = static_cast<std::uint32_t>(rad);
+				_needsUpdate = true;
+			}
+		} else {
+			if (FUCK::SliderInt("##Radius", &rad, 1, 2000)) {
+				_radius      = static_cast<std::uint32_t>(rad);
+				_needsUpdate = true;
+			}
 		}
 
 		FUCK::TableNextRow();
