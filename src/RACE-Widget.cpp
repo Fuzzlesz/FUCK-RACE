@@ -661,7 +661,7 @@ void RaceWidget::DrawToolButtons(float a_comboWidth, float a_rowStartX)
 	FUCK::SameLine();
 	float currentX = FUCK::GetCursorPos().x;
 
-	float rightNudge = isGamepad ? FUCK::Scale(10.0f) : FUCK::Scale(5.0f);
+	float rightNudge = isGamepad ? FUCK::Scale(16.0f) : FUCK::Scale(5.0f);
 	float targetX    = a_rowStartX + a_comboWidth - toolsWidth + rightNudge;
 
 	if (targetX > currentX) {
@@ -896,30 +896,6 @@ void RaceWidget::DrawMainPanel()
 
 	DrawIdleSelector(comboWidth, requestFocus);
 
-	if (isGamepad && _showLightSettings) {
-		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
-
-		if (FUCK::BeginTable("LightTopSepLocker", 1, FUCK::TableFlags::kSizingFixedFit, ImVec2(comboWidth, 0.0f))) {
-			FUCK::TableSetupColumn("SepCol", FUCK::TableColumnFlags::kWidthFixed, comboWidth);
-			FUCK::TableNextRow();
-			FUCK::TableNextColumn();
-			FUCK::SeparatorText("$RACE_LightSettingsTitle"_T);
-			FUCK::EndTable();
-		}
-
-		lightManager->DrawInlineSettings();
-
-		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
-
-		if (FUCK::BeginTable("LightBottomSepLocker", 1, FUCK::TableFlags::kSizingFixedFit, ImVec2(comboWidth, 0.0f))) {
-			FUCK::TableSetupColumn("SepCol", FUCK::TableColumnFlags::kWidthFixed, comboWidth);
-			FUCK::TableNextRow();
-			FUCK::TableNextColumn();
-			FUCK::Separator();
-			FUCK::EndTable();
-		}
-	}
-
 	if (DrawReferenceSelector(comboWidth, &requestFocus)) {
 		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
 	}
@@ -936,11 +912,34 @@ void RaceWidget::DrawMainPanel()
 	DrawCameraReset(comboWidth, rowStartX, isRaceTab);
 
 	if (_showSettings) {
-		if (isGamepad && eqManager->HasItems()) {
-			FUCK::Unindent(equipWidth - comboWidth);
-		}
 		DrawSettingsPanel();
-	} else if (isGamepad && eqManager->HasItems()) {
+	} else {
+		if (isGamepad && _showLightSettings) {
+			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
+
+			if (FUCK::BeginTable("LightTopSepLocker", 1, FUCK::TableFlags::kSizingFixedFit, ImVec2(comboWidth, 0.0f))) {
+				FUCK::TableSetupColumn("SepCol", FUCK::TableColumnFlags::kWidthFixed, comboWidth);
+				FUCK::TableNextRow();
+				FUCK::TableNextColumn();
+				FUCK::SeparatorText("$RACE_LightSettingsTitle"_T);
+				FUCK::EndTable();
+			}
+
+			lightManager->DrawInlineSettings();
+
+			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
+
+			if (FUCK::BeginTable("LightBottomSepLocker", 1, FUCK::TableFlags::kSizingFixedFit, ImVec2(comboWidth, 0.0f))) {
+				FUCK::TableSetupColumn("SepCol", FUCK::TableColumnFlags::kWidthFixed, comboWidth);
+				FUCK::TableNextRow();
+				FUCK::TableNextColumn();
+				FUCK::Separator();
+				FUCK::EndTable();
+			}
+		}
+	}
+
+	if (isGamepad && eqManager->HasItems()) {
 		FUCK::Unindent(equipWidth - comboWidth);
 	}
 }
