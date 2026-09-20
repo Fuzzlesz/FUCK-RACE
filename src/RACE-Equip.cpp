@@ -136,13 +136,7 @@ void RaceEquipManager::DrawWindow()
 	float clusterScale  = 0.8f;
 	float expectedWidth = FUCK::Scale(360.0f * clusterScale);
 
-	FUCK::PushFontScaled(nullptr, clusterScale);
-
-	ImVec2 currentSpacing = FUCK::GetStyleVarVec(ImGuiStyleVar_ItemSpacing);
-	FUCK::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(currentSpacing.x * clusterScale, currentSpacing.y * clusterScale));
-
-	ImVec2 currentFramePadding = FUCK::GetStyleVarVec(ImGuiStyleVar_FramePadding);
-	FUCK::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(currentFramePadding.x * clusterScale, currentFramePadding.y * clusterScale));
+	FUCK::PushScale(clusterScale);
 
 	if (FUCK::BeginTable("EquipWidthLocker", 1, FUCK::TableFlags::kSizingFixedFit, ImVec2(expectedWidth, 0.0f))) {
 		FUCK::TableSetupColumn("EquipCol", FUCK::TableColumnFlags::kWidthFixed, expectedWidth);
@@ -178,8 +172,7 @@ void RaceEquipManager::DrawWindow()
 		FUCK::EndTable();
 	}
 
-	FUCK::PopStyleVar(2);
-	FUCK::PopFont();
+	FUCK::PopScale();
 }
 
 void RaceEquipManager::RestoreEquipped()

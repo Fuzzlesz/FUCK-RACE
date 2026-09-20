@@ -500,13 +500,7 @@ void RaceWidget::Draw()
 		_anchorPos.y = _currentPos.y;
 	}
 
-	FUCK::PushFontScaled(nullptr, clusterScale);
-
-	ImVec2 spacing = FUCK::GetStyleVarVec(ImGuiStyleVar_ItemSpacing);
-	FUCK::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(spacing.x * clusterScale, spacing.y * clusterScale));
-
-	ImVec2 framePadding = FUCK::GetStyleVarVec(ImGuiStyleVar_FramePadding);
-	FUCK::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(framePadding.x * clusterScale, framePadding.y * clusterScale));
+	FUCK::PushScale(clusterScale);
 
 	FUCK::BeginGroup();
 
@@ -530,8 +524,7 @@ void RaceWidget::Draw()
 
 	FUCK::EndGroup();
 
-	FUCK::PopStyleVar(2);
-	FUCK::PopFont();
+	FUCK::PopScale();
 
 	if (isEditing) {
 		ImVec2 winMin = FUCK::GetItemRectMin();
@@ -644,25 +637,25 @@ void RaceWidget::DrawToolButtons(float a_comboWidth, float a_rowStartX)
 	bool hasEquipBtn = (!isGamepad && eqManager->HasItems());
 	bool hasLight    = (SKEE64Compat::IsPresent() && !isGamepad);
 
-	ImVec2 framePad = FUCK::GetStyleVarVec(ImGuiStyleVar_FramePadding);
-	float  spacingX = FUCK::GetStyleVarVec(ImGuiStyleVar_ItemSpacing).x;
+	float spacingX = FUCK::GetStyleVarVec(ImGuiStyleVar_ItemSpacing).x;
 
-	float helpWidth  = FUCK::Scale(2.0f) + FUCK::CalcTextSize("(?)").x;
-	float gearWidth  = FUCK::CalcTextSize(ICON_FA_GEAR).x + framePad.x * 2.0f;
-	float toolsWidth = gearWidth + helpWidth;
+	float clusterScale = 0.8f;
+	float dynScale     = FUCK::GetGlobalScale() * clusterScale;
+
+	float btnPadX    = 8.0f * dynScale;
+	float gearWidth  = FUCK::CalcTextSize(ICON_FA_GEAR).x + (btnPadX * 2.0f);
+	float toolsWidth = gearWidth;
 
 	if (hasLight) {
-		toolsWidth += spacingX + FUCK::CalcTextSize(ICON_FA_LIGHTBULB).x + framePad.x * 2.0f;
+		toolsWidth += spacingX + FUCK::CalcTextSize(ICON_FA_LIGHTBULB).x + (btnPadX * 2.0f);
 	}
 	if (hasEquipBtn) {
-		toolsWidth += spacingX + FUCK::CalcTextSize("$RACE_EquipBtn"_T).x + framePad.x * 2.0f;
+		toolsWidth += spacingX + FUCK::CalcTextSize("$RACE_EquipBtn"_T).x + (btnPadX * 2.0f);
 	}
 
 	FUCK::SameLine();
 	float currentX = FUCK::GetCursorPos().x;
-
-	float rightNudge = isGamepad ? FUCK::Scale(16.0f) : FUCK::Scale(5.0f);
-	float targetX    = a_rowStartX + a_comboWidth - toolsWidth + rightNudge;
+	float targetX  = a_rowStartX + a_comboWidth - toolsWidth;
 
 	if (targetX > currentX) {
 		FUCK::SetCursorPosX(targetX);
@@ -778,16 +771,16 @@ void RaceWidget::DrawCameraReset(float a_comboWidth, float a_rowStartX, bool a_i
 	}
 
 	if (hasCam) {
-		ImVec2 framePad   = FUCK::GetStyleVarVec(ImGuiStyleVar_FramePadding);
-		float  resetWidth = FUCK::CalcTextSize("$RACE_ResetCam"_T).x + framePad.x * 2.0f;
-
-		float resetNudge = FUCK::Scale(7.0f);  // Nudge left to correct the overhang
+		float clusterScale = 0.8f;
+		float dynScale     = FUCK::GetGlobalScale() * clusterScale;
+		float btnPadX      = 8.0f * dynScale;
+		float resetWidth   = FUCK::CalcTextSize("$RACE_ResetCam"_T).x + (btnPadX * 2.0f);
 
 		if (drawCheckbox) {
 			FUCK::SameLine();
 		}
 
-		FUCK::SetCursorPosX(a_rowStartX + a_comboWidth - resetWidth - resetNudge);
+		FUCK::SetCursorPosX(a_rowStartX + a_comboWidth - resetWidth);
 
 		if (FUCK::Button("$RACE_ResetCam"_T)) {
 			RaceCamera::GetSingleton()->ResetOffsets();
@@ -981,14 +974,7 @@ void RaceWidget::DrawSettingsPanel()
 	float clusterScale  = 0.8f * panelScale;
 	float settingsWidth = FUCK::Scale(440.0f * clusterScale);
 
-	FUCK::PushFontScaled(nullptr, clusterScale);
-
-	ImVec2 currentSpacing = FUCK::GetStyleVarVec(ImGuiStyleVar_ItemSpacing);
-	FUCK::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(currentSpacing.x * panelScale, currentSpacing.y * panelScale));
-
-	ImVec2 currentFramePadding = FUCK::GetStyleVarVec(ImGuiStyleVar_FramePadding);
-	FUCK::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(currentFramePadding.x * panelScale, currentFramePadding.y * panelScale));
-
+	FUCK::PushScale(clusterScale);
 	FUCK::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0.0f, FUCK::Scale(4.0f) * panelScale));
 
 	if (FUCK::BeginTable("SettingsWidthLocker", 1, FUCK::TableFlags::kSizingFixedFit, ImVec2(settingsWidth, 0.0f))) {
@@ -1100,8 +1086,8 @@ void RaceWidget::DrawSettingsPanel()
 
 		FUCK::EndTable();
 	}
-	FUCK::PopStyleVar(3);
-	FUCK::PopFont();
+	FUCK::PopStyleVar(1);
+	FUCK::PopScale();
 }
 
 void RaceWidget::ApplyMirrorLock()
@@ -1179,14 +1165,13 @@ void RaceWidget::DrawSculptPanel()
 	float comboWidth   = FUCK::Scale(360.0f * clusterScale);
 	float rowStartX    = FUCK::GetCursorPos().x;
 
-	ImVec2 framePad = FUCK::GetStyleVarVec(ImGuiStyleVar_FramePadding);
-	float  spacingX = FUCK::GetStyleVarVec(ImGuiStyleVar_ItemSpacing).x;
+	float spacingX = FUCK::GetStyleVarVec(ImGuiStyleVar_ItemSpacing).x;
 
 	if (DrawReferenceSelector(comboWidth)) {
-		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
+		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(10.0f)));
 	}
 
-	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
+	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(3.0f)));
 
 	// Calculate checkbox width: Checkbox Square + Spacing + Text
 	float cbSquare = FUCK::GetFrameHeight();
@@ -1207,18 +1192,21 @@ void RaceWidget::DrawSculptPanel()
 
 	if (FUCK::Checkbox("$RACE_FreezeWireframe"_T, &_freezeWireframe, false)) {}
 
-	// Calculate width: Play Btn + Spacing + Stop Btn + Help Marker
+	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
+
+	// Calculate width: Play Btn + Spacing + Stop Btn
 	auto        animManager = RaceAnimManager::GetSingleton();
 	const char* playIcon    = animManager->IsFrozen() ? ICON_FA_PLAY : ICON_FA_PAUSE;
 
-	float playWidth     = FUCK::CalcTextSize(playIcon).x + framePad.x * 2.0f;
-	float stopWidth     = FUCK::CalcTextSize(ICON_FA_STOP).x + framePad.x * 2.0f;
-	float helpWidth     = FUCK::Scale(2.0f) + FUCK::CalcTextSize("(?)").x;
-	float controlsWidth = playWidth + spacingX + stopWidth + helpWidth;
+	float dynScale = FUCK::GetGlobalScale() * clusterScale;
+	float btnPadX  = 8.0f * dynScale;
 
-	// Nudge right to correct underhang
-	float playbackNudge = FUCK::Scale(-11.5f);
-	FUCK::SetCursorPosX(rowStartX + comboWidth - controlsWidth - playbackNudge);
+	float playWidth = FUCK::CalcTextSize(playIcon).x + (btnPadX * 2.0f);
+	float stopWidth = FUCK::CalcTextSize(ICON_FA_STOP).x + (btnPadX * 2.0f);
+
+	float controlsWidth = playWidth + spacingX + stopWidth;
+
+	FUCK::SetCursorPosX(rowStartX + comboWidth - controlsWidth);
 	DrawPlaybackControls();
 
 	FUCK::SameLine(0.0f, FUCK::Scale(2.0f));
