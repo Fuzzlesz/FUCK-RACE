@@ -31,12 +31,23 @@ public:
 					bool isJournal = widget->IsJournalOpen();
 
 					if (!s_eatingEscape && isRSM && !isJournal) {
-						RE::UIMessageQueue::GetSingleton()->AddMessage(RE::JournalMenu::MENU_NAME, RE::UI_MESSAGE_TYPE::kShow, nullptr);
+						auto equipMgr = RaceEquipManager::GetSingleton();
+						auto lightMgr = RaceLightManager::GetSingleton();
+
+						if (FUCK::IsPopupOpen(nullptr, FUCK::PopupFlags::kAnyPopup)) {
+						}
+						else if (equipMgr->IsWindowOpen() || lightMgr->IsWindowOpen() || widget->HasOpenPanels()) {
+							equipMgr->SetWindowOpen(false);
+							lightMgr->SetWindowOpen(false);
+							widget->CloseSettings();
+						}
+						else {
+							RE::UIMessageQueue::GetSingleton()->AddMessage(RE::JournalMenu::MENU_NAME, RE::UI_MESSAGE_TYPE::kShow, nullptr);
+						}
+
 						s_eatingEscape = true;
 						return true;
 					}
-					if (s_eatingEscape)
-						return true;
 				} else {
 					s_eatingEscape = false;
 				}

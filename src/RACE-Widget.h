@@ -39,6 +39,7 @@ public:
 	bool IsWireframeFrozen() const { return _freezeWireframe; }
 	bool IsRaceStatsHidden() const { return _hideRaceStats; }
 
+	bool HasOpenPanels() const { return _showSettings || _showLightSettings; }
 	void CloseSettings();
 	void ToggleRaceStats();
 	
