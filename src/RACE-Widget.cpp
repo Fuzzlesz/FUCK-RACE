@@ -1167,8 +1167,9 @@ void RaceWidget::DrawSculptPanel()
 
 	float spacingX = FUCK::GetStyleVarVec(ImGuiStyleVar_ItemSpacing).x;
 
-	if (DrawReferenceSelector(comboWidth)) {
-		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(10.0f)));
+	bool drewRef = DrawReferenceSelector(comboWidth);
+	if (drewRef) {
+		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 	}
 
 	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(3.0f)));
@@ -1192,6 +1193,9 @@ void RaceWidget::DrawSculptPanel()
 
 	if (FUCK::Checkbox("$RACE_FreezeWireframe"_T, &_freezeWireframe, false)) {}
 
+	if (drewRef) {
+		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(3.0f)));
+	}
 	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
 
 	// Calculate width: Play Btn + Spacing + Stop Btn
