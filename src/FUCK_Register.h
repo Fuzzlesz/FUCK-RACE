@@ -14,42 +14,58 @@ public:
 	const char* Id() const override { return "RACE_Widget"; }
 	const char* Title() const override { return "$RACE_Title"_T; }
 
-	bool OnAsyncInput(const void* a_event) override
+		bool OnAsyncInput(const void* a_event) override
 	{
 		if (!a_event)
 			return false;
-		auto        inputEvents    = static_cast<RE::InputEvent* const*>(a_event);
-		static bool s_eatingEscape = false;
+
+		// Defer Escape handling to the main framework if open.
+		if (FUCK::IsMenuOpen())
+			return false;
+
+		auto        inputEvents      = static_cast<RE::InputEvent* const*>(a_event);
+		static bool s_eatingEscape   = false;
+		static bool s_pendingJournal = false;
+
+		auto widget    = RaceWidget::GetSingleton();
+		bool isRSM     = widget->IsRaceMenuOpen();
+		bool isJournal = widget->IsJournalOpen();
 
 		for (auto event = *inputEvents; event; event = event->next) {
 			auto btn = event->AsButtonEvent();
+			if (!btn || btn->GetDevice() != RE::INPUT_DEVICE::kKeyboard || btn->GetIDCode() != static_cast<uint32_t>(RE::BSWin32KeyboardDevice::Key::kEscape))
+				continue;
 
-			if (btn && btn->GetDevice() == RE::INPUT_DEVICE::kKeyboard && btn->GetIDCode() == static_cast<uint32_t>(RE::BSWin32KeyboardDevice::Key::kEscape)) {
-				if (btn->IsDown()) {
-					auto widget    = RaceWidget::GetSingleton();
-					bool isRSM     = widget->IsRaceMenuOpen();
-					bool isJournal = widget->IsJournalOpen();
+			// Trap Escape to close panels or open Journal.
+			if (btn->IsDown()) {
+				if (!s_eatingEscape && isRSM && !isJournal) {
+					auto equipMgr = RaceEquipManager::GetSingleton();
+					auto lightMgr = RaceLightManager::GetSingleton();
 
-					if (!s_eatingEscape && isRSM && !isJournal) {
-						auto equipMgr = RaceEquipManager::GetSingleton();
-						auto lightMgr = RaceLightManager::GetSingleton();
-
-						if (FUCK::IsPopupOpen(nullptr, FUCK::PopupFlags::kAnyPopup)) {
-						}
-						else if (equipMgr->IsWindowOpen() || lightMgr->IsWindowOpen() || widget->HasOpenPanels()) {
-							equipMgr->SetWindowOpen(false);
-							lightMgr->SetWindowOpen(false);
-							widget->CloseSettings();
-						}
-						else {
-							RE::UIMessageQueue::GetSingleton()->AddMessage(RE::JournalMenu::MENU_NAME, RE::UI_MESSAGE_TYPE::kShow, nullptr);
-						}
-
-						s_eatingEscape = true;
-						return true;
+					if (FUCK::IsPopupOpen(nullptr, FUCK::PopupFlags::kAnyPopup)) {
+						// Let ImGui handle it.
+					} else if (equipMgr->IsWindowOpen() || lightMgr->IsWindowOpen() || widget->HasOpenPanels()) {
+						// Close open child panels.
+						equipMgr->SetWindowOpen(false);
+						lightMgr->SetWindowOpen(false);
+						widget->CloseSettings();
+					} else {
+						// Open Journal on release.
+						s_pendingJournal = true;
 					}
-				} else {
-					s_eatingEscape = false;
+
+					s_eatingEscape = true;
+					return true;
+				}
+			} else {
+				s_eatingEscape = false;
+
+				if (btn->IsUp() && s_pendingJournal) {
+					s_pendingJournal = false;
+					if (isRSM && !isJournal) {
+						RE::UIMessageQueue::GetSingleton()->AddMessage(RE::JournalMenu::MENU_NAME, RE::UI_MESSAGE_TYPE::kShow, nullptr);
+					}
+					return true;
 				}
 			}
 		}
