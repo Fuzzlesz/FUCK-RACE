@@ -1046,6 +1046,10 @@ void RaceWidget::DrawSettingsPanel()
 
 		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 
+		if (FUCK::Checkbox("$RACE_SmoothCamera"_T, &camSettings.smoothCamera, true, true)) {
+			changed = true;
+		}
+		
 		if (FUCK::Checkbox("$RACE_HideIdles"_T, &_hideIdles, true, true)) {
 			SaveSettings();
 		}

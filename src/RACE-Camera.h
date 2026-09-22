@@ -2,6 +2,8 @@
 
 struct CameraSettings
 {
+	bool  smoothCamera    = true;
+
 	float kbmPanSpeed     =  15.0f;
 	float kbmRotSpeed     =   1.5f;
 	float kbmRollSpeed    =   1.5f;
@@ -66,6 +68,12 @@ private:
 	float        _camRoll   = 0.0f;
 	float        _fovOffset = 0.0f;
 	float        _baseFov   = 0.0f;
+
+	RE::NiPoint3 _targetCamOffset{ 0.0f, 0.0f, 0.0f };
+	float        _targetCamRotZ   = 0.0f;
+	float        _targetCamRotX   = 0.0f;
+	float        _targetCamRoll   = 0.0f;
+	float        _targetFovOffset = 0.0f;
 
 	float _currentZoomOffset     = 0.0f;
 	float _targetZoomOffset      = 0.0f;
