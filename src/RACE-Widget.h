@@ -9,13 +9,14 @@ public:
 
 	void Draw();
 	void DrawMainPanel();
-	void DrawSettingsPanel();
 	void DrawSculptPanel();
+	void DrawSettingsPanel();
 
 	void DrawIdleSelector(float a_comboWidth, bool& a_requestFocus);
 	bool DrawReferenceSelector(float a_comboWidth, bool* a_requestFocus = nullptr);
 	void DrawPlaybackControls();
 	void DrawToolButtons(float a_comboWidth, float a_rowStartX);
+	void DrawCameraHelpMarker();
 	void DrawCameraReset(float a_comboWidth, float a_rowStartX, bool a_isRaceTab);
 
 	void OnAdvanceMovie(RE::RaceSexMenu* a_menu);
@@ -24,6 +25,7 @@ public:
 	bool IsSkee64Present() const { return _skee64Present; }
 	bool IsUIHidden() const { return _uiHidden; }
 
+	bool              IsActive() const { return _isRaceMenuOpen; }
 	bool              IsRaceMenuOpen() const { return _isRaceMenuOpen; }
 	bool              IsJournalOpen() const { return _isJournalOpen; }
 	RE::GFxMovieView* GetCachedMenuMovie() const { return _cachedRaceMenuMovie; }
@@ -42,12 +44,20 @@ public:
 	bool HasOpenPanels() const { return _showSettings || _showLightSettings; }
 	void CloseSettings();
 	void ToggleRaceStats();
-	
+
 private:
 	void LoadSettings();
 	void SaveSettings();
 	void HandlePositioning(ImVec2& expectedPos);
 	void ApplyMirrorLock();
+
+	// Shared panel pieces
+	bool  UpdateGamepadFocus();
+	void  UpdateBackButtonHold(bool a_useRaceMenuLight);
+	float DrawGamepadEquipCombo(float a_comboWidth, bool& a_requestFocus);
+	void  DrawInlineLightSettings(float a_comboWidth);
+	bool  DrawCameraSettings();
+	bool  DrawGeneralSettings();
 
 	bool _isDragging = false;
 
@@ -58,6 +68,7 @@ private:
 	bool _skee64Present = false;
 
 	bool              _isRaceMenuOpen      = false;
+	bool              _wasActive           = false;
 	bool              _isJournalOpen       = false;
 	RE::GFxMovieView* _cachedRaceMenuMovie = nullptr;
 

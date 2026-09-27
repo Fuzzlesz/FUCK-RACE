@@ -26,12 +26,13 @@ void RaceWidget::Initialize()
 	RaceReferenceManager::GetSingleton()->ScanReferences();
 
 	static FUCK::MenuEventListener listener([](const char* menuName, bool opening) {
-		auto widget = RaceWidget::GetSingleton();
+		auto             widget = RaceWidget::GetSingleton();
 		std::string_view name(menuName);
 
 		if (name == RE::RaceSexMenu::MENU_NAME) {
 			widget->_isRaceMenuOpen = opening;
 			if (opening) {
+				widget->_wasActive = true;
 				if (auto ui = RE::UI::GetSingleton()) {
 					if (auto menu = ui->GetMenu(RE::RaceSexMenu::MENU_NAME)) {
 						widget->_cachedRaceMenuMovie = menu->uiMovie.get();
@@ -270,7 +271,9 @@ void RaceWidget::SaveSettings()
 
 bool RaceWidget::IsOpen() const
 {
-	if (!_isRaceMenuOpen && _lastMode != -1) {
+	bool isActive = IsActive();
+
+	if (!isActive && _wasActive) {
 		auto* self        = const_cast<RaceWidget*>(this);
 		auto  animManager = RaceAnimManager::GetSingleton();
 
@@ -279,6 +282,7 @@ bool RaceWidget::IsOpen() const
 		self->_uiHidden          = false;
 		self->_showSettings      = false;
 		self->_showLightSettings = false;
+		self->_wasActive         = false;
 
 		if (animManager->IsFrozen()) {
 			animManager->SetPlayerFrozen(false);
@@ -293,7 +297,7 @@ bool RaceWidget::IsOpen() const
 		RaceReferenceManager::GetSingleton()->CloseAllWindows();
 	}
 
-	return _isRaceMenuOpen && !_isJournalOpen;
+	return isActive && !_isJournalOpen;
 }
 
 void RaceWidget::HandlePositioning(ImVec2& expectedPos)
@@ -628,14 +632,26 @@ void RaceWidget::DrawPlaybackControls()
 	FUCK::PopID();
 }
 
+void RaceWidget::DrawCameraHelpMarker()
+{
+	// Pull the help marker inwards
+	FUCK::SameLine(0.0f, FUCK::Scale(2.0f));
+	if (FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad) {
+		FUCK::HelpMarker("$RACE_CamTooltip_GP"_T);
+	} else {
+		FUCK::HelpMarker("$RACE_CamTooltip_KBM"_T);
+	}
+}
+
 void RaceWidget::DrawToolButtons(float a_comboWidth, float a_rowStartX)
 {
 	bool isGamepad    = FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
 	auto eqManager    = RaceEquipManager::GetSingleton();
 	auto lightManager = RaceLightManager::GetSingleton();
 
-	bool hasEquipBtn = (!isGamepad && eqManager->HasItems());
-	bool hasLight    = (SKEE64Compat::IsPresent() && !isGamepad);
+	bool hasLightStudio = (!isGamepad && lightManager->HasLightStudio() && !_isRaceMenuOpen);
+	bool hasEquipBtn    = (!isGamepad && eqManager->HasItems());
+	bool hasLight       = (SKEE64Compat::IsPresent() && !isGamepad && _isRaceMenuOpen);
 
 	float spacingX = FUCK::GetStyleVarVec(ImGuiStyleVar_ItemSpacing).x;
 
@@ -646,7 +662,7 @@ void RaceWidget::DrawToolButtons(float a_comboWidth, float a_rowStartX)
 	float gearWidth  = FUCK::CalcTextSize(ICON_FA_GEAR).x + (btnPadX * 2.0f);
 	float toolsWidth = gearWidth;
 
-	if (hasLight) {
+	if (hasLight || hasLightStudio) {
 		toolsWidth += spacingX + FUCK::CalcTextSize(ICON_FA_LIGHTBULB).x + (btnPadX * 2.0f);
 	}
 	if (hasEquipBtn) {
@@ -717,6 +733,16 @@ void RaceWidget::DrawToolButtons(float a_comboWidth, float a_rowStartX)
 			FUCK::PopStyleColor(2);
 
 		FUCK::SameLine();
+	} else if (hasLightStudio) {
+		FUCK::PushID("RACE_LightStudioToggle");
+		if (FUCK::Button(ICON_FA_LIGHTBULB)) {
+			SKSE::GetMessagingInterface()->Dispatch(0x1001, nullptr, 0, "FUCK-LIGHT");
+		}
+		if (FUCK::IsItemHovered(0)) {
+			FUCK::SetTooltip("$RACE_LightStudio"_T);
+		}
+		FUCK::PopID();
+		FUCK::SameLine();
 	}
 
 	if (FUCK::Button(ICON_FA_GEAR)) {
@@ -727,14 +753,6 @@ void RaceWidget::DrawToolButtons(float a_comboWidth, float a_rowStartX)
 			lightManager->SetWindowOpen(false);
 			eqManager->SetWindowOpen(false);
 		}
-	}
-
-	// Pull the help marker inwards
-	FUCK::SameLine(0.0f, FUCK::Scale(2.0f));
-	if (isGamepad) {
-		FUCK::HelpMarker("$RACE_CamTooltip_GP"_T);
-	} else {
-		FUCK::HelpMarker("$RACE_CamTooltip_KBM"_T);
 	}
 
 	if (openLightKBM) {
@@ -798,7 +816,7 @@ void RaceWidget::DrawCameraReset(float a_comboWidth, float a_rowStartX, bool a_i
 	}
 }
 
-void RaceWidget::DrawMainPanel()
+bool RaceWidget::UpdateGamepadFocus()
 {
 	static bool s_wasRbDown  = false;
 	static bool s_queueFocus = false;
@@ -826,66 +844,119 @@ void RaceWidget::DrawMainPanel()
 		s_queueFocus = false;
 	}
 
-	bool  isGamepad    = FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
-	auto  eqManager    = RaceEquipManager::GetSingleton();
-	auto  lightManager = RaceLightManager::GetSingleton();
-	float clusterScale = 0.8f;
-	float comboWidth   = FUCK::Scale(360.0f * clusterScale);
-	float equipWidth   = comboWidth * 1.5f;
-	bool  isRaceTab    = IsOnRaceTab();
+	return requestFocus;
+}
 
-	// --- Gamepad Back Button Logic (Enforce Light ON) ---
+void RaceWidget::UpdateBackButtonHold(bool a_useRaceMenuLight)
+{
+	// --- Gamepad Back Button Logic (Enforce Light ON or open Light Studio) ---
 	static float s_backHoldTime             = 0.0f;
 	static bool  s_backLongPressedTriggered = false;
 
-	if (isGamepad) {
-		RE::GFxValue menuInstance;
-		bool         hasMenu = _cachedRaceMenuMovie && GetMenuInstance(_cachedRaceMenuMovie, menuInstance);
+	if (FUCK::GetInputDevice() != FUCK::InputDevice::kGamepad) {
+		return;
+	}
 
-		if (FUCK::IsInputDown(RACE::Keys::kGP_Back)) {
-			s_backHoldTime += FUCK::GetDeltaTime();
+	if (!FUCK::IsInputDown(RACE::Keys::kGP_Back)) {
+		s_backHoldTime             = 0.0f;
+		s_backLongPressedTriggered = false;
+		return;
+	}
 
-			if (s_backHoldTime > 0.5f && !s_backLongPressedTriggered) {
-				_showLightSettings = !_showLightSettings;
+	s_backHoldTime += FUCK::GetDeltaTime();
 
-				if (_showLightSettings) {
-					_showSettings = false;
-					eqManager->SetWindowOpen(false);
+	if (s_backHoldTime <= 0.5f || s_backLongPressedTriggered) {
+		return;
+	}
 
-					if (hasMenu) {
-						RE::GFxValue bShowLight;
-						if (menuInstance.GetMember("bShowLight", &bShowLight) && bShowLight.IsBool()) {
-							if (!bShowLight.GetBool()) {
-								menuInstance.Invoke("onLightClicked", nullptr, nullptr, 0);
-							}
-						}
+	if (a_useRaceMenuLight) {
+		_showLightSettings = !_showLightSettings;
+
+		if (_showLightSettings) {
+			_showSettings = false;
+			RaceEquipManager::GetSingleton()->SetWindowOpen(false);
+
+			RE::GFxValue menuInstance;
+			if (_cachedRaceMenuMovie && GetMenuInstance(_cachedRaceMenuMovie, menuInstance)) {
+				RE::GFxValue bShowLight;
+				if (menuInstance.GetMember("bShowLight", &bShowLight) && bShowLight.IsBool()) {
+					if (!bShowLight.GetBool()) {
+						menuInstance.Invoke("onLightClicked", nullptr, nullptr, 0);
 					}
 				}
-				s_backLongPressedTriggered = true;
 			}
-		} else {
-			s_backHoldTime             = 0.0f;
-			s_backLongPressedTriggered = false;
 		}
+	} else if (RaceLightManager::GetSingleton()->HasLightStudio()) {
+		SKSE::GetMessagingInterface()->Dispatch(0x1001, nullptr, 0, "FUCK-LIGHT");
 	}
 
-	if (isGamepad && eqManager->HasItems()) {
-		float alignOffset = equipWidth - comboWidth;
+	s_backLongPressedTriggered = true;
+}
 
-		if (requestFocus) {
-			FUCK::SetKeyboardFocusHere(0);
-			requestFocus = false;
-		}
+float RaceWidget::DrawGamepadEquipCombo(float a_comboWidth, bool& a_requestFocus)
+{
+	auto eqManager = RaceEquipManager::GetSingleton();
 
-		FUCK::SetNextItemWidth(equipWidth);
-		int eqIndex = 0;
-		if (FUCK::ComboWithFilter("##RACE_Equip", &eqIndex, eqManager->GetComboStrings().data(), static_cast<int>(eqManager->GetComboStrings().size()), 15)) {
-			if (eqIndex > 0)
-				eqManager->ToggleItem(eqIndex - 1);
-		}
-		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
-		FUCK::Indent(alignOffset);
+	if (FUCK::GetInputDevice() != FUCK::InputDevice::kGamepad || !eqManager->HasItems()) {
+		return 0.0f;
 	}
+
+	float equipWidth  = a_comboWidth * 1.5f;
+	float alignOffset = equipWidth - a_comboWidth;
+
+	if (a_requestFocus) {
+		FUCK::SetKeyboardFocusHere(0);
+		a_requestFocus = false;
+	}
+
+	FUCK::SetNextItemWidth(equipWidth);
+	int eqIndex = 0;
+	if (FUCK::ComboWithFilter("##RACE_Equip", &eqIndex, eqManager->GetComboStrings().data(), static_cast<int>(eqManager->GetComboStrings().size()), 15)) {
+		if (eqIndex > 0)
+			eqManager->ToggleItem(eqIndex - 1);
+	}
+	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
+	FUCK::Indent(alignOffset);
+
+	return alignOffset;
+}
+
+void RaceWidget::DrawInlineLightSettings(float a_comboWidth)
+{
+	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
+
+	if (FUCK::BeginTable("LightTopSepLocker", 1, FUCK::TableFlags::kSizingFixedFit, ImVec2(a_comboWidth, 0.0f))) {
+		FUCK::TableSetupColumn("SepCol", FUCK::TableColumnFlags::kWidthFixed, a_comboWidth);
+		FUCK::TableNextRow();
+		FUCK::TableNextColumn();
+		FUCK::SeparatorText("$RACE_LightSettingsTitle"_T);
+		FUCK::EndTable();
+	}
+
+	RaceLightManager::GetSingleton()->DrawInlineSettings();
+
+	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
+
+	if (FUCK::BeginTable("LightBottomSepLocker", 1, FUCK::TableFlags::kSizingFixedFit, ImVec2(a_comboWidth, 0.0f))) {
+		FUCK::TableSetupColumn("SepCol", FUCK::TableColumnFlags::kWidthFixed, a_comboWidth);
+		FUCK::TableNextRow();
+		FUCK::TableNextColumn();
+		FUCK::Separator();
+		FUCK::EndTable();
+	}
+}
+
+void RaceWidget::DrawMainPanel()
+{
+	bool  requestFocus = UpdateGamepadFocus();
+	bool  isGamepad    = FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
+	float clusterScale = 0.8f;
+	float comboWidth   = FUCK::Scale(360.0f * clusterScale);
+	bool  isRaceTab    = IsOnRaceTab();
+
+	UpdateBackButtonHold(_isRaceMenuOpen);
+
+	float equipIndent = DrawGamepadEquipCombo(comboWidth, requestFocus);
 
 	DrawIdleSelector(comboWidth, requestFocus);
 
@@ -902,38 +973,17 @@ void RaceWidget::DrawMainPanel()
 
 	DrawPlaybackControls();
 	DrawToolButtons(comboWidth, rowStartX);
+	DrawCameraHelpMarker();
 	DrawCameraReset(comboWidth, rowStartX, isRaceTab);
 
 	if (_showSettings) {
 		DrawSettingsPanel();
-	} else {
-		if (isGamepad && _showLightSettings) {
-			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
-
-			if (FUCK::BeginTable("LightTopSepLocker", 1, FUCK::TableFlags::kSizingFixedFit, ImVec2(comboWidth, 0.0f))) {
-				FUCK::TableSetupColumn("SepCol", FUCK::TableColumnFlags::kWidthFixed, comboWidth);
-				FUCK::TableNextRow();
-				FUCK::TableNextColumn();
-				FUCK::SeparatorText("$RACE_LightSettingsTitle"_T);
-				FUCK::EndTable();
-			}
-
-			lightManager->DrawInlineSettings();
-
-			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
-
-			if (FUCK::BeginTable("LightBottomSepLocker", 1, FUCK::TableFlags::kSizingFixedFit, ImVec2(comboWidth, 0.0f))) {
-				FUCK::TableSetupColumn("SepCol", FUCK::TableColumnFlags::kWidthFixed, comboWidth);
-				FUCK::TableNextRow();
-				FUCK::TableNextColumn();
-				FUCK::Separator();
-				FUCK::EndTable();
-			}
-		}
+	} else if (isGamepad && _showLightSettings) {
+		DrawInlineLightSettings(comboWidth);
 	}
 
-	if (isGamepad && eqManager->HasItems()) {
-		FUCK::Unindent(equipWidth - comboWidth);
+	if (equipIndent > 0.0f) {
+		FUCK::Unindent(equipIndent);
 	}
 }
 
@@ -968,6 +1018,7 @@ void RaceWidget::ToggleRaceStats()
 void RaceWidget::DrawSettingsPanel()
 {
 	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
+
 	FUCK::SeparatorText("$RACE_Settings"_T);
 
 	float panelScale    = 0.9f;
@@ -982,31 +1033,50 @@ void RaceWidget::DrawSettingsPanel()
 		FUCK::TableNextRow();
 		FUCK::TableNextColumn();
 
-		auto& camSettings = RaceCamera::GetSingleton()->GetSettings();
-		bool  changed     = false;
-
-		int flagsKBM = 0;
-		int flagsGP  = 0;
-
-		if (_settingsJustOpened) {
-			if (FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad) {
-				flagsGP = 2;  // ImGuiTabItemFlags_SetSelected
-			} else {
-				flagsKBM = 2;  // ImGuiTabItemFlags_SetSelected
-			}
-			_settingsJustOpened = false;
-		}
-
 		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
 
-		bool isGamepad = FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
+		bool changed = false;
 
-		if (FUCK::BeginTabBar("RaceSettingsTabs", 0)) {
-			// Keyboard & Mouse Tab
-			if (!isGamepad) {
-				if (FUCK::BeginTabItem("$RACE_CamSettings_KBM"_T, flagsKBM)) {
-					FUCK::PushID("KBM");
-					FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
+		changed |= DrawCameraSettings();
+
+		// One-shot: only applies on the frame the panel opens
+		_settingsJustOpened = false;
+
+		changed |= DrawGeneralSettings();
+
+		if (changed) {
+			SaveSettings();
+		}
+
+		FUCK::EndTable();
+	}
+	FUCK::PopStyleVar(1);
+	FUCK::PopScale();
+}
+
+bool RaceWidget::DrawCameraSettings()
+{
+	auto& camSettings = RaceCamera::GetSingleton()->GetSettings();
+	bool  changed     = false;
+	bool  isGamepad   = FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
+
+	int flagsKBM = 0;
+	int flagsGP  = 0;
+
+	if (_settingsJustOpened) {
+		if (isGamepad) {
+			flagsGP = 2;  // ImGuiTabItemFlags_SetSelected
+		} else {
+			flagsKBM = 2;  // ImGuiTabItemFlags_SetSelected
+		}
+	}
+
+	if (FUCK::BeginTabBar("RaceSettingsTabs", 0)) {
+		// Keyboard & Mouse Tab
+		if (!isGamepad) {
+			if (FUCK::BeginTabItem("$RACE_CamSettings_KBM"_T, flagsKBM)) {
+				FUCK::PushID("KBM");
+				FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 
 				changed |= FUCK::ScaledSliderFloat("$RACE_SpeedPan"_T,      &camSettings.kbmPanSpeed,         1.0f,  50.0f,    1.0f);
 				changed |= FUCK::ScaledSliderFloat("$RACE_SpeedOrbit"_T,    &camSettings.kbmRotSpeed,         0.1f,   3.0f,   10.0f);
@@ -1044,54 +1114,51 @@ void RaceWidget::DrawSettingsPanel()
 		changed |= FUCK::ScaledSliderFloat("$RACE_QuickZoomDown"_T, &camSettings.quickZoomDownOffset,   0.0f, 100.0f,    1.0f);
 		changed |= FUCK::ScaledSliderFloat("$RACE_QuickZoomPan"_T,  &camSettings.quickZoomSideOffset,-100.0f, 100.0f,    1.0f);
 
-		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
+	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 
-		if (FUCK::Checkbox("$RACE_SmoothCamera"_T, &camSettings.smoothCamera, true, true)) {
-			changed = true;
-		}
-		
-		if (FUCK::Checkbox("$RACE_HideIdles"_T, &_hideIdles, true, true)) {
-			SaveSettings();
-		}
+	if (FUCK::Checkbox("$RACE_SmoothCamera"_T, &camSettings.smoothCamera, true, true)) {
+		changed = true;
+	}
+	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 
-		if (FUCK::Checkbox("$RACE_StartFrozen"_T, &_startFrozen, true, true)) {
-			SaveSettings();
-		}
-
-		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
-
-		constexpr float EPSILON = 0.001f;
+	constexpr float EPSILON = 0.001f;
 
 		CameraSettings def;
-		bool           isModified =
-			std::abs(camSettings.kbmPanSpeed         - def.kbmPanSpeed)         > EPSILON ||
-			std::abs(camSettings.kbmRotSpeed         - def.kbmRotSpeed)         > EPSILON ||
-			std::abs(camSettings.kbmZoomFovSpeed     - def.kbmZoomFovSpeed)     > EPSILON ||
-			std::abs(camSettings.gpPanSpeed          - def.gpPanSpeed)          > EPSILON ||
-			std::abs(camSettings.gpZoomSpeed         - def.gpZoomSpeed)         > EPSILON ||
-			std::abs(camSettings.gpRotSpeed          - def.gpRotSpeed)          > EPSILON ||
-			std::abs(camSettings.gpFovSpeed          - def.gpFovSpeed)          > EPSILON ||
-			std::abs(camSettings.gpCharRotSpeed      - def.gpCharRotSpeed)      > EPSILON ||
-			std::abs(camSettings.quickZoomOffset     - def.quickZoomOffset)     > EPSILON ||
-			std::abs(camSettings.quickZoomDownOffset - def.quickZoomDownOffset) > EPSILON ||
-			std::abs(camSettings.quickZoomSideOffset - def.quickZoomSideOffset) > EPSILON ||
-			std::abs(camSettings.gpDeadzone          - def.gpDeadzone)          > EPSILON ;
+	bool           isModified =
+		std::abs(camSettings.kbmPanSpeed         - def.kbmPanSpeed)         > EPSILON ||
+		std::abs(camSettings.kbmRotSpeed         - def.kbmRotSpeed)         > EPSILON ||
+		std::abs(camSettings.kbmZoomFovSpeed     - def.kbmZoomFovSpeed)     > EPSILON ||
+		std::abs(camSettings.gpPanSpeed          - def.gpPanSpeed)          > EPSILON ||
+		std::abs(camSettings.gpZoomSpeed         - def.gpZoomSpeed)         > EPSILON ||
+		std::abs(camSettings.gpRotSpeed          - def.gpRotSpeed)          > EPSILON ||
+		std::abs(camSettings.gpFovSpeed          - def.gpFovSpeed)          > EPSILON ||
+		std::abs(camSettings.gpCharRotSpeed      - def.gpCharRotSpeed)      > EPSILON ||
+		std::abs(camSettings.quickZoomOffset     - def.quickZoomOffset)     > EPSILON ||
+		std::abs(camSettings.quickZoomDownOffset - def.quickZoomDownOffset) > EPSILON ||
+		std::abs(camSettings.quickZoomSideOffset - def.quickZoomSideOffset) > EPSILON ||
+		std::abs(camSettings.gpDeadzone          - def.gpDeadzone)          > EPSILON ;
 
-		if (isModified) {
-			if (FUCK::Button("$RACE_RestoreDefaults"_T)) {
-				camSettings = def;
-				changed     = true;
-			}
+	if (isModified) {
+		if (FUCK::Button("$RACE_RestoreDefaults"_T)) {
+			camSettings = def;
+			changed     = true;
 		}
-
-		if (changed) {
-			SaveSettings();
-		}
-
-		FUCK::EndTable();
+		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 	}
-	FUCK::PopStyleVar(1);
-	FUCK::PopScale();
+
+	return changed;
+}
+
+bool RaceWidget::DrawGeneralSettings()
+{
+	bool changed = false;
+
+	changed |= FUCK::Checkbox("$RACE_HideIdles"_T, &_hideIdles, true, true);
+	changed |= FUCK::Checkbox("$RACE_StartFrozen"_T, &_startFrozen, true, true);
+
+	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
+
+	return changed;
 }
 
 void RaceWidget::ApplyMirrorLock()
@@ -1217,13 +1284,7 @@ void RaceWidget::DrawSculptPanel()
 	FUCK::SetCursorPosX(rowStartX + comboWidth - controlsWidth);
 	DrawPlaybackControls();
 
-	FUCK::SameLine(0.0f, FUCK::Scale(2.0f));
-	bool isGamepad = FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
-	if (isGamepad) {
-		FUCK::HelpMarker("$RACE_CamTooltip_GP"_T);
-	} else {
-		FUCK::HelpMarker("$RACE_CamTooltip_KBM"_T);
-	}
+	DrawCameraHelpMarker();
 
 	DrawCameraReset(comboWidth, rowStartX, false);
 }
