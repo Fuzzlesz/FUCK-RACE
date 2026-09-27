@@ -1,5 +1,5 @@
 set(headers ${headers}
-	src/FUCK_API.h
+	src/API/FUCK_API.h
 	src/FUCK_Register.h
 	src/IconsFontAwesome6.h
 	src/PCH.h
