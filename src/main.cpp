@@ -22,8 +22,7 @@ void InitializeLog()
 	SKSE::log::info(FMT_STRING("{} v{}"), Version::PROJECT, Version::NAME);
 }
 
-#ifdef SKYRIM_AE
-extern "C" DLLEXPORT constinit auto SKSEPlugin_Version = []() {
+SKSE_EXPORT constinit auto SKSEPlugin_Version = []() {
 	SKSE::PluginVersionData v;
 	v.PluginVersion(Version::MAJOR);
 	v.PluginName("FUCK-RACE");
@@ -33,8 +32,8 @@ extern "C" DLLEXPORT constinit auto SKSEPlugin_Version = []() {
 	v.CompatibleVersions({ SKSE::RUNTIME_SSE_LATEST });
 	return v;
 }();
-#else
-extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a_skse, SKSE::PluginInfo* a_info)
+
+SKSE_PLUGIN_QUERY(const SKSE::QueryInterface* a_skse, SKSE::PluginInfo* a_info)
 {
 	a_info->infoVersion = SKSE::PluginInfo::kVersion;
 	a_info->name        = "FUCK-RACE";
@@ -46,9 +45,8 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a
 	}
 	return true;
 }
-#endif
 
-extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_skse)
+SKSE_PLUGIN_LOAD(const SKSE::LoadInterface* a_skse)
 {
 	InitializeLog();
 	SKSE::Init(a_skse, false);

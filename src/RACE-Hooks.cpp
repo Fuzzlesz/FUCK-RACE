@@ -44,7 +44,7 @@ namespace Hooks
 
 	void Install()
 	{
-		stl::write_vfunc<RE::TESIdleForm, SetFormEditorID>();
-		stl::write_vfunc<RE::RaceSexMenu, RaceSexMenu_AdvanceMovie>();
+		stl::write_vfunc<SetFormEditorID>(RE::TESIdleForm::VTABLE[0]);
+		stl::write_vfunc<RaceSexMenu_AdvanceMovie>(RE::VTABLE_RaceSexMenu[0]);
 	}
 }

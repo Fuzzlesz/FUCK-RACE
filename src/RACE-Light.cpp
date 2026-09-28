@@ -55,7 +55,7 @@ void RaceLightManager::ScanForRaceMenuLight()
 		return;
 	}
 
-	for (auto& item : player->GetParentCell()->references) {
+	for (auto& item : player->GetParentCell()->GetRuntimeData().references) {
 		if (auto ref = item.get()) {
 			if (ref->GetBaseObject() == rmLightBase && !ref->IsDeleted()) {
 				_rmLightRef = ref;
@@ -94,7 +94,7 @@ void RaceLightManager::ApplyToLight()
 					return;
 				}
 				if (auto niNode = node->AsNode()) {
-					for (auto& child : niNode->children) {
+					for (auto& child : niNode->GetChildren()) {
 						if (child)
 							findLight(child.get());
 					}
@@ -103,10 +103,14 @@ void RaceLightManager::ApplyToLight()
 			findLight(root);
 
 			if (pointLight) {
-				pointLight->radius = { (float)_radius, (float)_radius, (float)_radius };
+				auto& lightData  = pointLight->GetLightRuntimeData();
+				lightData.radius = { (float)_radius, (float)_radius, (float)_radius };
 				pointLight->SetLightAttenuation((float)_radius);
-				pointLight->fade    = _fade;
-				pointLight->diffuse = RE::NiColor(_color.red / 255.0f, _color.green / 255.0f, _color.blue / 255.0f);
+				lightData.fade    = _fade;
+				lightData.diffuse = RE::NiColor(
+					_color.red / 255.0f,
+					_color.green / 255.0f,
+					_color.blue / 255.0f);
 
 				RE::NiUpdateData ctx;
 				pointLight->Update(ctx);

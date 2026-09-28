@@ -128,11 +128,11 @@ void RaceAnimManager::SetPlayerFrozen(bool a_frozen)
 		return;
 
 	if (a_frozen) {
-		if (const auto currentProcess = player->currentProcess) {
+		if (const auto currentProcess = player->GetActorRuntimeData().currentProcess) {
 			currentProcess->ClearMuzzleFlashes();
 		}
 
-		player->boolFlags.reset(RE::Actor::BOOL_FLAGS::kShouldAnimGraphUpdate);
+		player->GetActorRuntimeData().boolFlags.reset(RE::Actor::BOOL_FLAGS::kShouldAnimGraphUpdate);
 
 		if (const auto charController = player->GetCharController()) {
 			charController->flags.set(RE::CHARACTER_FLAGS::kNotPushable);
@@ -151,7 +151,7 @@ void RaceAnimManager::SetPlayerFrozen(bool a_frozen)
 			animData->eyesBlinkingStage = RE::BSFaceGenAnimationData::EyesBlinkingStage::BlinkDelay;
 		}
 	} else {
-		player->boolFlags.set(RE::Actor::BOOL_FLAGS::kShouldAnimGraphUpdate);
+		player->GetActorRuntimeData().boolFlags.set(RE::Actor::BOOL_FLAGS::kShouldAnimGraphUpdate);
 
 		if (const auto charController = player->GetCharController()) {
 			charController->flags.reset(RE::CHARACTER_FLAGS::kNotPushable);
@@ -193,8 +193,8 @@ void RaceAnimManager::PlaySelectedIdle()
 		if (_isFrozen)
 			SetPlayerFrozen(false);
 		auto player = RE::PlayerCharacter::GetSingleton();
-		if (player && player->currentProcess)
-			player->currentProcess->PlayIdle(player, _validIdles[_selectedIndex].second, nullptr);
+		if (auto process = player ? player->GetActorRuntimeData().currentProcess : nullptr)
+			process->PlayIdle(player, _validIdles[_selectedIndex].second, nullptr);
 	}
 }
 
@@ -204,8 +204,8 @@ void RaceAnimManager::TogglePlay()
 		SetPlayerFrozen(false);
 	} else if (_selectedIndex > 0 && _selectedIndex < static_cast<int>(_validIdles.size())) {
 		auto player = RE::PlayerCharacter::GetSingleton();
-		if (player && player->currentProcess)
-			player->currentProcess->PlayIdle(player, _validIdles[_selectedIndex].second, nullptr);
+		if (auto process = player ? player->GetActorRuntimeData().currentProcess : nullptr)
+			process->PlayIdle(player, _validIdles[_selectedIndex].second, nullptr);
 	}
 }
 
@@ -214,11 +214,11 @@ void RaceAnimManager::StopCurrentIdle()
 	if (_isFrozen)
 		SetPlayerFrozen(false);
 	auto player = RE::PlayerCharacter::GetSingleton();
-	if (player && player->currentProcess) {
-		player->currentProcess->StopCurrentIdle(player, true);
+	if (auto process = player ? player->GetActorRuntimeData().currentProcess : nullptr) {
+		process->StopCurrentIdle(player, true);
 		auto resetRoot = RE::TESForm::LookupByEditorID<RE::TESIdleForm>("ResetRoot");
 		if (resetRoot)
-			player->currentProcess->PlayIdle(player, resetRoot, nullptr);
+			process->PlayIdle(player, resetRoot, nullptr);
 		_selectedIndex = 0;
 	}
 }

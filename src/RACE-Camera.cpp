@@ -530,10 +530,11 @@ void RaceCamera::HandleInput(float a_interval)
 	}
 
 	if (auto camera = RE::PlayerCamera::GetSingleton()) {
-		if (_baseFov == 0.0f && camera->worldFOV != 0.0f)
-			_baseFov = camera->worldFOV;
+		auto& worldFOV = camera->GetRuntimeData2().worldFOV;
+		if (_baseFov == 0.0f && worldFOV != 0.0f)
+			_baseFov = worldFOV;
 		if (_baseFov != 0.0f)
-			camera->worldFOV = _baseFov + _fovOffset;
+			worldFOV = _baseFov + _fovOffset;
 	}
 }
 
@@ -635,7 +636,7 @@ void RaceCamera::ResetOffsets()
 {
 	if (auto camera = RE::PlayerCamera::GetSingleton()) {
 		if (_baseFov != 0.0f)
-			camera->worldFOV = _baseFov;
+			camera->GetRuntimeData2().worldFOV = _baseFov;
 		RevertCameraTransform(camera->cameraRoot.get());
 	}
 	_camOffset             = { 0.0f, 0.0f, 0.0f };

@@ -497,7 +497,7 @@ void RaceWidget::Draw()
 
 	if (animManager->IsFrozen()) {
 		auto player = RE::PlayerCharacter::GetSingleton();
-		if (player && player->boolFlags.all(RE::Actor::BOOL_FLAGS::kShouldAnimGraphUpdate)) {
+		if (player && player->GetActorRuntimeData().boolFlags.all(RE::Actor::BOOL_FLAGS::kShouldAnimGraphUpdate)) {
 			animManager->SetPlayerFrozen(false);
 		}
 	}

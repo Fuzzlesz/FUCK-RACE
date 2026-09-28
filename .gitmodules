@@ -1,6 +1,7 @@
 [submodule "extern/CommonLibSSE"]
 	path = extern/CommonLibSSE
-	url = https://github.com/powerof3/CommonLibSSE.git
+	url = https://github.com/alandtse/CommonLibVR.git
+	branch = ng
 [submodule "src/API"]
 	path = src/API
 	url = https://github.com/Fuzzlesz/FUCK_API
