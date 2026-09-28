@@ -857,9 +857,10 @@ bool RaceWidget::UpdateGamepadFocus()
 	return requestFocus;
 }
 
-void RaceWidget::UpdateBackButtonHold(bool a_useRaceMenuLight)
+void RaceWidget::UpdateBackButtonHold()
 {
-	// --- Gamepad Back Button Logic (Enforce Light ON or open Light Studio) ---
+	// --- Gamepad Back Button Logic ---
+	//     (Toggle Racemenu light / Hold for light settings)
 	static float s_backHoldTime             = 0.0f;
 	static bool  s_backLongPressedTriggered = false;
 
@@ -879,25 +880,21 @@ void RaceWidget::UpdateBackButtonHold(bool a_useRaceMenuLight)
 		return;
 	}
 
-	if (a_useRaceMenuLight) {
-		_showLightSettings = !_showLightSettings;
+	_showLightSettings = !_showLightSettings;
 
-		if (_showLightSettings) {
-			_showSettings = false;
-			RaceEquipManager::GetSingleton()->SetWindowOpen(false);
+	if (_showLightSettings) {
+		_showSettings = false;
+		RaceEquipManager::GetSingleton()->SetWindowOpen(false);
 
-			RE::GFxValue menuInstance;
-			if (_cachedRaceMenuMovie && GetMenuInstance(_cachedRaceMenuMovie, menuInstance)) {
-				RE::GFxValue bShowLight;
-				if (menuInstance.GetMember("bShowLight", &bShowLight) && bShowLight.IsBool()) {
-					if (!bShowLight.GetBool()) {
-						menuInstance.Invoke("onLightClicked", nullptr, nullptr, 0);
-					}
+		RE::GFxValue menuInstance;
+		if (_cachedRaceMenuMovie && GetMenuInstance(_cachedRaceMenuMovie, menuInstance)) {
+			RE::GFxValue bShowLight;
+			if (menuInstance.GetMember("bShowLight", &bShowLight) && bShowLight.IsBool()) {
+				if (!bShowLight.GetBool()) {
+					menuInstance.Invoke("onLightClicked", nullptr, nullptr, 0);
 				}
 			}
 		}
-	} else if (RaceLightManager::GetSingleton()->HasLightStudio()) {
-		SKSE::GetMessagingInterface()->Dispatch(0x1001, nullptr, 0, "FUCK-LIGHT");
 	}
 
 	s_backLongPressedTriggered = true;
@@ -964,7 +961,7 @@ void RaceWidget::DrawMainPanel()
 	float comboWidth   = FUCK::Scale(360.0f * clusterScale);
 	bool  isRaceTab    = IsOnRaceTab();
 
-	UpdateBackButtonHold(_isRaceMenuOpen);
+	UpdateBackButtonHold();
 
 	float equipIndent = DrawGamepadEquipCombo(comboWidth, requestFocus);
 

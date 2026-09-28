@@ -53,7 +53,7 @@ private:
 
 	// Shared panel pieces
 	bool  UpdateGamepadFocus();
-	void  UpdateBackButtonHold(bool a_useRaceMenuLight);
+	void  UpdateBackButtonHold();
 	float DrawGamepadEquipCombo(float a_comboWidth, bool& a_requestFocus);
 	void  DrawInlineLightSettings(float a_comboWidth);
 	bool  DrawCameraSettings();
