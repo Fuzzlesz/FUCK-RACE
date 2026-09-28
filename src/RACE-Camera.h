@@ -21,6 +21,8 @@ struct CameraSettings
 	float quickZoomOffset     = 100.0f;
 	float quickZoomDownOffset =  45.0f;
 	float quickZoomSideOffset = -30.0f;
+
+	float panZoomScaling = 1.0f;  // 0 = off, 1 = pan speed fully proportional to zoom/FOV
 };
 
 class RaceCamera : public REX::Singleton<RaceCamera>
@@ -59,6 +61,8 @@ public:
 	bool IsMouseOverWireframe() const;
 
 private:
+	float GetPanScale() const;
+
 	CameraSettings _settings;
 
 	float _pendingScroll = 0.0f;

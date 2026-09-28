@@ -1194,6 +1194,8 @@ bool RaceWidget::DrawCameraSettings()
 	changed |= FUCK::ScaledSliderFloat("$RACE_QuickZoomDown"_T, &camSettings.quickZoomDownOffset,    0.0f, 100.0f, 0.2f);
 	changed |= FUCK::ScaledSliderFloat("$RACE_QuickZoomPan"_T,  &camSettings.quickZoomSideOffset, -100.0f, 100.0f, 0.1f);
 
+	changed |= FUCK::ScaledSliderFloat("$RACE_PanZoomScaling"_T, &camSettings.panZoomScaling,        0.0f,   1.0f, 20.0f);
+
 	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 
 	constexpr float EPSILON = 0.001f;
@@ -1213,6 +1215,7 @@ bool RaceWidget::DrawCameraSettings()
 		std::abs(camSettings.quickZoomDownOffset - def.quickZoomDownOffset) > EPSILON ||
 		std::abs(camSettings.quickZoomSideOffset - def.quickZoomSideOffset) > EPSILON ||
 		std::abs(camSettings.gpDeadzone          - def.gpDeadzone)          > EPSILON ||
+		std::abs(camSettings.panZoomScaling      - def.panZoomScaling)      > EPSILON ||
 		std::abs(camSettings.lerpMult            - def.lerpMult)            > EPSILON ;
 
 	if (isModified) {
