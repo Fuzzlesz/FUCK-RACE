@@ -278,6 +278,7 @@ void RaceWidget::LoadSettings()
 		_disableMirror     = FUCK::INI::LoadBool(ini, "Widget", "DisableMirror",     false);
 		_hideRaceStats     = FUCK::INI::LoadBool(ini, "Widget", "HideRaceStats",     false);
 		_showInFittingRoom = FUCK::INI::LoadBool(ini, "Widget", "ShowInFittingRoom", true);
+		_showAdvanced      = FUCK::INI::LoadBool(ini, "Widget", "ShowAdvanced",      false);
 
 		RaceCamera::GetSingleton()->LoadSettings(ini);
 	});
@@ -299,6 +300,7 @@ void RaceWidget::SaveSettings()
 		FUCK::INI::SaveBool(ini, "Widget", "DisableMirror",     _disableMirror,     false);
 		FUCK::INI::SaveBool(ini, "Widget", "HideRaceStats",     _hideRaceStats,     false);
 		FUCK::INI::SaveBool(ini, "Widget", "ShowInFittingRoom", _showInFittingRoom, true);
+		FUCK::INI::SaveBool(ini, "Widget", "ShowAdvanced",      _showAdvanced,      false);
 
 		RaceCamera::GetSingleton()->SaveSettings(ini);
 	});
@@ -1117,6 +1119,11 @@ void RaceWidget::DrawSettingsPanel(bool a_includeCamera)
 
 		changed |= DrawGeneralSettings();
 
+		if (a_includeCamera) {
+			changed |= FUCK::Checkbox("$RACE_ShowAdvanced"_T, &_showAdvanced, true, true);
+			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
+		}
+
 		if (changed) {
 			SaveSettings();
 		}
@@ -1149,54 +1156,56 @@ bool RaceWidget::DrawCameraSettings()
 		}
 	}
 
-	if (FUCK::BeginTabBar("RaceSettingsTabs", 0)) {
-		// Keyboard & Mouse Tab
-		if (!isGamepad) {
-			if (FUCK::BeginTabItem("$RACE_CamSettings_KBM"_T, flagsKBM)) {
-				FUCK::PushID("KBM");
+	if (_showAdvanced) {
+		if (FUCK::BeginTabBar("RaceSettingsTabs", 0)) {
+			// Keyboard & Mouse Tab
+			if (!isGamepad) {
+				if (FUCK::BeginTabItem("$RACE_CamSettings_KBM"_T, flagsKBM)) {
+					FUCK::PushID("KBM");
+					FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
+
+					changed |= SpeedSlider("$RACE_SpeedPan"_T,   &camSettings.kbmPanSpeed,     def.kbmPanSpeed);
+					changed |= SpeedSlider("$RACE_SpeedOrbit"_T, &camSettings.kbmRotSpeed,     def.kbmRotSpeed);
+					changed |= SpeedSlider("$RACE_SpeedRoll"_T,  &camSettings.kbmRollSpeed,    def.kbmRollSpeed);
+					changed |= SpeedSlider("$RACE_SpeedFOV"_T,   &camSettings.kbmZoomFovSpeed, def.kbmZoomFovSpeed);
+
+					FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
+					FUCK::PopID();
+					FUCK::EndTabItem();
+				}
+			}
+
+			// Gamepad Tab
+			if (FUCK::BeginTabItem("$RACE_CamSettings_GP"_T, flagsGP)) {
+				FUCK::PushID("GP");
 				FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 
-				changed |= SpeedSlider("$RACE_SpeedPan"_T,   &camSettings.kbmPanSpeed,     def.kbmPanSpeed);
-				changed |= SpeedSlider("$RACE_SpeedOrbit"_T, &camSettings.kbmRotSpeed,     def.kbmRotSpeed);
-				changed |= SpeedSlider("$RACE_SpeedRoll"_T,  &camSettings.kbmRollSpeed,    def.kbmRollSpeed);
-				changed |= SpeedSlider("$RACE_SpeedFOV"_T,   &camSettings.kbmZoomFovSpeed, def.kbmZoomFovSpeed);
+				changed |= SpeedSlider("$RACE_SpeedPan"_T,     &camSettings.gpPanSpeed,     def.gpPanSpeed);
+				changed |= SpeedSlider("$RACE_SpeedZoom"_T,    &camSettings.gpZoomSpeed,    def.gpZoomSpeed);
+				changed |= SpeedSlider("$RACE_SpeedOrbit"_T,   &camSettings.gpRotSpeed,     def.gpRotSpeed);
+				changed |= SpeedSlider("$RACE_SpeedRoll"_T,    &camSettings.gpRollSpeed,    def.gpRollSpeed);
+				changed |= SpeedSlider("$RACE_SpeedFOV_GP"_T,  &camSettings.gpFovSpeed,     def.gpFovSpeed);
+				changed |= SpeedSlider("$RACE_SpeedCharRot"_T, &camSettings.gpCharRotSpeed, def.gpCharRotSpeed);
+				
+				changed |= FUCK::ScaledSliderFloat("$RACE_Deadzone"_T, &camSettings.gpDeadzone,     0.0f, 0.5f, 40.0f);
 
 				FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 				FUCK::PopID();
 				FUCK::EndTabItem();
 			}
+			FUCK::EndTabBar();
 		}
 
-		// Gamepad Tab
-		if (FUCK::BeginTabItem("$RACE_CamSettings_GP"_T, flagsGP)) {
-			FUCK::PushID("GP");
-			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
+		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 
-			changed |= SpeedSlider("$RACE_SpeedPan"_T,     &camSettings.gpPanSpeed,     def.gpPanSpeed);
-			changed |= SpeedSlider("$RACE_SpeedZoom"_T,    &camSettings.gpZoomSpeed,    def.gpZoomSpeed);
-			changed |= SpeedSlider("$RACE_SpeedOrbit"_T,   &camSettings.gpRotSpeed,     def.gpRotSpeed);
-			changed |= SpeedSlider("$RACE_SpeedRoll"_T,    &camSettings.gpRollSpeed,    def.gpRollSpeed);
-			changed |= SpeedSlider("$RACE_SpeedFOV_GP"_T,  &camSettings.gpFovSpeed,     def.gpFovSpeed);
-			changed |= SpeedSlider("$RACE_SpeedCharRot"_T, &camSettings.gpCharRotSpeed, def.gpCharRotSpeed);
-			
-			changed |= FUCK::ScaledSliderFloat("$RACE_Deadzone"_T, &camSettings.gpDeadzone,     0.0f, 0.5f, 40.0f);
+		changed |= FUCK::ScaledSliderFloat("$RACE_QuickZoomDist"_T, &camSettings.quickZoomOffset,       10.0f, 200.0f, 0.1f);
+		changed |= FUCK::ScaledSliderFloat("$RACE_QuickZoomDown"_T, &camSettings.quickZoomDownOffset,    0.0f, 100.0f, 0.2f);
+		changed |= FUCK::ScaledSliderFloat("$RACE_QuickZoomPan"_T,  &camSettings.quickZoomSideOffset, -100.0f, 100.0f, 0.1f);
 
-			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
-			FUCK::PopID();
-			FUCK::EndTabItem();
-		}
-		FUCK::EndTabBar();
+		changed |= FUCK::ScaledSliderFloat("$RACE_PanZoomScaling"_T, &camSettings.panZoomScaling,        0.0f,   1.0f, 20.0f);
+
+		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 	}
-
-	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
-
-	changed |= FUCK::ScaledSliderFloat("$RACE_QuickZoomDist"_T, &camSettings.quickZoomOffset,       10.0f, 200.0f, 0.1f);
-	changed |= FUCK::ScaledSliderFloat("$RACE_QuickZoomDown"_T, &camSettings.quickZoomDownOffset,    0.0f, 100.0f, 0.2f);
-	changed |= FUCK::ScaledSliderFloat("$RACE_QuickZoomPan"_T,  &camSettings.quickZoomSideOffset, -100.0f, 100.0f, 0.1f);
-
-	changed |= FUCK::ScaledSliderFloat("$RACE_PanZoomScaling"_T, &camSettings.panZoomScaling,        0.0f,   1.0f, 20.0f);
-
-	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 
 	constexpr float EPSILON = 0.001f;
 
@@ -1218,7 +1227,7 @@ bool RaceWidget::DrawCameraSettings()
 		std::abs(camSettings.panZoomScaling      - def.panZoomScaling)      > EPSILON ||
 		std::abs(camSettings.lerpMult            - def.lerpMult)            > EPSILON ;
 
-	if (isModified) {
+	if (_showAdvanced && isModified) {
 		if (FUCK::Button("$RACE_RestoreDefaults"_T)) {
 			camSettings = def;
 			changed     = true;
@@ -1230,7 +1239,7 @@ bool RaceWidget::DrawCameraSettings()
 		changed = true;
 	}
 
-	if (camSettings.smoothCamera) {
+	if (camSettings.smoothCamera && _showAdvanced) {
 		changed |= SpeedSlider("$RACE_LerpMult"_T, &camSettings.lerpMult, def.lerpMult);
 	}
 	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));

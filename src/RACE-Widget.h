@@ -86,6 +86,7 @@ private:
 	bool _freezeWireframe   = false;
 	bool _hideRaceStats     = false;
 	bool _showInFittingRoom = true;
+	bool _showAdvanced      = false;
 
 	int _lastMode = -1;
 };
