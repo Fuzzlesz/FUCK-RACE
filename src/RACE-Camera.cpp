@@ -8,6 +8,7 @@ void RaceCamera::LoadSettings(CSimpleIniA& a_ini)
 	CameraSettings def;
 	
 	_settings.smoothCamera        = FUCK::INI::LoadBool(a_ini, "Camera", "SmoothCamera",          def.smoothCamera);
+	_settings.lerpMult            = FUCK::INI::LoadFloat(a_ini, "Camera", "LerpMult",             def.lerpMult);
 
 	_settings.kbmPanSpeed         = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMPanSpeed",          def.kbmPanSpeed);
 	_settings.kbmRotSpeed         = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMRotSpeed",          def.kbmRotSpeed);
@@ -32,6 +33,7 @@ void RaceCamera::SaveSettings(CSimpleIniA& a_ini)
 	CameraSettings def;
 	
 	FUCK::INI::SaveBool  (a_ini, "Camera", "SmoothCamera",        _settings.smoothCamera,         def.smoothCamera);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "LerpMult",            _settings.lerpMult,             def.lerpMult);
 
 	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMPanSpeed",         _settings.kbmPanSpeed,          def.kbmPanSpeed);
 	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMRotSpeed",         _settings.kbmRotSpeed,          def.kbmRotSpeed);
@@ -511,7 +513,7 @@ void RaceCamera::HandleInput(float a_interval)
 	s_wasMouseRot = allowMouseRot;
 
 	if (_settings.smoothCamera) {
-		float lerpSpeed = std::clamp(10.0f * a_interval, 0.0f, 1.0f);
+		float lerpSpeed = std::clamp(_settings.lerpMult * a_interval, 0.0f, 1.0f);
 		_camOffset.x = std::lerp(_camOffset.x, _targetCamOffset.x, lerpSpeed);
 		_camOffset.y = std::lerp(_camOffset.y, _targetCamOffset.y, lerpSpeed);
 		_camOffset.z = std::lerp(_camOffset.z, _targetCamOffset.z, lerpSpeed);

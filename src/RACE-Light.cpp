@@ -117,7 +117,7 @@ void RaceLightManager::ApplyToLight()
 
 void RaceLightManager::Update()
 {
-	if (!RaceWidget::GetSingleton()->IsRaceMenuOpen()) {
+	if (!RaceWidget::GetSingleton()->IsActive()) {
 		return;
 	}
 
@@ -135,7 +135,7 @@ bool RaceLightManager::IsWindowOpen() const
 {
 	if (!_isOpen)
 		return false;
-	return RaceWidget::GetSingleton()->IsRaceMenuOpen() && !RaceWidget::GetSingleton()->IsJournalOpen();
+	return RaceWidget::GetSingleton()->IsActive() && !RaceWidget::GetSingleton()->IsJournalOpen();
 }
 
 void RaceLightManager::SetWindowOpen(bool a_open)
@@ -178,6 +178,10 @@ void RaceLightManager::DrawInlineSettings()
 	float clusterScale  = 0.8f;
 	float settingsWidth = FUCK::Scale(360.0f * clusterScale);
 
+	// RB is held to keep gamepad focus on the widget, so stop it also acting as ImGui's
+	// x10 "tweak fast" modifier, which would make every d-pad press skip ten steps
+	FUCK::PushGamepadTweakFastDisabled();
+
 	if (FUCK::BeginTable("LightInlineTable", 2, FUCK::TableFlags::kSizingStretchProp, ImVec2(settingsWidth, 0.0f))) {
 		FUCK::TableSetupColumn("Labels", FUCK::TableColumnFlags::kWidthStretch, 0.35f);
 		FUCK::TableSetupColumn("Widgets", FUCK::TableColumnFlags::kWidthStretch, 0.65f);
@@ -187,20 +191,11 @@ void RaceLightManager::DrawInlineSettings()
 		FUCK::AlignTextToFramePadding();
 		FUCK::Text("$RACE_LightFade"_T);
 
-		bool isGamepad = FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
-
+		// Sliders are kept to a displayed range of 100 or less, so each d-pad press is exactly one step
 		FUCK::TableNextColumn();
 		FUCK::SetNextItemWidth(-1.0f);
-		if (isGamepad) {
-			float displayFade = _fade * 100.0f;
-			if (FUCK::DragFloat("##Brightness", &displayFade, 1.0f, 0.0f, 1000.0f, "%.0f")) {
-				_fade        = displayFade / 100.0f;
-				_needsUpdate = true;
-			}
-		} else {
-			if (FUCK::ScaledSliderFloat("##Brightness", &_fade, 0.0f, 10.0f, 100.0f, "%.0f")) {
-				_needsUpdate = true;
-			}
+		if (FUCK::ScaledSliderFloat("##Brightness", &_fade, 0.0f, 10.0f, 10.0f)) {  // 0-100, 0.1 per step
+			_needsUpdate = true;
 		}
 
 		FUCK::TableNextRow();
@@ -210,17 +205,10 @@ void RaceLightManager::DrawInlineSettings()
 
 		FUCK::TableNextColumn();
 		FUCK::SetNextItemWidth(-1.0f);
-		int rad = static_cast<int>(_radius);
-		if (isGamepad) {
-			if (FUCK::DragInt("##Radius", &rad, 1.0f, 1, 2000)) {
-				_radius      = static_cast<std::uint32_t>(rad);
-				_needsUpdate = true;
-			}
-		} else {
-			if (FUCK::SliderInt("##Radius", &rad, 1, 2000)) {
-				_radius      = static_cast<std::uint32_t>(rad);
-				_needsUpdate = true;
-			}
+		float rad = static_cast<float>(_radius);
+		if (FUCK::ScaledSliderFloat("##Radius", &rad, 20.0f, 2000.0f, 0.05f)) {  // 1-100, 20 units per step
+			_radius      = static_cast<std::uint32_t>(std::lround(rad));
+			_needsUpdate = true;
 		}
 
 		FUCK::TableNextRow();
@@ -240,6 +228,8 @@ void RaceLightManager::DrawInlineSettings()
 
 		FUCK::EndTable();
 	}
+
+	FUCK::PopGamepadTweakFastDisabled();
 }
 
 void RaceLightManager::DrawWindow()
