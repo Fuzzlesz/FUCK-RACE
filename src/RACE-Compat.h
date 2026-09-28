@@ -32,3 +32,16 @@ namespace SKEE64Compat
 		}
 	}
 }
+
+namespace FittingRoomCompat
+{
+	inline bool g_present = false;
+
+	inline bool Detect()
+	{
+		g_present = (GetModuleHandleW(L"FittingRoom.dll") != nullptr);
+		return g_present;
+	}
+
+	inline bool IsPresent() { return g_present; }
+}

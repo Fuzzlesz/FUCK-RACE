@@ -10,7 +10,8 @@ public:
 	void Draw();
 	void DrawMainPanel();
 	void DrawSculptPanel();
-	void DrawSettingsPanel();
+	void DrawFittingRoomPanel();
+	void DrawSettingsPanel(bool a_includeCamera);
 
 	void DrawIdleSelector(float a_comboWidth, bool& a_requestFocus);
 	bool DrawReferenceSelector(float a_comboWidth, bool* a_requestFocus = nullptr);
@@ -25,8 +26,9 @@ public:
 	bool IsSkee64Present() const { return _skee64Present; }
 	bool IsUIHidden() const { return _uiHidden; }
 
-	bool              IsActive() const { return _isRaceMenuOpen; }
+	bool              IsActive() const { return _isRaceMenuOpen || (_isFittingRoomOpen && _fittingRoomVisible); }
 	bool              IsRaceMenuOpen() const { return _isRaceMenuOpen; }
+	bool              IsFittingRoomOpen() const { return _isFittingRoomOpen; }
 	bool              IsJournalOpen() const { return _isJournalOpen; }
 	RE::GFxMovieView* GetCachedMenuMovie() const { return _cachedRaceMenuMovie; }
 
@@ -68,6 +70,8 @@ private:
 	bool _skee64Present = false;
 
 	bool              _isRaceMenuOpen      = false;
+	bool              _isFittingRoomOpen   = false;
+	bool              _fittingRoomVisible  = false;
 	bool              _wasActive           = false;
 	bool              _isJournalOpen       = false;
 	RE::GFxMovieView* _cachedRaceMenuMovie = nullptr;
@@ -76,11 +80,12 @@ private:
 	bool _settingsJustOpened = false;
 	bool _showLightSettings  = false;
 
-	bool _startFrozen     = false;
-	bool _hideIdles       = false;
-	bool _disableMirror   = false;
-	bool _freezeWireframe = false;
-	bool _hideRaceStats   = false;
+	bool _startFrozen       = false;
+	bool _hideIdles         = false;
+	bool _disableMirror     = false;
+	bool _freezeWireframe   = false;
+	bool _hideRaceStats     = false;
+	bool _showInFittingRoom = true;
 
 	int _lastMode = -1;
 };

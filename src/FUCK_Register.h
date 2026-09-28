@@ -28,7 +28,7 @@ public:
 		static bool s_pendingJournal = false;
 
 		auto widget    = RaceWidget::GetSingleton();
-		bool isRSM     = widget->IsRaceMenuOpen();
+		bool isRSM     = widget->IsRaceMenuOpen() && !widget->IsFittingRoomOpen();
 		bool isJournal = widget->IsJournalOpen();
 
 		for (auto event = *inputEvents; event; event = event->next) {

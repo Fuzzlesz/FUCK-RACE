@@ -106,7 +106,7 @@ void RaceCamera::RevertCameraTransform(RE::NiNode* a_cameraRoot)
 void RaceCamera::HandleInput(float a_interval)
 {
 	auto widget = RaceWidget::GetSingleton();
-	if (widget->IsJournalOpen()) {
+	if (widget->IsJournalOpen() || widget->IsFittingRoomOpen()) {
 		return;
 	}
 
@@ -539,7 +539,7 @@ void RaceCamera::HandleInput(float a_interval)
 
 void RaceCamera::ApplyTransform(RE::NiNode* a_cameraRoot)
 {
-	if (!a_cameraRoot || !HasAnyCamera())
+	if (!a_cameraRoot || !HasAnyCamera() || RaceWidget::GetSingleton()->IsFittingRoomOpen())
 		return;
 
 	_originalTranslate = a_cameraRoot->local.translate;
