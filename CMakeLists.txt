@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 set(NAME "FUCK-RACE" CACHE STRING "")
-set(VERSION 2.0.2)
+set(VERSION 2.1.0)
 
 # ---- Project ----
 
