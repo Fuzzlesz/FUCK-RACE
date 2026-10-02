@@ -115,13 +115,26 @@ void RaceCamera::RevertCameraTransform(RE::NiNode* a_cameraRoot)
 	}
 }
 
+float RaceCamera::GetFovScale() const
+{
+	if (_baseFov <= 0.0f)
+		return 1.0f;
+
+	// Visible width grows with tan(fov / 2), so this is how much more (or less)
+	// of the scene is on screen compared to RaceMenu's default FOV
+	constexpr float DEG2RAD = std::numbers::pi_v<float> / 180.0f;
+
+	float fov   = std::clamp(_baseFov + _fovOffset, 1.0f, 170.0f);
+	float scale = std::tan(fov * 0.5f * DEG2RAD) / std::tan(_baseFov * 0.5f * DEG2RAD);
+	return std::clamp(scale, 0.1f, 10.0f);
+}
+
 float RaceCamera::GetPanScale() const
 {
 	if (_settings.panZoomScaling <= 0.0f)
 		return 1.0f;
 
-	constexpr float DEG2RAD = std::numbers::pi_v<float> / 180.0f;
-	float           scale   = 1.0f;
+	float scale = 1.0f;
 
 	// Distance: current camera-to-head distance relative to RaceMenu's default.
 	// cameraRoot has already been reverted to its original transform at this point.
@@ -137,11 +150,7 @@ float RaceCamera::GetPanScale() const
 		}
 	}
 
-	// FOV: visible width grows with tan(fov / 2)
-	if (_baseFov > 0.0f) {
-		float fov = std::clamp(_baseFov + _fovOffset, 1.0f, 170.0f);
-		scale *= std::tan(fov * 0.5f * DEG2RAD) / std::tan(_baseFov * 0.5f * DEG2RAD);
-	}
+	scale *= GetFovScale();
 
 	scale = std::clamp(scale, 0.1f, 10.0f);
 	return std::pow(scale, _settings.panZoomScaling);
@@ -289,6 +298,10 @@ void RaceCamera::HandleInput(float a_interval)
 		// Pan faster when zoomed out / wide FOV so the subject crosses the screen at a consistent rate
 		float panScale = GetPanScale();
 
+		// Orbit & pitch only follow FOV: at a narrow FOV the same angular step swings the
+		// subject much further across the screen, so slow rotation down to keep precision
+		float rotScale = std::pow(GetFovScale(), _settings.panZoomScaling);
+
 		// --- Mouse Controls ---
 		if (ctrlDown && !isAnyUIHovered && !isPopupOpen) {
 			if (_pendingScroll != 0.0f && !IsMouseOverWireframe()) {
@@ -328,8 +341,8 @@ void RaceCamera::HandleInput(float a_interval)
 			float mPan   = mouseDelta.x * _settings.kbmPanSpeed  * rateMult * panScale * MOUSE_MOVE_MULT;
 			float mZ     = mouseDelta.y * _settings.kbmPanSpeed  * rateMult * panScale * MOUSE_MOVE_MULT;
 			float mRoll  = mouseDelta.x * _settings.kbmRollSpeed * rateMult * MOUSE_MOVE_MULT;
-			float mOrb   = mouseDelta.x * _settings.kbmRotSpeed  * rateMult * MOUSE_MOVE_MULT;
-			float mPitch = mouseDelta.y * _settings.kbmRotSpeed  * rateMult * MOUSE_MOVE_MULT;
+			float mOrb   = mouseDelta.x * _settings.kbmRotSpeed  * rateMult * rotScale * MOUSE_MOVE_MULT;
+			float mPitch = mouseDelta.y * _settings.kbmRotSpeed  * rateMult * rotScale * MOUSE_MOVE_MULT;
 
 			if (ctrlDown && shiftDown) {
 				// Roll (Middle + Ctrl + Shift)
@@ -360,7 +373,7 @@ void RaceCamera::HandleInput(float a_interval)
 			}
 
 			float speed        = _settings.kbmPanSpeed     * _kbmAcceleration * rateMult * panScale * a_interval;
-			float rotSpeed     = _settings.kbmRotSpeed     * rateMult * a_interval;
+			float rotSpeed     = _settings.kbmRotSpeed     * rateMult * rotScale * a_interval;
 			float rollSpeed    = _settings.kbmRollSpeed    * rateMult * a_interval;
 			float zoomFovSpeed = _settings.kbmZoomFovSpeed * rateMult * a_interval;
 
@@ -439,7 +452,7 @@ void RaceCamera::HandleInput(float a_interval)
 		if (isGlobalGP || (isCameraTab && FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad)) {
 			float gpPanSpeed  = _settings.gpPanSpeed  * rateMult * panScale * a_interval;
 			float gpZoomSpeed = _settings.gpZoomSpeed * rateMult * a_interval;
-			float gpRotSpeed  = _settings.gpRotSpeed  * rateMult * a_interval;
+			float gpRotSpeed  = _settings.gpRotSpeed  * rateMult * rotScale * a_interval;
 			float gpRollSpeed = _settings.gpRollSpeed * rateMult * a_interval;
 			float gpFovSpeed  = _settings.gpFovSpeed  * rateMult * a_interval;
 			float deadzone    = _settings.gpDeadzone;
