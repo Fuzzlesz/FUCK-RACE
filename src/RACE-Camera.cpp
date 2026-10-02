@@ -3,6 +3,14 @@
 #include "RACE-Inputs.h"
 #include "RACE-Widget.h"
 
+namespace
+{
+	inline float SmoothFactor(float a_speed, float a_dt)
+	{
+		return 1.0f - std::exp(-a_speed * a_dt);
+	}
+}
+
 void RaceCamera::LoadSettings(CSimpleIniA& a_ini)
 {
 	CameraSettings def;
@@ -157,12 +165,14 @@ void RaceCamera::HandleInput(float a_interval)
 	constexpr float LERP_SNAP_TOLERANCE = 0.05f;
 	constexpr float PITCH_CLAMP_LIMIT   = 1.55f;
 	constexpr float SCROLL_SMOOTH_SPEED = 15.0f;
+	constexpr float QUICKZOOM_SPEED     = 5.0f;
 	constexpr float EPSILON             = 0.001f;
 
 	// Interpolate Quick Zoom swoop
-	_currentZoomOffset     = std::lerp(_currentZoomOffset,     _targetZoomOffset,     5.0f * a_interval);
-	_currentZoomDownOffset = std::lerp(_currentZoomDownOffset, _targetZoomDownOffset, 5.0f * a_interval);
-	_currentZoomSideOffset = std::lerp(_currentZoomSideOffset, _targetZoomSideOffset, 5.0f * a_interval);
+	const float quickZoomT = SmoothFactor(QUICKZOOM_SPEED, a_interval);
+	_currentZoomOffset     = std::lerp(_currentZoomOffset,     _targetZoomOffset,     quickZoomT);
+	_currentZoomDownOffset = std::lerp(_currentZoomDownOffset, _targetZoomDownOffset, quickZoomT);
+	_currentZoomSideOffset = std::lerp(_currentZoomSideOffset, _targetZoomSideOffset, quickZoomT);
 
 	// Snap to target to prevent floating point drift keeping the reset button active
 	if (std::abs(_currentZoomOffset - _targetZoomOffset) < LERP_SNAP_TOLERANCE)
@@ -295,7 +305,7 @@ void RaceCamera::HandleInput(float a_interval)
 
 		// Apply smoothed scrolling
 		if (std::abs(_smoothScrollZoom) > EPSILON) {
-			float step = std::lerp(0.0f, _smoothScrollZoom, SCROLL_SMOOTH_SPEED * a_interval);
+			float step = _smoothScrollZoom * SmoothFactor(SCROLL_SMOOTH_SPEED, a_interval);
 			_targetCamOffset.y += step;
 			_smoothScrollZoom -= step;
 		} else {
@@ -304,7 +314,7 @@ void RaceCamera::HandleInput(float a_interval)
 		}
 
 		if (std::abs(_smoothScrollFov) > EPSILON) {
-			float step = std::lerp(0.0f, _smoothScrollFov, SCROLL_SMOOTH_SPEED * a_interval);
+			float step = _smoothScrollFov * SmoothFactor(SCROLL_SMOOTH_SPEED, a_interval);
 			_targetFovOffset -= step;
 			_smoothScrollFov -= step;
 		} else {
@@ -552,7 +562,7 @@ void RaceCamera::HandleInput(float a_interval)
 	s_wasMouseRot = allowMouseRot;
 
 	if (_settings.smoothCamera) {
-		float lerpSpeed = std::clamp(_settings.lerpMult * a_interval, 0.0f, 1.0f);
+		float lerpSpeed = SmoothFactor(_settings.lerpMult, a_interval);
 		_camOffset.x = std::lerp(_camOffset.x, _targetCamOffset.x, lerpSpeed);
 		_camOffset.y = std::lerp(_camOffset.y, _targetCamOffset.y, lerpSpeed);
 		_camOffset.z = std::lerp(_camOffset.z, _targetCamOffset.z, lerpSpeed);
