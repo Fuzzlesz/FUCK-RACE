@@ -16,6 +16,8 @@ struct CameraSettings
 	float gpFovSpeed     = 30.0f;
 	float gpCharRotSpeed = 3.0f;
 	float gpDeadzone     = 0.25f;
+
+	bool HasCustomSpeeds() const;
 };
 
 struct WidgetSettings

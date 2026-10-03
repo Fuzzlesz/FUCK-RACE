@@ -88,6 +88,26 @@ namespace
 	}
 }
 
+bool CameraSettings::HasCustomSpeeds() const
+{
+	constexpr float EPSILON = 0.001f;
+
+	const CameraSettings def;
+	auto differs = [](float a, float b) { return std::abs(a - b) > EPSILON; };
+
+	return differs(kbmPanSpeed,     def.kbmPanSpeed)     ||
+	       differs(kbmRotSpeed,     def.kbmRotSpeed)     ||
+	       differs(kbmRollSpeed,    def.kbmRollSpeed)    ||
+	       differs(kbmZoomFovSpeed, def.kbmZoomFovSpeed) ||
+	       differs(gpPanSpeed,      def.gpPanSpeed)      ||
+	       differs(gpZoomSpeed,     def.gpZoomSpeed)     ||
+	       differs(gpRotSpeed,      def.gpRotSpeed)      ||
+	       differs(gpRollSpeed,     def.gpRollSpeed)     ||
+	       differs(gpFovSpeed,      def.gpFovSpeed)      ||
+	       differs(gpCharRotSpeed,  def.gpCharRotSpeed)  ||
+	       differs(gpDeadzone,      def.gpDeadzone);
+}
+
 void RaceSettings::Load()
 {
 	GetINI().Load([this](CSimpleIniA& ini) {
