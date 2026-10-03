@@ -1,17 +1,11 @@
 #include "RACE-Camera.h"
+#include "RACE-CameraMaths.h"
 #include "RACE-Compat.h"
 #include "RACE-Inputs.h"
 #include "RACE-Settings.h"
 #include "RACE-Widget.h"
 
-namespace
-{
-	// Framerate independent lerp factor
-	inline float SmoothFactor(float a_speed, float a_dt)
-	{
-		return 1.0f - std::exp(-a_speed * a_dt);
-	}
-}
+using namespace RACE::CameraMath;
 
 bool RaceCamera::IsMouseOverWireframe() const
 {
@@ -72,17 +66,12 @@ float RaceCamera::GetFovScale() const
 
 	// Visible width grows with tan(fov / 2), so this is how much more (or less)
 	// of the scene is on screen compared to RaceMenu's default FOV
-	constexpr float DEG2RAD = std::numbers::pi_v<float> / 180.0f;
-
-	float fov   = std::clamp(_baseFov + _fovOffset, 1.0f, 170.0f);
-	float scale = std::tan(fov * 0.5f * DEG2RAD) / std::tan(_baseFov * 0.5f * DEG2RAD);
-	return std::clamp(scale, 0.1f, 10.0f);
+	return FovScale(_baseFov, _baseFov + _fovOffset);
 }
 
 float RaceCamera::GetRaceMenuFov(float a_gameFov)
 {
 	constexpr float RACEMENU_VFOV = 60.0f;  // vertical FOV in RaceMenu, same at any aspect or game FOV
-	constexpr float DEG2RAD       = std::numbers::pi_v<float> / 180.0f;
 
 	// worldFOV isn't the vertical FOV, so measure how it maps to the frustum once per aspect
 	ImVec2 display = FUCK::GetDisplaySize();
@@ -90,7 +79,7 @@ float RaceCamera::GetRaceMenuFov(float a_gameFov)
 	if (_fovToTanV <= 0.0f || std::abs(aspect - _fovAspect) > 0.01f) {
 		auto  worldCam = RE::Main::WorldRootCamera();
 		float top      = worldCam ? worldCam->GetRuntimeData2().viewFrustum.fTop : 0.0f;
-		float tanGame  = std::tan(a_gameFov * 0.5f * DEG2RAD);
+		float tanGame  = TanHalf(a_gameFov);
 		if (top <= 0.01f || tanGame <= 0.0f)
 			return a_gameFov;
 
@@ -98,7 +87,7 @@ float RaceCamera::GetRaceMenuFov(float a_gameFov)
 		_fovAspect = aspect;
 	}
 
-	return 2.0f * std::atan(std::tan(RACEMENU_VFOV * 0.5f * DEG2RAD) / _fovToTanV) / DEG2RAD;
+	return FovFromTanHalf(TanHalf(RACEMENU_VFOV) / _fovToTanV);
 }
 
 bool RaceCamera::GetCurrentFov(float& a_horizontal, float& a_vertical) const
@@ -106,13 +95,10 @@ bool RaceCamera::GetCurrentFov(float& a_horizontal, float& a_vertical) const
 	if (_baseFov <= 0.0f || _fovToTanV <= 0.0f)
 		return false;
 
-	constexpr float DEG2RAD = std::numbers::pi_v<float> / 180.0f;
+	float tanV = _fovToTanV * TanHalf(ClampFov(_baseFov + _fovOffset));
 
-	float fov  = std::clamp(_baseFov + _fovOffset, 1.0f, 170.0f);
-	float tanV = _fovToTanV * std::tan(fov * 0.5f * DEG2RAD);
-
-	a_vertical   = 2.0f * std::atan(tanV) / DEG2RAD;
-	a_horizontal = 2.0f * std::atan(tanV * _fovAspect) / DEG2RAD;
+	a_vertical   = FovFromTanHalf(tanV);
+	a_horizontal = FovFromTanHalf(tanV * _fovAspect);
 	return true;
 }
 
@@ -297,23 +283,9 @@ void RaceCamera::HandleInput(float a_interval)
 		_pendingScroll = 0.0f;
 
 		// Apply smoothed scrolling
-		if (std::abs(_smoothScrollZoom) > EPSILON) {
-			float step = _smoothScrollZoom * SmoothFactor(SCROLL_SMOOTH_SPEED, a_interval);
-			_targetCamOffset.y += step;
-			_smoothScrollZoom -= step;
-		} else {
-			_targetCamOffset.y += _smoothScrollZoom;
-			_smoothScrollZoom = 0.0f;
-		}
-
-		if (std::abs(_smoothScrollFov) > EPSILON) {
-			float step = _smoothScrollFov * SmoothFactor(SCROLL_SMOOTH_SPEED, a_interval);
-			_targetFovOffset -= step;
-			_smoothScrollFov -= step;
-		} else {
-			_targetFovOffset -= _smoothScrollFov;
-			_smoothScrollFov = 0.0f;
-		}
+		float scrollFactor = SmoothFactor(SCROLL_SMOOTH_SPEED, a_interval);
+		_targetCamOffset.y += DrainSmoothed(_smoothScrollZoom, scrollFactor, EPSILON);
+		_targetFovOffset   -= DrainSmoothed(_smoothScrollFov,  scrollFactor, EPSILON);
 
 		if (mmbDown && !isAnyUIHovered && !isPopupOpen && !s_wireframeInteractLock) {
 			ImVec2 mouseDelta = FUCK::GetMouseDelta();
@@ -438,11 +410,7 @@ void RaceCamera::HandleInput(float a_interval)
 			float deadzone    = settings.gpDeadzone;
 
 			auto ProcessAxis = [deadzone](float val) {
-				if (std::abs(val) < deadzone)
-					return 0.0f;
-				float normalized = (std::abs(val) - deadzone) / (1.0f - deadzone);
-				float curved     = normalized * normalized;
-				return val < 0.0f ? -curved : curved;
+				return ApplyDeadzone(val, deadzone);
 			};
 
 			// D-Pad (For Racemenu Camera Tab only)
@@ -589,16 +557,6 @@ void RaceCamera::UpdateQuickZoomFraming(const RE::NiPoint3& a_headPos, const RE:
 	constexpr float QUICKZOOM_SCREEN_X     = 1.0f / 3.0f;  // -1 = left edge, 1 = right edge (1/3 = right thirds line)
 	constexpr float FALLBACK_TAN_HALF_VFOV = 0.364f;       // ~40 deg vertical FOV
 
-	// Pelvis to root (floor) is the longer half; margin covers the top of the head
-	float halfHeight = (a_pelvisPos - a_rootPos).Length() * QUICKZOOM_MARGIN;
-	if (halfHeight < 1.0f)
-		return;
-
-	// Camera axes: X right, Y forward, Z up
-	const auto&        rot = _originalRotate;
-	const RE::NiPoint3 right{ rot.entry[0][0], rot.entry[1][0], rot.entry[2][0] };
-	const RE::NiPoint3 fwd{ rot.entry[0][1], rot.entry[1][1], rot.entry[2][1] };
-
 	// tan(half FOV) at the current FOV, horizontal from screen aspect
 	float tanV = FALLBACK_TAN_HALF_VFOV * GetFovScale();
 	if (auto worldCam = RE::Main::WorldRootCamera()) {
@@ -609,18 +567,18 @@ void RaceCamera::UpdateQuickZoomFraming(const RE::NiPoint3& a_headPos, const RE:
 
 	ImVec2 display = FUCK::GetDisplaySize();
 	float  aspect  = (display.x > 0.0f && display.y > 0.0f) ? display.x / display.y : 16.0f / 9.0f;
-	float  tanH    = tanV * aspect;
 
 	// Fit full body height, then shift sideways so the pelvis lands on QUICKZOOM_SCREEN_X
-	float        depth  = halfHeight / tanV;
-	RE::NiPoint3 camPos = a_pelvisPos - fwd * depth - right * (QUICKZOOM_SCREEN_X * depth * tanH);
+	auto framing = FrameFullBody(a_pelvisPos, a_rootPos, _originalRotate, tanV, aspect, QUICKZOOM_MARGIN, QUICKZOOM_SCREEN_X);
+	if (!framing)
+		return;
 
-	float headDepth = (a_headPos - _originalTranslate).Dot(fwd);
+	float headDepth = (a_headPos - _originalTranslate).Dot(ForwardAxis(_originalRotate));
 
 	// Stored relative to RaceMenu's camera so idle animation can't drag the framing around
-	_quickZoomCamDelta   = camPos - _originalTranslate;
+	_quickZoomCamDelta   = framing->camPos - _originalTranslate;
 	_quickZoomPivotDelta = a_pelvisPos - _originalTranslate;
-	_quickZoomDistance   = std::max(depth - headDepth, 0.0f);
+	_quickZoomDistance   = std::max(framing->depth - headDepth, 0.0f);
 	_hasQuickZoomFraming = true;
 }
 
@@ -633,9 +591,11 @@ void RaceCamera::ApplyTransform(RE::NiNode* a_cameraRoot)
 	_originalRotate    = a_cameraRoot->local.rotate;
 	_wasModified       = true;
 
+	auto player = RE::PlayerCharacter::GetSingleton();
+
 	RE::NiPoint3 headPos = _originalTranslate;
 	RE::NiPoint3 rootPos = _originalTranslate;
-	if (auto player = RE::PlayerCharacter::GetSingleton()) {
+	if (player) {
 		rootPos = player->GetPosition();
 		if (auto headNode = player->GetNodeByName("NPC Head [Head]")) {
 			headPos = headNode->world.translate;
@@ -646,7 +606,7 @@ void RaceCamera::ApplyTransform(RE::NiNode* a_cameraRoot)
 
 	if (_isQuickZoomed && !_hasQuickZoomFraming) {
 		RE::NiPoint3 pelvisPos = headPos + (rootPos - headPos) * 0.5f;
-		if (auto player = RE::PlayerCharacter::GetSingleton()) {
+		if (player) {
 			if (auto pelvisNode = player->GetNodeByName("NPC Pelvis [Pelv]")) {
 				pelvisPos = pelvisNode->world.translate;
 			}
@@ -662,53 +622,10 @@ void RaceCamera::ApplyTransform(RE::NiNode* a_cameraRoot)
 		camBase                = _originalTranslate + _quickZoomCamDelta * _quickZoomBlend;
 	}
 
-	RE::NiPoint3 radiusVec = camBase - pivot;
-	radiusVec.z            = 0.0f;
-
-	float cosZ = std::cos(_camRotZ);
-	float sinZ = std::sin(_camRotZ);
-
-	RE::NiPoint3 orbitedTranslate;
-	orbitedTranslate.x = pivot.x + (radiusVec.x * cosZ - radiusVec.y * sinZ);
-	orbitedTranslate.y = pivot.y + (radiusVec.x * sinZ + radiusVec.y * cosZ);
-	orbitedTranslate.z = camBase.z;
-
-	RE::NiMatrix3 orbitedRotate;
-	for (int i = 0; i < 3; ++i) {
-		orbitedRotate.entry[0][i] = cosZ * _originalRotate.entry[0][i] - sinZ * _originalRotate.entry[1][i];
-		orbitedRotate.entry[1][i] = sinZ * _originalRotate.entry[0][i] + cosZ * _originalRotate.entry[1][i];
-		orbitedRotate.entry[2][i] = _originalRotate.entry[2][i];
-	}
-
-	// Pitch Matrix (Rotation around local X-axis / Right vector)
-	RE::NiMatrix3 pitchMat;
-	float         cosP = std::cos(_camRotX);
-	float         sinP = std::sin(_camRotX);
-
-	pitchMat.entry[0][0] = 1.0f;
-	pitchMat.entry[0][1] = 0.0f;
-	pitchMat.entry[0][2] = 0.0f;
-	pitchMat.entry[1][0] = 0.0f;
-	pitchMat.entry[1][1] = cosP;
-	pitchMat.entry[1][2] = -sinP;
-	pitchMat.entry[2][0] = 0.0f;
-	pitchMat.entry[2][1] = sinP;
-	pitchMat.entry[2][2] = cosP;
-
-	// Roll Matrix (Rotation around local Y-axis / Forward vector)
-	RE::NiMatrix3 rollMat;
-	float         cosR = std::cos(_camRoll);
-	float         sinR = std::sin(_camRoll);
-
-	rollMat.entry[0][0] = cosR;
-	rollMat.entry[0][1] = 0.0f;
-	rollMat.entry[0][2] = -sinR;
-	rollMat.entry[1][0] = 0.0f;
-	rollMat.entry[1][1] = 1.0f;
-	rollMat.entry[1][2] = 0.0f;
-	rollMat.entry[2][0] = sinR;
-	rollMat.entry[2][1] = 0.0f;
-	rollMat.entry[2][2] = cosR;
+	RE::NiPoint3  orbitedTranslate = OrbitAroundZ(pivot, camBase, _camRotZ);
+	RE::NiMatrix3 orbitedRotate    = MakeYaw(_camRotZ) * _originalRotate;
+	RE::NiMatrix3 pitchMat         = MakePitch(_camRotX);
+	RE::NiMatrix3 rollMat          = MakeRoll(_camRoll);
 
 	RE::NiPoint3 finalOffset      = orbitedRotate * (pitchMat * _camOffset);
 	a_cameraRoot->local.translate = orbitedTranslate + finalOffset;
