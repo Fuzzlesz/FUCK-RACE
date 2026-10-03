@@ -8,5 +8,6 @@ set(sources ${sources}
 	src/RACE-Reference.cpp
 	src/RACE-Settings.cpp
 	src/RACE-Widget.cpp
+	src/RACE-WidgetSettings.cpp
 	src/main.cpp
 )
