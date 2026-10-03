@@ -15,9 +15,8 @@ namespace
 void RaceCamera::LoadSettings(CSimpleIniA& a_ini)
 {
 	CameraSettings def;
-	
+
 	_settings.smoothCamera    = FUCK::INI::LoadBool(a_ini, "Camera", "SmoothCamera",    def.smoothCamera);
-	_settings.lerpMult        = FUCK::INI::LoadFloat(a_ini, "Camera", "LerpMult",       def.lerpMult);
 
 	_settings.kbmPanSpeed     = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMPanSpeed",    def.kbmPanSpeed);
 	_settings.kbmRotSpeed     = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMRotSpeed",    def.kbmRotSpeed);
@@ -36,9 +35,8 @@ void RaceCamera::LoadSettings(CSimpleIniA& a_ini)
 void RaceCamera::SaveSettings(CSimpleIniA& a_ini)
 {
 	CameraSettings def;
-	
+
 	FUCK::INI::SaveBool  (a_ini, "Camera", "SmoothCamera",   _settings.smoothCamera,    def.smoothCamera);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "LerpMult",       _settings.lerpMult,        def.lerpMult);
 
 	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMPanSpeed",    _settings.kbmPanSpeed,     def.kbmPanSpeed);
 	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMRotSpeed",    _settings.kbmRotSpeed,     def.kbmRotSpeed);
@@ -199,6 +197,7 @@ void RaceCamera::HandleInput(float a_interval)
 	constexpr float PITCH_CLAMP_LIMIT        =  1.55f;
 	constexpr float SCROLL_SMOOTH_SPEED      = 15.0f;
 	constexpr float QUICKZOOM_SPEED          =  5.0f;
+	constexpr float CINEMATIC_SPEED          = 10.0f;
 	constexpr float EPSILON                  =  0.001f;
 
 	// Interpolate Quick Zoom swoop
@@ -402,13 +401,13 @@ void RaceCamera::HandleInput(float a_interval)
 			if (isSecondaryKBM) {
 				if (isCameraTabOnly) {
 					// Camera Tab Secondary (Alt): Move Camera X/Z
-					if (FUCK::IsInputDown(RACE::Keys::kKB_W)) 
+					if (FUCK::IsInputDown(RACE::Keys::kKB_W))
 						_targetCamOffset.z += speed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_S)) 
+					if (FUCK::IsInputDown(RACE::Keys::kKB_S))
 						_targetCamOffset.z -= speed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_A)) 
+					if (FUCK::IsInputDown(RACE::Keys::kKB_A))
 						_targetCamOffset.x -= speed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_D)) 
+					if (FUCK::IsInputDown(RACE::Keys::kKB_D))
 						_targetCamOffset.x += speed;
 				} else {
 					// Global Secondary (Ctrl+Shift): Zoom, FOV, Roll & Tilt
@@ -593,14 +592,14 @@ void RaceCamera::HandleInput(float a_interval)
 	s_wasMouseRot = allowMouseRot;
 
 	if (_settings.smoothCamera) {
-		float lerpSpeed = SmoothFactor(_settings.lerpMult, a_interval);
-		_camOffset.x = std::lerp(_camOffset.x, _targetCamOffset.x, lerpSpeed);
-		_camOffset.y = std::lerp(_camOffset.y, _targetCamOffset.y, lerpSpeed);
-		_camOffset.z = std::lerp(_camOffset.z, _targetCamOffset.z, lerpSpeed);
-		_camRotZ     = std::lerp(_camRotZ,     _targetCamRotZ,     lerpSpeed);
-		_camRotX     = std::lerp(_camRotX,     _targetCamRotX,     lerpSpeed);
-		_camRoll     = std::lerp(_camRoll,     _targetCamRoll,     lerpSpeed);
-		_fovOffset   = std::lerp(_fovOffset,   _targetFovOffset,   lerpSpeed);
+		float lerpSpeed = SmoothFactor(CINEMATIC_SPEED, a_interval);
+		_camOffset.x    = std::lerp(_camOffset.x, _targetCamOffset.x, lerpSpeed);
+		_camOffset.y    = std::lerp(_camOffset.y, _targetCamOffset.y, lerpSpeed);
+		_camOffset.z    = std::lerp(_camOffset.z, _targetCamOffset.z, lerpSpeed);
+		_camRotZ        = std::lerp(_camRotZ,     _targetCamRotZ,     lerpSpeed);
+		_camRotX        = std::lerp(_camRotX,     _targetCamRotX,     lerpSpeed);
+		_camRoll        = std::lerp(_camRoll,     _targetCamRoll,     lerpSpeed);
+		_fovOffset      = std::lerp(_fovOffset,   _targetFovOffset,  lerpSpeed);
 	} else {
 		_camOffset = _targetCamOffset;
 		_camRotZ   = _targetCamRotZ;

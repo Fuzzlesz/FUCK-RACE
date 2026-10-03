@@ -2,8 +2,7 @@
 
 struct CameraSettings
 {
-	bool  smoothCamera    = true;
-	float lerpMult        =  10.0f;
+	bool smoothCamera     = true;
 
 	float kbmPanSpeed     =  15.0f;
 	float kbmRotSpeed     =   1.5f;

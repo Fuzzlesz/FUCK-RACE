@@ -18,7 +18,7 @@ public:
 	void DrawPlaybackControls();
 	void DrawToolButtons(float a_comboWidth, float a_rowStartX);
 	void DrawCameraHelpMarker();
-	void DrawCameraReset(float a_comboWidth, float a_rowStartX, bool a_isRaceTab);
+	void DrawCameraReset(float a_comboWidth, float a_rowStartX, bool a_isRaceTab, bool a_reserveRow = false);
 
 	void OnAdvanceMovie(RE::RaceSexMenu* a_menu);
 

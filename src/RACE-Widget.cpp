@@ -811,33 +811,43 @@ void RaceWidget::DrawToolButtons(float a_comboWidth, float a_rowStartX)
 	}
 }
 
-void RaceWidget::DrawCameraReset(float a_comboWidth, float a_rowStartX, bool a_isRaceTab)
+void RaceWidget::DrawCameraReset(float a_comboWidth, float a_rowStartX, bool a_isRaceTab, bool a_reserveRow)
 {
 	bool hasCam       = RaceCamera::GetSingleton()->IsCameraModified();
 	bool drawCheckbox = a_isRaceTab;
 
 	float hFov    = 0.0f;
 	float vFov    = 0.0f;
-	bool  drawFov = _showFov && RaceCamera::GetSingleton()->GetCurrentFov(hFov, vFov);
+	bool  drawFov = _showFov && !a_isRaceTab && RaceCamera::GetSingleton()->GetCurrentFov(hFov, vFov);
 
-	if (!hasCam && !drawCheckbox && !drawFov)
+	if (!hasCam && !drawCheckbox && !drawFov) {
+			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
+			FUCK::Dummy(ImVec2(0.0f, FUCK::GetFrameHeight() + FUCK::Scale(6.0f)));
+		}
 		return;
+	}
 
 	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
 
+	float rowY = FUCK::GetCursorPos().y;
+
 	if (drawCheckbox) {
-		FUCK::SetCursorPosX(a_rowStartX);
+		FUCK::SetCursorPos(ImVec2(a_rowStartX, rowY + FUCK::Scale(4.0f)));
 		if (FUCK::Checkbox("$RACE_HideRaceStats"_T, &_hideRaceStats, false)) {
 			SaveSettings();
 			ToggleRaceStats();
 		}
 	}
 
-	bool fovInline = drawFov && !drawCheckbox;
-	if (fovInline) {
-		FUCK::SetCursorPosX(a_rowStartX);
-		FUCK::AlignTextToFramePadding();
+	if (drawFov) {
+		float fovOffset = FUCK::GetStyleVarVec(ImGuiStyleVar_FramePadding).y + FUCK::Scale(3.0f);
+		FUCK::SetCursorPos(ImVec2(a_rowStartX, rowY + fovOffset));
 		FUCK::TextDisabled("%s %.1f\u00B0 x %.1f\u00B0", "$RACE_FOV"_T, hFov, vFov);
+	}
+
+	if (drawCheckbox || drawFov) {
+		FUCK::SameLine();
+		FUCK::SetCursorPosY(rowY);
 	}
 
 	if (hasCam) {
@@ -845,10 +855,6 @@ void RaceWidget::DrawCameraReset(float a_comboWidth, float a_rowStartX, bool a_i
 		float dynScale     = FUCK::GetGlobalScale() * clusterScale;
 		float btnPadX      = 8.0f * dynScale;
 		float resetWidth   = FUCK::CalcTextSize("$RACE_ResetCam"_T).x + (btnPadX * 2.0f);
-
-		if (drawCheckbox || fovInline) {
-			FUCK::SameLine();
-		}
 
 		FUCK::SetCursorPosX(a_rowStartX + a_comboWidth - resetWidth);
 
@@ -865,11 +871,8 @@ void RaceWidget::DrawCameraReset(float a_comboWidth, float a_rowStartX, bool a_i
 				}
 			}
 		}
-	}
-
-	if (drawFov && !fovInline) {
-		FUCK::SetCursorPosX(a_rowStartX);
-		FUCK::TextDisabled("%s %.1f\u00B0 x %.1f\u00B0", "$RACE_FOV"_T, hFov, vFov);
+	} else if (drawCheckbox || drawFov) {
+		FUCK::Dummy(ImVec2(0.0f, FUCK::GetFrameHeight() + FUCK::Scale(6.0f)));
 	}
 }
 
@@ -1028,7 +1031,7 @@ void RaceWidget::DrawMainPanel()
 	DrawPlaybackControls();
 	DrawToolButtons(comboWidth, rowStartX);
 	DrawCameraHelpMarker();
-	DrawCameraReset(comboWidth, rowStartX, isRaceTab);
+	DrawCameraReset(comboWidth, rowStartX, isRaceTab, _showSettings);
 
 	if (_showSettings) {
 		DrawSettingsPanel(true);
@@ -1100,7 +1103,10 @@ void RaceWidget::ToggleRaceStats()
 
 void RaceWidget::DrawSettingsPanel(bool a_includeCamera)
 {
-	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
+	// !a_includeCamera is pretty much Fitting Room only right now
+	if (!a_includeCamera) {
+		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
+	}
 
 	if (a_includeCamera) {
 		FUCK::SeparatorText("$RACE_Settings"_T);
@@ -1174,7 +1180,25 @@ bool RaceWidget::DrawCameraSettings()
 		}
 	}
 
+	constexpr float EPSILON = 0.001f;
+
+	bool isModified =
+		std::abs(camSettings.kbmPanSpeed     - def.kbmPanSpeed)     > EPSILON ||
+		std::abs(camSettings.kbmRotSpeed     - def.kbmRotSpeed)     > EPSILON ||
+		std::abs(camSettings.kbmRollSpeed    - def.kbmRollSpeed)    > EPSILON ||
+		std::abs(camSettings.kbmZoomFovSpeed - def.kbmZoomFovSpeed) > EPSILON ||
+		std::abs(camSettings.gpPanSpeed      - def.gpPanSpeed)      > EPSILON ||
+		std::abs(camSettings.gpZoomSpeed     - def.gpZoomSpeed)     > EPSILON ||
+		std::abs(camSettings.gpRotSpeed      - def.gpRotSpeed)      > EPSILON ||
+		std::abs(camSettings.gpRollSpeed     - def.gpRollSpeed)     > EPSILON ||
+		std::abs(camSettings.gpFovSpeed      - def.gpFovSpeed)      > EPSILON ||
+		std::abs(camSettings.gpCharRotSpeed  - def.gpCharRotSpeed)  > EPSILON ||
+		std::abs(camSettings.gpDeadzone - def.gpDeadzone)           > EPSILON ;
+
 	if (_showAdvanced) {
+		ImVec2 tabRowPos   = FUCK::GetCursorPos();
+		float  tabRowWidth = FUCK::GetContentRegionAvail().x;
+
 		if (FUCK::BeginTabBar("RaceSettingsTabs", 0)) {
 			// Keyboard & Mouse Tab
 			if (!isGamepad) {
@@ -1187,7 +1211,6 @@ bool RaceWidget::DrawCameraSettings()
 					changed |= SpeedSlider("$RACE_SpeedRoll"_T,  &camSettings.kbmRollSpeed,    def.kbmRollSpeed);
 					changed |= SpeedSlider("$RACE_SpeedFOV"_T,   &camSettings.kbmZoomFovSpeed, def.kbmZoomFovSpeed);
 
-					FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 					FUCK::PopID();
 					FUCK::EndTabItem();
 				}
@@ -1207,52 +1230,41 @@ bool RaceWidget::DrawCameraSettings()
 				
 				changed |= FUCK::ScaledSliderFloat("$RACE_Deadzone"_T, &camSettings.gpDeadzone,     0.0f, 0.5f, 40.0f);
 
-				FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 				FUCK::PopID();
 				FUCK::EndTabItem();
 			}
 			FUCK::EndTabBar();
 		}
 
-		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
-	}
+		if (isModified) {
+			static float s_resetWidth = 0.0f;
 
-	constexpr float EPSILON = 0.001f;
+			ImVec2 afterTabs  = FUCK::GetCursorPos();
+			float  resetWidth = s_resetWidth > 0.0f ? s_resetWidth : FUCK::CalcTextSize("$RACE_RestoreDefaults"_T).x + FUCK::GetStyleVarVec(ImGuiStyleVar_FramePadding).x * 2.0f;
 
-	bool isModified =
-		std::abs(camSettings.kbmPanSpeed     - def.kbmPanSpeed)     > EPSILON ||
-		std::abs(camSettings.kbmRotSpeed     - def.kbmRotSpeed)     > EPSILON ||
-		std::abs(camSettings.kbmRollSpeed    - def.kbmRollSpeed)    > EPSILON ||
-		std::abs(camSettings.kbmZoomFovSpeed - def.kbmZoomFovSpeed) > EPSILON ||
-		std::abs(camSettings.gpPanSpeed      - def.gpPanSpeed)      > EPSILON ||
-		std::abs(camSettings.gpZoomSpeed     - def.gpZoomSpeed)     > EPSILON ||
-		std::abs(camSettings.gpRotSpeed      - def.gpRotSpeed)      > EPSILON ||
-		std::abs(camSettings.gpRollSpeed     - def.gpRollSpeed)     > EPSILON ||
-		std::abs(camSettings.gpFovSpeed      - def.gpFovSpeed)      > EPSILON ||
-		std::abs(camSettings.gpCharRotSpeed  - def.gpCharRotSpeed)  > EPSILON ||
-		std::abs(camSettings.gpDeadzone      - def.gpDeadzone)      > EPSILON ||
-		std::abs(camSettings.lerpMult        - def.lerpMult)        > EPSILON ;
+			FUCK::SetCursorPos(ImVec2(tabRowPos.x + tabRowWidth - resetWidth - FUCK::Scale(30.0f), tabRowPos.y - FUCK::Scale(3.0f)));
 
-	if (_showAdvanced && isModified) {
-		if (FUCK::Button("$RACE_RestoreDefaults"_T)) {
-			camSettings = def;
-			changed     = true;
+			bool resetPressed = FUCK::Button("$RACE_RestoreDefaults"_T);
+			s_resetWidth      = FUCK::GetItemRectSize().x;
+
+			if (resetPressed) {
+				camSettings = def;
+				changed     = true;
+			}
+
+			FUCK::SetCursorPos(afterTabs);
 		}
+
 		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
-	}
-
-	if (FUCK::Checkbox("$RACE_SmoothCamera"_T, &camSettings.smoothCamera, true, true)) {
-		changed = true;
-	}
-
-	if (camSettings.smoothCamera && _showAdvanced) {
-		changed |= SpeedSlider("$RACE_LerpMult"_T, &camSettings.lerpMult, def.lerpMult);
 	}
 
 	if (_showAdvanced) {
 		changed |= FUCK::Checkbox("$RACE_ShowFov"_T, &_showFov, true, true);
 	}
-	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
+
+	if (FUCK::Checkbox("$RACE_SmoothCamera"_T, &camSettings.smoothCamera, true, true)) {
+		changed = true;
+	}
 
 	return changed;
 }
