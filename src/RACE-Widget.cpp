@@ -821,6 +821,7 @@ void RaceWidget::DrawCameraReset(float a_comboWidth, float a_rowStartX, bool a_i
 	bool  drawFov = _showFov && !a_isRaceTab && RaceCamera::GetSingleton()->GetCurrentFov(hFov, vFov);
 
 	if (!hasCam && !drawCheckbox && !drawFov) {
+		if (a_reserveRow) {
 			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
 			FUCK::Dummy(ImVec2(0.0f, FUCK::GetFrameHeight() + FUCK::Scale(6.0f)));
 		}
