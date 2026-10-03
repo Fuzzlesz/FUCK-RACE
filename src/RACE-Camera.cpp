@@ -6,6 +6,58 @@
 #include "RACE-Widget.h"
 
 using namespace RACE::CameraMath;
+namespace Keys = RACE::Keys;
+
+namespace
+{
+	// Multipliers & Magic Numbers
+	constexpr float MOUSE_WHEEL_MULT         =  0.1f;
+	constexpr float MOUSE_MOVE_MULT          =  0.002f;
+	constexpr float MOUSE_ROT_MULT           =  0.010f;
+	constexpr float GP_DPAD_MULT             =  0.5f;
+
+	constexpr float QUICKZOOM_SNAP_TOLERANCE =  0.001f;
+	constexpr float PITCH_CLAMP_LIMIT        =  1.55f;
+	constexpr float SCROLL_SMOOTH_SPEED      = 15.0f;
+	constexpr float QUICKZOOM_SPEED          =  5.0f;
+	constexpr float CINEMATIC_SPEED          = 10.0f;
+	constexpr float EPSILON                  =  0.001f;
+
+	constexpr float DEFAULT_CAMERA_RATE      =  5.0f;
+	constexpr float MIN_CAMERA_RATE          =  1.0f;
+	constexpr float MAX_CAMERA_RATE          = 10.0f;
+
+	float InputAxis(std::uint32_t a_positive, std::uint32_t a_negative)
+	{
+		return (FUCK::IsInputDown(a_positive) ? 1.0f : 0.0f) - (FUCK::IsInputDown(a_negative) ? 1.0f : 0.0f);
+	}
+
+	bool GetCameraEditor(RE::GFxValue& a_out)
+	{
+		auto widget = RaceWidget::GetSingleton();
+		auto movie  = widget->GetCachedMenuMovie();
+
+		RE::GFxValue menuInstance;
+		return movie && widget->GetMenuInstance(movie, menuInstance) && menuInstance.GetMember("cameraEditor", &a_out);
+	}
+
+	void RotatePlayer(float a_amount)
+	{
+		auto player = RE::PlayerCharacter::GetSingleton();
+		if (!player || !player->Is3DLoaded())
+			return;
+
+		if (auto root = player->Get3D(false)) {
+			RE::NiMatrix3 deltaMat;
+			deltaMat.SetEulerAnglesXYZ(0.0f, 0.0f, -a_amount);
+
+			root->local.rotate = deltaMat * root->local.rotate;
+
+			RE::NiUpdateData ctx;
+			root->UpdateWorldData(&ctx);
+		}
+	}
+}
 
 bool RaceCamera::IsMouseOverWireframe() const
 {
@@ -48,15 +100,16 @@ bool RaceCamera::IsMouseOverWireframe() const
 	return false;
 }
 
-void RaceCamera::RevertCameraTransform(RE::NiNode* a_cameraRoot)
+bool RaceCamera::GetCurrentFov(float& a_horizontal, float& a_vertical) const
 {
-	if (a_cameraRoot && _wasModified) {
-		if (a_cameraRoot->local.translate == _appliedTranslate && a_cameraRoot->local.rotate == _appliedRotate) {
-			a_cameraRoot->local.translate = _originalTranslate;
-			a_cameraRoot->local.rotate    = _originalRotate;
-		}
-		_wasModified = false;
-	}
+	if (_baseFov <= 0.0f || _fovToTanV <= 0.0f)
+		return false;
+
+	float tanV = _fovToTanV * TanHalf(ClampFov(_baseFov + _fovOffset));
+
+	a_vertical   = FovFromTanHalf(tanV);
+	a_horizontal = FovFromTanHalf(tanV * _fovAspect);
+	return true;
 }
 
 float RaceCamera::GetFovScale() const
@@ -88,18 +141,6 @@ float RaceCamera::GetRaceMenuFov(float a_gameFov)
 	}
 
 	return FovFromTanHalf(TanHalf(RACEMENU_VFOV) / _fovToTanV);
-}
-
-bool RaceCamera::GetCurrentFov(float& a_horizontal, float& a_vertical) const
-{
-	if (_baseFov <= 0.0f || _fovToTanV <= 0.0f)
-		return false;
-
-	float tanV = _fovToTanV * TanHalf(ClampFov(_baseFov + _fovOffset));
-
-	a_vertical   = FovFromTanHalf(tanV);
-	a_horizontal = FovFromTanHalf(tanV * _fovAspect);
-	return true;
 }
 
 float RaceCamera::GetPanScale() const
@@ -136,418 +177,365 @@ void RaceCamera::HandleInput(float a_interval)
 
 	const auto& settings = RaceSettings::GetSingleton()->camera;
 
-	// Multipliers & Magic Numbers
-	constexpr float MOUSE_WHEEL_MULT         =  0.1f;
-	constexpr float MOUSE_MOVE_MULT          =  0.002f;
-	constexpr float MOUSE_ROT_MULT           =  0.010f;
-	constexpr float GP_DPAD_MULT             =  0.5f;
+	UpdateQuickZoomBlend(a_interval);
 
-	constexpr float QUICKZOOM_SNAP_TOLERANCE =  0.001f;
-	constexpr float PITCH_CLAMP_LIMIT        =  1.55f;
-	constexpr float SCROLL_SMOOTH_SPEED      = 15.0f;
-	constexpr float QUICKZOOM_SPEED          =  5.0f;
-	constexpr float CINEMATIC_SPEED          = 10.0f;
-	constexpr float EPSILON                  =  0.001f;
+	FrameInput in = GatherInput();
 
-	// Interpolate Quick Zoom swoop
-	const float quickZoomTarget = _isQuickZoomed ? 1.0f : 0.0f;
-	_quickZoomBlend             = std::lerp(_quickZoomBlend, quickZoomTarget, SmoothFactor(QUICKZOOM_SPEED, a_interval));
-
-	// Snap to target to prevent floating point drift keeping the reset button active
-	if (std::abs(_quickZoomBlend - quickZoomTarget) < QUICKZOOM_SNAP_TOLERANCE)
-		_quickZoomBlend = quickZoomTarget;
-
-	bool hasSkee         = SKEE64Compat::IsPresent();
-	int  mode            = hasSkee ? widget->GetCurrentMode() : 0;
-	bool isCameraTab     = (mode == 2);
-
-	bool ctrlDown        = FUCK::IsModifierPressed(FUCK::Modifier::kCtrl);
-	bool shiftDown       = FUCK::IsModifierPressed(FUCK::Modifier::kShift);
-	bool altDown         = FUCK::IsModifierPressed(FUCK::Modifier::kAlt);
-
-	bool lbDown          = FUCK::IsInputDown(RACE::Keys::kGP_LB);
-	bool rbDown          = FUCK::IsInputDown(RACE::Keys::kGP_RB);
-
-	bool mmbDown         = FUCK::IsMouseDown(2);
-	bool rmbDown         = FUCK::IsMouseDown(1);
-	bool isPopupOpen     = FUCK::IsPopupOpen(nullptr, FUCK::PopupFlags::kAnyPopup);
-
-	bool isAnyUIHovered  = FUCK::IsWindowHovered(1) || FUCK::IsAnyItemHovered();
-
-	// Lock out camera interaction if a mouse button was clicked down inside the sculpt wireframe
-	static bool s_wasInteractDown       = false;
-	static bool s_wireframeInteractLock = false;
-
-	bool isInteractDown = FUCK::IsInputDown(RACE::Keys::kMouse_Right) || mmbDown;
-	if (!isInteractDown) {
-		s_wireframeInteractLock = false;
-	} else if (isInteractDown && !s_wasInteractDown) {
-		if (IsMouseOverWireframe()) {
-			s_wireframeInteractLock = true;
-		}
-	}
-	s_wasInteractDown = isInteractDown;
-
-	bool isGamepad = FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
-	bool disableGP = isGamepad && widget->IsOnSculptTab();
-
-	bool isGlobalKBM   = ctrlDown && !FUCK::IsAnyItemActive();
-	bool isGlobalGP    = rbDown && !FUCK::IsAnyItemActive() && !disableGP;
-	bool isGlobalMouse = mmbDown && !FUCK::IsAnyItemActive() && !s_wireframeInteractLock && !isAnyUIHovered;
-
-	bool isCameraMode  = isGlobalKBM || isGlobalGP || isCameraTab || isGlobalMouse;
-
-	if (isCameraMode) {
-		if (isCameraTab && hasSkee) {
-			auto movie = widget->GetCachedMenuMovie();
-
-			// Inject ActionScript sync to update the Camera Editor's bottom bar toggles natively
-			if (movie) {
-				RE::GFxValue menuInstance;
-				if (widget->GetMenuInstance(movie, menuInstance)) {
-					RE::GFxValue cameraEditor;
-					if (menuInstance.GetMember("cameraEditor", &cameraEditor)) {
-						RE::GFxValue secVal;
-						cameraEditor.GetMember("_secondary", &secVal);
-
-						// UI toggle reflects the Camera Tab's specific secondary modifiers (LB for GP, Alt for KBM)
-						bool desiredSecondary = isGamepad ? lbDown : altDown;
-
-						if (secVal.GetBool() != desiredSecondary) {
-							cameraEditor.SetMember("_secondary", RE::GFxValue(desiredSecondary));
-							cameraEditor.Invoke("updateBottomBar", nullptr, nullptr, 0);
-						}
-					}
-				}
-			}
-
-			// Handle Rate Multiplier (for Racemenu Camera Tab only)
-			static bool s_rateUpPressed   = false;
-			static bool s_rateDownPressed = false;
-
-			bool rateUp   = FUCK::IsInputDown(RACE::Keys::kGP_A) || FUCK::IsKeyDown(ImGuiKey_Enter);
-			bool rateDown = FUCK::IsInputDown(RACE::Keys::kGP_B) || FUCK::IsKeyDown(ImGuiKey_Tab) || FUCK::IsKeyDown(ImGuiKey_Escape);
-
-			if (rateUp && !s_rateUpPressed) {
-				_cameraRate = std::min(10.0f, _cameraRate + 1.0f);
-				if (movie) {
-					RE::GFxValue menuInst;
-					if (widget->GetMenuInstance(movie, menuInst)) {
-						RE::GFxValue camEd;
-						if (menuInst.GetMember("cameraEditor", &camEd)) {
-							camEd.SetMember("movementRate", RE::GFxValue(_cameraRate));
-							camEd.Invoke("updateBottomBar", nullptr, nullptr, 0);
-						}
-					}
-				}
-			}
-			if (rateDown && !s_rateDownPressed) {
-				_cameraRate = std::max(1.0f, _cameraRate - 1.0f);
-				if (movie) {
-					RE::GFxValue menuInst;
-					if (widget->GetMenuInstance(movie, menuInst)) {
-						RE::GFxValue camEd;
-						if (menuInst.GetMember("cameraEditor", &camEd)) {
-							camEd.SetMember("movementRate", RE::GFxValue(_cameraRate));
-							camEd.Invoke("updateBottomBar", nullptr, nullptr, 0);
-						}
-					}
-				}
-			}
-			s_rateUpPressed   = rateUp;
-			s_rateDownPressed = rateDown;
+	if (in.isCameraMode) {
+		if (in.isCameraTab) {
+			SyncCameraTab(in);
 		}
 
-		// Calculate scaled speeds based on the multiplier (UI default is 5.0f, which normalises back to 1.0f)
-		float rateMult = isCameraTab ? (_cameraRate / 5.0f) : 1.0f;
+		// Read after SyncCameraTab, which may have just changed the rate
+		in.rateMult = in.isCameraTab ? (_cameraRate / DEFAULT_CAMERA_RATE) : 1.0f;
 
 		// Pan faster when zoomed out / wide FOV so the subject crosses the screen at a consistent rate
-		float panScale = GetPanScale();
+		in.panScale = GetPanScale();
 
 		// Orbit & pitch only follow FOV: at a narrow FOV the same angular step swings the
 		// subject much further across the screen, so slow rotation down to keep precision
-		float rotScale = GetFovScale();
+		in.rotScale = GetFovScale();
 
-		// --- Mouse Controls ---
-		if (ctrlDown && !isAnyUIHovered && !isPopupOpen) {
-			if (_pendingScroll != 0.0f && !IsMouseOverWireframe()) {
-				if (shiftDown) {
-					// FOV (CTRL + SHIFT + Scroll)
-					_smoothScrollFov += _pendingScroll * (settings.kbmZoomFovSpeed * rateMult * MOUSE_WHEEL_MULT);
-				} else {
-					// Zoom (CTRL + Scroll)
-					_smoothScrollZoom += _pendingScroll * (settings.kbmZoomFovSpeed * rateMult * MOUSE_WHEEL_MULT);
-				}
-			}
-		}
-		_pendingScroll = 0.0f;
+		HandleMouse(in, settings, a_interval);
+		HandleKeyboard(in, settings, a_interval);
+		HandleGamepad(in, settings, a_interval);
 
-		// Apply smoothed scrolling
-		float scrollFactor = SmoothFactor(SCROLL_SMOOTH_SPEED, a_interval);
-		_targetCamOffset.y += DrainSmoothed(_smoothScrollZoom, scrollFactor, EPSILON);
-		_targetFovOffset   -= DrainSmoothed(_smoothScrollFov,  scrollFactor, EPSILON);
-
-		if (mmbDown && !isAnyUIHovered && !isPopupOpen && !s_wireframeInteractLock) {
-			ImVec2 mouseDelta = FUCK::GetMouseDelta();
-
-			float mPan   = mouseDelta.x * settings.kbmPanSpeed  * rateMult * panScale * MOUSE_MOVE_MULT;
-			float mZ     = mouseDelta.y * settings.kbmPanSpeed  * rateMult * panScale * MOUSE_MOVE_MULT;
-			float mRoll  = mouseDelta.x * settings.kbmRollSpeed * rateMult * MOUSE_MOVE_MULT;
-			float mOrb   = mouseDelta.x * settings.kbmRotSpeed  * rateMult * rotScale * MOUSE_MOVE_MULT;
-			float mPitch = mouseDelta.y * settings.kbmRotSpeed  * rateMult * rotScale * MOUSE_MOVE_MULT;
-
-			if (ctrlDown && shiftDown) {
-				// Roll (Middle + Ctrl + Shift)
-				_targetCamRoll += mRoll;
-			} else if (ctrlDown) {
-				// Pitch (Middle + Ctrl)
-				_targetCamRotX += mPitch;
-			} else if (rmbDown) {
-				// Orbit (Middle + Right)
-				_targetCamRotZ += mOrb;
-			} else {
-				// Pan (Middle)
-				_targetCamOffset.x -= mPan;
-				_targetCamOffset.z += mZ;
-			}
-		}
-
-		// --- KBM Logic ---
-		if (isGlobalKBM || (isCameraTab && FUCK::GetInputDevice() != FUCK::InputDevice::kGamepad)) {
-			bool isTranslating = FUCK::IsInputDown(RACE::Keys::kKB_W) || FUCK::IsInputDown(RACE::Keys::kKB_S) || FUCK::IsInputDown(RACE::Keys::kKB_A) || FUCK::IsInputDown(RACE::Keys::kKB_D);
-
-			if (isTranslating) {
-				_kbmAcceleration += 1.5f * a_interval;
-				if (_kbmAcceleration > 15.0f)
-					_kbmAcceleration = 15.0f;
-			} else {
-				_kbmAcceleration = 1.0f;
-			}
-
-			float speed        = settings.kbmPanSpeed     * _kbmAcceleration * rateMult * panScale * a_interval;
-			float rotSpeed     = settings.kbmRotSpeed     * rateMult * rotScale * a_interval;
-			float rollSpeed    = settings.kbmRollSpeed    * rateMult * a_interval;
-			float zoomFovSpeed = settings.kbmZoomFovSpeed * rateMult * a_interval;
-
-			// Support both Global modifiers (Ctrl+Shift) and Camera Tab specific modifiers (Alt)
-			bool isCameraTabOnly = isCameraTab && !isGlobalKBM;
-			bool isSecondaryKBM  = (isGlobalKBM && shiftDown) || (isCameraTabOnly && altDown);
-
-			if (isSecondaryKBM) {
-				if (isCameraTabOnly) {
-					// Camera Tab Secondary (Alt): Move Camera X/Z
-					if (FUCK::IsInputDown(RACE::Keys::kKB_W))
-						_targetCamOffset.z += speed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_S))
-						_targetCamOffset.z -= speed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_A))
-						_targetCamOffset.x -= speed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_D))
-						_targetCamOffset.x += speed;
-				} else {
-					// Global Secondary (Ctrl+Shift): Zoom, FOV, Roll & Tilt
-					if (FUCK::IsInputDown(RACE::Keys::kKB_W))
-						_targetCamOffset.y += zoomFovSpeed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_S))
-						_targetCamOffset.y -= zoomFovSpeed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_A))
-						_targetFovOffset -= zoomFovSpeed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_D))
-						_targetFovOffset += zoomFovSpeed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_Q))
-						_targetCamRoll -= rollSpeed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_E))
-						_targetCamRoll += rollSpeed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_R))
-						_targetCamRotX += rotSpeed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_F))
-						_targetCamRotX -= rotSpeed;
-				}
-			} else {
-				if (isCameraTabOnly) {
-					// Camera Tab Primary: Zoom, Orbit & Tilt
-					if (FUCK::IsInputDown(RACE::Keys::kKB_W))
-						_targetCamOffset.y += zoomFovSpeed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_S))
-						_targetCamOffset.y -= zoomFovSpeed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_A))
-						_targetCamRotZ -= rotSpeed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_D))
-						_targetCamRotZ += rotSpeed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_Q))
-						_targetCamRotX -= rotSpeed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_E))
-						_targetCamRotX += rotSpeed;
-				} else {
-					// Global Primary (Ctrl): Move Camera X/Z, Orbit & Tilt
-					if (FUCK::IsInputDown(RACE::Keys::kKB_W))
-						_targetCamOffset.z += speed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_S))
-						_targetCamOffset.z -= speed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_A))
-						_targetCamOffset.x -= speed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_D))
-						_targetCamOffset.x += speed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_Q))
-						_targetCamRotZ -= rotSpeed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_E))
-						_targetCamRotZ += rotSpeed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_R))
-						_targetCamRotX += rotSpeed;
-					if (FUCK::IsInputDown(RACE::Keys::kKB_F))
-						_targetCamRotX -= rotSpeed;
-				}
-			}
-		}
-
-		// --- Gamepad Logic ---
-		if (isGlobalGP || (isCameraTab && FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad)) {
-			float gpPanSpeed  = settings.gpPanSpeed  * rateMult * panScale * a_interval;
-			float gpZoomSpeed = settings.gpZoomSpeed * rateMult * a_interval;
-			float gpRotSpeed  = settings.gpRotSpeed  * rateMult * rotScale * a_interval;
-			float gpRollSpeed = settings.gpRollSpeed * rateMult * a_interval;
-			float gpFovSpeed  = settings.gpFovSpeed  * rateMult * a_interval;
-			float deadzone    = settings.gpDeadzone;
-
-			auto ProcessAxis = [deadzone](float val) {
-				return ApplyDeadzone(val, deadzone);
-			};
-
-			// D-Pad (For Racemenu Camera Tab only)
-			// Ignore D-pad if RB is held so it doesn't move the camera when navigating the widget
-			if (isCameraTab && !rbDown) {
-				bool up    = FUCK::IsInputDown(RACE::Keys::kGP_Up);
-				bool down  = FUCK::IsInputDown(RACE::Keys::kGP_Down);
-				bool left  = FUCK::IsInputDown(RACE::Keys::kGP_Left);
-				bool right = FUCK::IsInputDown(RACE::Keys::kGP_Right);
-
-				if (lbDown) {
-					if (up)
-						_targetCamOffset.y += gpZoomSpeed * GP_DPAD_MULT;
-					if (down)
-						_targetCamOffset.y -= gpZoomSpeed * GP_DPAD_MULT;
-					if (left)
-						_targetCamRotZ     -= gpRotSpeed  * GP_DPAD_MULT;
-					if (right)
-						_targetCamRotZ     += gpRotSpeed  * GP_DPAD_MULT;
-				} else {
-					if (up)
-						_targetCamOffset.z += gpPanSpeed * GP_DPAD_MULT;
-					if (down)
-						_targetCamOffset.z -= gpPanSpeed * GP_DPAD_MULT;
-					if (left)
-						_targetCamOffset.x -= gpPanSpeed * GP_DPAD_MULT;
-					if (right)
-						_targetCamOffset.x += gpPanSpeed * GP_DPAD_MULT;
-				}
-			}
-
-			// Thumbsticks (Always requires RB)
-			if (isGlobalGP) {
-				float leftStickX  = ProcessAxis(FUCK::GetAnalogInput(RACE::Keys::kGP_LSX));
-				float leftStickY  = ProcessAxis(FUCK::GetAnalogInput(RACE::Keys::kGP_LSY));
-				float rightStickX = ProcessAxis(FUCK::GetAnalogInput(RACE::Keys::kGP_RSX));
-				float rightStickY = ProcessAxis(FUCK::GetAnalogInput(RACE::Keys::kGP_RSY));
-				float lt          = ProcessAxis(FUCK::GetAnalogInput(RACE::Keys::kGP_LT));
-				float rt          = ProcessAxis(FUCK::GetAnalogInput(RACE::Keys::kGP_RT));
-
-				_targetCamOffset.z += (leftStickY * gpPanSpeed);
-				_targetCamOffset.x += (leftStickX * gpPanSpeed);
-				_targetFovOffset   += (rt - lt) * gpFovSpeed;
-
-				// Roll & Pitch activate if LB + RB is held
-				if (lbDown) {
-					_targetCamRoll += (rightStickX * gpRollSpeed);
-					_targetCamRotX -= (rightStickY * gpRotSpeed);
-				} else {
-					_targetCamRotZ     -= (rightStickX * gpRotSpeed);
-					_targetCamOffset.y += (rightStickY * gpZoomSpeed);
-				}
-			}
-		}
-
-		// Clamp Pitch to prevent gimble flips when viewing directly from top/bottom
+		// Clamp Pitch to prevent gimbal flips when viewing directly from top/bottom
 		_targetCamRotX = std::clamp(_targetCamRotX, -PITCH_CLAMP_LIMIT, PITCH_CLAMP_LIMIT);
 	}
 
-	// Right-Click or Gamepad Character Rotation
-	bool isGP_Y      = FUCK::IsInputDown(RACE::Keys::kGP_Y);
-	bool isGP_X      = FUCK::IsInputDown(RACE::Keys::kGP_X);
-	bool isAnyActive = FUCK::IsAnyItemActive();
+	HandleCharacterRotation(in, settings, a_interval);
+	UpdateSmoothing(settings.smoothCamera, a_interval);
+	ApplyFov();
+}
+
+void RaceCamera::UpdateQuickZoomBlend(float a_interval)
+{
+	// Interpolate Quick Zoom swoop
+	const float target = _isQuickZoomed ? 1.0f : 0.0f;
+	_quickZoomBlend    = std::lerp(_quickZoomBlend, target, SmoothFactor(QUICKZOOM_SPEED, a_interval));
+
+	// Snap to target to prevent floating point drift keeping the reset button active
+	if (std::abs(_quickZoomBlend - target) < QUICKZOOM_SNAP_TOLERANCE)
+		_quickZoomBlend = target;
+}
+
+RaceCamera::FrameInput RaceCamera::GatherInput()
+{
+	auto widget = RaceWidget::GetSingleton();
+
+	FrameInput in;
+
+	in.isCameraTab  = SKEE64Compat::IsPresent() && widget->GetCurrentMode() == 2;
+	in.isGamepad    = FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
+
+	in.ctrlDown     = FUCK::IsModifierPressed(FUCK::Modifier::kCtrl);
+	in.shiftDown    = FUCK::IsModifierPressed(FUCK::Modifier::kShift);
+	in.altDown      = FUCK::IsModifierPressed(FUCK::Modifier::kAlt);
+
+	in.lbDown       = FUCK::IsInputDown(Keys::kGP_LB);
+	in.rbDown       = FUCK::IsInputDown(Keys::kGP_RB);
+
+	in.mmbDown      = FUCK::IsMouseDown(2);
+	in.rmbDown      = FUCK::IsMouseDown(1);
+
+	in.isPopupOpen  = FUCK::IsPopupOpen(nullptr, FUCK::PopupFlags::kAnyPopup);
+	in.isUIHovered  = FUCK::IsWindowHovered(1) || FUCK::IsAnyItemHovered();
+	in.isItemActive = FUCK::IsAnyItemActive();
+
+	UpdateWireframeLock(in.mmbDown);
+
+	// Sculpt tab uses the gamepad for its own controls
+	bool disableGP = in.isGamepad && widget->IsOnSculptTab();
+
+	bool isGlobalMouse = in.mmbDown && !in.isItemActive && !_wireframeLock && !in.isUIHovered;
+
+	in.isGlobalKBM  = in.ctrlDown && !in.isItemActive;
+	in.isGlobalGP   = in.rbDown && !in.isItemActive && !disableGP;
+	in.isCameraMode = in.isGlobalKBM || in.isGlobalGP || in.isCameraTab || isGlobalMouse;
+
+	return in;
+}
+
+void RaceCamera::UpdateWireframeLock(bool a_mmbDown)
+{
+	// Lock out camera interaction if a mouse button was clicked down inside the sculpt wireframe
+	bool isInteractDown = FUCK::IsInputDown(Keys::kMouse_Right) || a_mmbDown;
+
+	if (!isInteractDown) {
+		_wireframeLock = false;
+	} else if (!_wasInteractDown && IsMouseOverWireframe()) {
+		_wireframeLock = true;
+	}
+
+	_wasInteractDown = isInteractDown;
+}
+
+void RaceCamera::SyncCameraTab(const FrameInput& a_in)
+{
+	// Mirror our modifier state onto the Camera Editor's bottom bar toggle
+	// (LB on gamepad, Alt on keyboard), so its prompts match what the keys do
+	RE::GFxValue cameraEditor;
+	if (GetCameraEditor(cameraEditor)) {
+		RE::GFxValue secVal;
+		cameraEditor.GetMember("_secondary", &secVal);
+
+		bool desiredSecondary = a_in.isGamepad ? a_in.lbDown : a_in.altDown;
+		if (secVal.GetBool() != desiredSecondary) {
+			cameraEditor.SetMember("_secondary", RE::GFxValue(desiredSecondary));
+			cameraEditor.Invoke("updateBottomBar", nullptr, nullptr, 0);
+		}
+	}
+
+	// Rate multiplier, stepped on key press
+	bool rateUp   = FUCK::IsInputDown(Keys::kGP_A) || FUCK::IsKeyDown(ImGuiKey_Enter);
+	bool rateDown = FUCK::IsInputDown(Keys::kGP_B) || FUCK::IsKeyDown(ImGuiKey_Tab) || FUCK::IsKeyDown(ImGuiKey_Escape);
+
+	if (rateUp && !_wasRateUp) {
+		SetCameraTabRate(std::min(MAX_CAMERA_RATE, _cameraRate + 1.0f));
+	}
+	if (rateDown && !_wasRateDown) {
+		SetCameraTabRate(std::max(MIN_CAMERA_RATE, _cameraRate - 1.0f));
+	}
+
+	_wasRateUp   = rateUp;
+	_wasRateDown = rateDown;
+}
+
+void RaceCamera::SetCameraTabRate(float a_rate)
+{
+	_cameraRate = a_rate;
+
+	RE::GFxValue cameraEditor;
+	if (GetCameraEditor(cameraEditor)) {
+		cameraEditor.SetMember("movementRate", RE::GFxValue(_cameraRate));
+		cameraEditor.Invoke("updateBottomBar", nullptr, nullptr, 0);
+	}
+}
+
+void RaceCamera::HandleMouse(const FrameInput& a_in, const CameraSettings& a_settings, float a_interval)
+{
+	if (a_in.ctrlDown && !a_in.isUIHovered && !a_in.isPopupOpen) {
+		if (_pendingScroll != 0.0f && !IsMouseOverWireframe()) {
+			float amount = _pendingScroll * (a_settings.kbmZoomFovSpeed * a_in.rateMult * MOUSE_WHEEL_MULT);
+			if (a_in.shiftDown) {
+				// FOV (CTRL + SHIFT + Scroll)
+				_smoothScrollFov += amount;
+			} else {
+				// Zoom (CTRL + Scroll)
+				_smoothScrollZoom += amount;
+			}
+		}
+	}
+	_pendingScroll = 0.0f;
+
+	float scrollFactor = SmoothFactor(SCROLL_SMOOTH_SPEED, a_interval);
+	_targetCamOffset.y += DrainSmoothed(_smoothScrollZoom, scrollFactor, EPSILON);
+	_targetFovOffset   -= DrainSmoothed(_smoothScrollFov,  scrollFactor, EPSILON);
+
+	if (!a_in.mmbDown || a_in.isUIHovered || a_in.isPopupOpen || _wireframeLock)
+		return;
+
+	ImVec2 mouseDelta = FUCK::GetMouseDelta();
+	float  mult       = a_in.rateMult * MOUSE_MOVE_MULT;
+
+	if (a_in.ctrlDown && a_in.shiftDown) {
+		// Roll (Middle + Ctrl + Shift)
+		_targetCamRoll += mouseDelta.x * a_settings.kbmRollSpeed * mult;
+	} else if (a_in.ctrlDown) {
+		// Pitch (Middle + Ctrl)
+		_targetCamRotX += mouseDelta.y * a_settings.kbmRotSpeed * mult * a_in.rotScale;
+	} else if (a_in.rmbDown) {
+		// Orbit (Middle + Right)
+		_targetCamRotZ += mouseDelta.x * a_settings.kbmRotSpeed * mult * a_in.rotScale;
+	} else {
+		// Pan (Middle)
+		_targetCamOffset.x -= mouseDelta.x * a_settings.kbmPanSpeed * mult * a_in.panScale;
+		_targetCamOffset.z += mouseDelta.y * a_settings.kbmPanSpeed * mult * a_in.panScale;
+	}
+}
+
+void RaceCamera::HandleKeyboard(const FrameInput& a_in, const CameraSettings& a_settings, float a_interval)
+{
+	if (!a_in.isGlobalKBM && !(a_in.isCameraTab && !a_in.isGamepad))
+		return;
+
+	// Translation accelerates the longer WASD is held
+	bool isTranslating = FUCK::IsInputDown(Keys::kKB_W) || FUCK::IsInputDown(Keys::kKB_S) ||
+	                     FUCK::IsInputDown(Keys::kKB_A) || FUCK::IsInputDown(Keys::kKB_D);
+
+	if (isTranslating) {
+		_kbmAcceleration = std::min(_kbmAcceleration + 1.5f * a_interval, 15.0f);
+	} else {
+		_kbmAcceleration = 1.0f;
+	}
+
+	float speed        = a_settings.kbmPanSpeed     * _kbmAcceleration * a_in.rateMult * a_in.panScale * a_interval;
+	float rotSpeed     = a_settings.kbmRotSpeed     * a_in.rateMult * a_in.rotScale * a_interval;
+	float rollSpeed    = a_settings.kbmRollSpeed    * a_in.rateMult * a_interval;
+	float zoomFovSpeed = a_settings.kbmZoomFovSpeed * a_in.rateMult * a_interval;
+
+	float ws = InputAxis(Keys::kKB_W, Keys::kKB_S);
+	float da = InputAxis(Keys::kKB_D, Keys::kKB_A);
+	float eq = InputAxis(Keys::kKB_E, Keys::kKB_Q);
+	float rf = InputAxis(Keys::kKB_R, Keys::kKB_F);
+
+	// Global modifiers (Ctrl / Ctrl+Shift) and Camera Tab modifiers (none / Alt) map differently
+	bool isCameraTabOnly = a_in.isCameraTab && !a_in.isGlobalKBM;
+	bool isSecondary     = (a_in.isGlobalKBM && a_in.shiftDown) || (isCameraTabOnly && a_in.altDown);
+
+	if (isCameraTabOnly && isSecondary) {
+		// Camera Tab Secondary (Alt): Move Camera X/Z
+		_targetCamOffset.z += ws * speed;
+		_targetCamOffset.x += da * speed;
+	} else if (isSecondary) {
+		// Global Secondary (Ctrl+Shift): Zoom, FOV, Roll & Tilt
+		_targetCamOffset.y += ws * zoomFovSpeed;
+		_targetFovOffset   += da * zoomFovSpeed;
+		_targetCamRoll     += eq * rollSpeed;
+		_targetCamRotX     += rf * rotSpeed;
+	} else if (isCameraTabOnly) {
+		// Camera Tab Primary: Zoom, Orbit & Tilt
+		_targetCamOffset.y += ws * zoomFovSpeed;
+		_targetCamRotZ     += da * rotSpeed;
+		_targetCamRotX     += eq * rotSpeed;
+	} else {
+		// Global Primary (Ctrl): Move Camera X/Z, Orbit & Tilt
+		_targetCamOffset.z += ws * speed;
+		_targetCamOffset.x += da * speed;
+		_targetCamRotZ     += eq * rotSpeed;
+		_targetCamRotX     += rf * rotSpeed;
+	}
+}
+
+void RaceCamera::HandleGamepad(const FrameInput& a_in, const CameraSettings& a_settings, float a_interval)
+{
+	if (!a_in.isGlobalGP && !(a_in.isCameraTab && a_in.isGamepad))
+		return;
+
+	float panSpeed  = a_settings.gpPanSpeed  * a_in.rateMult * a_in.panScale * a_interval;
+	float zoomSpeed = a_settings.gpZoomSpeed * a_in.rateMult * a_interval;
+	float rotSpeed  = a_settings.gpRotSpeed  * a_in.rateMult * a_in.rotScale * a_interval;
+	float rollSpeed = a_settings.gpRollSpeed * a_in.rateMult * a_interval;
+	float fovSpeed  = a_settings.gpFovSpeed  * a_in.rateMult * a_interval;
+
+	// D-Pad (RaceMenu Camera Tab only)
+	// Ignored while RB is held so navigating the widget doesn't move the camera
+	if (a_in.isCameraTab && !a_in.rbDown) {
+		float upDown    = InputAxis(Keys::kGP_Up,    Keys::kGP_Down);
+		float rightLeft = InputAxis(Keys::kGP_Right, Keys::kGP_Left);
+
+		if (a_in.lbDown) {
+			_targetCamOffset.y += upDown    * zoomSpeed * GP_DPAD_MULT;
+			_targetCamRotZ     += rightLeft * rotSpeed  * GP_DPAD_MULT;
+		} else {
+			_targetCamOffset.z += upDown    * panSpeed * GP_DPAD_MULT;
+			_targetCamOffset.x += rightLeft * panSpeed * GP_DPAD_MULT;
+		}
+	}
+
+	// Thumbsticks (Always requires RB)
+	if (a_in.isGlobalGP) {
+		auto axis = [&](std::uint32_t a_key) {
+			return ApplyDeadzone(FUCK::GetAnalogInput(a_key), a_settings.gpDeadzone);
+		};
+
+		float leftX  = axis(Keys::kGP_LSX);
+		float leftY  = axis(Keys::kGP_LSY);
+		float rightX = axis(Keys::kGP_RSX);
+		float rightY = axis(Keys::kGP_RSY);
+		float lt     = axis(Keys::kGP_LT);
+		float rt     = axis(Keys::kGP_RT);
+
+		_targetCamOffset.z += leftY * panSpeed;
+		_targetCamOffset.x += leftX * panSpeed;
+		_targetFovOffset   += (rt - lt) * fovSpeed;
+
+		if (a_in.lbDown) {
+			// LB + RB: Roll & Pitch
+			_targetCamRoll += rightX * rollSpeed;
+			_targetCamRotX -= rightY * rotSpeed;
+		} else {
+			// RB: Orbit & Zoom
+			_targetCamRotZ     -= rightX * rotSpeed;
+			_targetCamOffset.y += rightY * zoomSpeed;
+		}
+	}
+}
+
+void RaceCamera::HandleCharacterRotation(const FrameInput& a_in, const CameraSettings& a_settings, float a_interval)
+{
+	// Right-drag, or RB + X/Y on gamepad
+	bool gpY = FUCK::IsInputDown(Keys::kGP_Y);
+	bool gpX = FUCK::IsInputDown(Keys::kGP_X);
 
 	// Prevent input "bleed" when selecting UI items with the gamepad.
-	static bool s_lockoutGPRot = false;
-	if (isPopupOpen || isAnyActive) {
-		s_lockoutGPRot = true;
-	} else if (!isGP_Y && !isGP_X) {
-		s_lockoutGPRot = false;
+	if (a_in.isPopupOpen || a_in.isItemActive) {
+		_lockoutGPCharRot = true;
+	} else if (!gpY && !gpX) {
+		_lockoutGPCharRot = false;
 	}
 
 	// Block mouse rotation if hovering ImGui windows, sculpt wireframe
-	bool allowMouseRot = FUCK::IsInputDown(RACE::Keys::kMouse_Right) && !mmbDown && !isAnyUIHovered && !isPopupOpen && !s_wireframeInteractLock;
-	bool allowGPRot    = rbDown && (isGP_Y || isGP_X) && !s_lockoutGPRot;
+	bool allowMouseRot = FUCK::IsInputDown(Keys::kMouse_Right) && !a_in.mmbDown && !a_in.isUIHovered && !a_in.isPopupOpen && !_wireframeLock;
+	bool allowGPRot    = a_in.rbDown && (gpY || gpX) && !_lockoutGPCharRot;
 
-	bool isRotatingNow = (allowMouseRot || allowGPRot);
+	float rotAmount = 0.0f;
 
-	static bool s_wasMouseRot = false;
-
-	if (isRotatingNow) {
-		float rotAmount = 0.0f;
-
-		if (allowMouseRot) {
-			if (s_wasMouseRot) { // Ignore the very first frame to prevent delta spikes
-				rotAmount = FUCK::GetMouseDelta().x * MOUSE_ROT_MULT;
-			}
-		} else if (allowGPRot) {
-			if (isGP_Y)
-				rotAmount -= settings.gpCharRotSpeed * a_interval;
-			if (isGP_X)
-				rotAmount += settings.gpCharRotSpeed * a_interval;
+	if (allowMouseRot) {
+		if (_wasMouseCharRot) { // Ignore the very first frame to prevent delta spikes
+			rotAmount = FUCK::GetMouseDelta().x * MOUSE_ROT_MULT;
 		}
-
-		if (rotAmount != 0.0f) {
-			auto player = RE::PlayerCharacter::GetSingleton();
-			if (player && player->Is3DLoaded()) {
-				if (auto root = player->Get3D(false)) {
-					RE::NiMatrix3 deltaMat;
-					deltaMat.SetEulerAnglesXYZ(0.0f, 0.0f, -rotAmount);
-					
-					root->local.rotate = deltaMat * root->local.rotate;
-
-					RE::NiUpdateData ctx;
-					root->UpdateWorldData(&ctx);
-				}
-			}
-		}
+	} else if (allowGPRot) {
+		if (gpY)
+			rotAmount -= a_settings.gpCharRotSpeed * a_interval;
+		if (gpX)
+			rotAmount += a_settings.gpCharRotSpeed * a_interval;
 	}
-	s_wasMouseRot = allowMouseRot;
 
-	if (settings.smoothCamera) {
-		float lerpSpeed = SmoothFactor(CINEMATIC_SPEED, a_interval);
-		_camOffset.x    = std::lerp(_camOffset.x, _targetCamOffset.x, lerpSpeed);
-		_camOffset.y    = std::lerp(_camOffset.y, _targetCamOffset.y, lerpSpeed);
-		_camOffset.z    = std::lerp(_camOffset.z, _targetCamOffset.z, lerpSpeed);
-		_camRotZ        = std::lerp(_camRotZ,     _targetCamRotZ,     lerpSpeed);
-		_camRotX        = std::lerp(_camRotX,     _targetCamRotX,     lerpSpeed);
-		_camRoll        = std::lerp(_camRoll,     _targetCamRoll,     lerpSpeed);
-		_fovOffset      = std::lerp(_fovOffset,   _targetFovOffset,  lerpSpeed);
-	} else {
+	_wasMouseCharRot = allowMouseRot;
+
+	if (rotAmount != 0.0f) {
+		RotatePlayer(rotAmount);
+	}
+}
+
+void RaceCamera::UpdateSmoothing(bool a_smooth, float a_interval)
+{
+	if (!a_smooth) {
 		_camOffset = _targetCamOffset;
 		_camRotZ   = _targetCamRotZ;
 		_camRotX   = _targetCamRotX;
 		_camRoll   = _targetCamRoll;
 		_fovOffset = _targetFovOffset;
+		return;
 	}
 
-	if (auto camera = RE::PlayerCamera::GetSingleton()) {
-		auto& worldFOV = camera->GetRuntimeData2().worldFOV;
-		if (_baseFov == 0.0f && worldFOV != 0.0f) {
-			_gameFov = worldFOV;
-			_baseFov = GetRaceMenuFov(worldFOV);
-		}
-		if (_baseFov != 0.0f)
-			worldFOV = _baseFov + _fovOffset;
+	float t      = SmoothFactor(CINEMATIC_SPEED, a_interval);
+	_camOffset.x = std::lerp(_camOffset.x, _targetCamOffset.x, t);
+	_camOffset.y = std::lerp(_camOffset.y, _targetCamOffset.y, t);
+	_camOffset.z = std::lerp(_camOffset.z, _targetCamOffset.z, t);
+	_camRotZ     = std::lerp(_camRotZ,     _targetCamRotZ,     t);
+	_camRotX     = std::lerp(_camRotX,     _targetCamRotX,     t);
+	_camRoll     = std::lerp(_camRoll,     _targetCamRoll,     t);
+	_fovOffset   = std::lerp(_fovOffset,   _targetFovOffset,   t);
+}
+
+void RaceCamera::ApplyFov()
+{
+	auto camera = RE::PlayerCamera::GetSingleton();
+	if (!camera)
+		return;
+
+	auto& worldFOV = camera->GetRuntimeData2().worldFOV;
+
+	if (_baseFov == 0.0f && worldFOV != 0.0f) {
+		_gameFov = worldFOV;
+		_baseFov = GetRaceMenuFov(worldFOV);
 	}
+
+	if (_baseFov != 0.0f)
+		worldFOV = _baseFov + _fovOffset;
 }
 
 void RaceCamera::UpdateQuickZoomFraming(const RE::NiPoint3& a_headPos, const RE::NiPoint3& a_pelvisPos, const RE::NiPoint3& a_rootPos)
@@ -637,6 +625,17 @@ void RaceCamera::ApplyTransform(RE::NiNode* a_cameraRoot)
 	a_cameraRoot->UpdateWorldData(&ctx);
 }
 
+void RaceCamera::RevertCameraTransform(RE::NiNode* a_cameraRoot)
+{
+	if (a_cameraRoot && _wasModified) {
+		if (a_cameraRoot->local.translate == _appliedTranslate && a_cameraRoot->local.rotate == _appliedRotate) {
+			a_cameraRoot->local.translate = _originalTranslate;
+			a_cameraRoot->local.rotate    = _originalRotate;
+		}
+		_wasModified = false;
+	}
+}
+
 void RaceCamera::ToggleQuickZoom()
 {
 	_isQuickZoomed = !_isQuickZoomed;
@@ -669,7 +668,7 @@ void RaceCamera::ResetOffsets()
 	_targetFovOffset     = 0.0f;
 	_baseFov             = 0.0f;
 	_gameFov             = 0.0f;
-	_cameraRate          = 5.0f;
+	_cameraRate          = DEFAULT_CAMERA_RATE;
 	_isQuickZoomed       = false;
 	_quickZoomBlend      = 0.0f;
 	_quickZoomDistance   = 0.0f;
