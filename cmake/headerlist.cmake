@@ -6,6 +6,7 @@ set(headers ${headers}
 	src/RACE-Anims.h
 	src/RACE-Camera.h
 	src/RACE-CameraMaths.h
+	src/RACE-ColorPicker.h
 	src/RACE-Compat.h
 	src/RACE-Equip.h
 	src/RACE-Hooks.h

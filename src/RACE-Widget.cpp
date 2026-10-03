@@ -4,6 +4,7 @@
 
 #include "RACE-Anims.h"
 #include "RACE-Camera.h"
+#include "RACE-ColorPicker.h"
 #include "RACE-Compat.h"
 #include "RACE-Equip.h"
 #include "RACE-Inputs.h"
@@ -176,8 +177,12 @@ void RaceWidget::OnAdvanceMovie(RE::RaceSexMenu* a_menu)
 						menuInstance.SetMember("ShowRaceDescription", newShowRaceDesc);
 					}
 
+					RaceColorPicker::GetSingleton()->InstallHooks(a_menu->uiMovie.get(), menuInstance);
+
 					menuInstance.SetMember("FUCK_HooksApplied", RE::GFxValue(true));
 				}
+
+				RaceColorPicker::GetSingleton()->OnAdvanceMovie(a_menu->uiMovie.get(), menuInstance);
 
 				// Apply Sculpt Panel Hooks
 				if (GetCurrentMode() == 3) {
@@ -380,7 +385,10 @@ void RaceWidget::Draw()
 	RE::GFxValue menuInstance;
 	bool         hasMenu = _cachedRaceMenuMovie && GetMenuInstance(_cachedRaceMenuMovie, menuInstance);
 
-	if (hasMenu) {
+	// Stay up for our picker while RaceMenu's colour field fades modeSelect out (gamepad keeps RaceMenu's sliders)
+	bool showColor = FUCK::GetInputDevice() != FUCK::InputDevice::kGamepad && RaceColorPicker::GetSingleton()->IsFieldOpen();
+
+	if (hasMenu && !showColor) {
 		// Sync to modeSelect's alpha safely using the IsFlagSet bitmask check.
 		RE::GFxValue modeSelect;
 		if (menuInstance.GetMember("modeSelect", &modeSelect)) {
@@ -500,6 +508,8 @@ void RaceWidget::Draw()
 	FUCK::BeginGroup();
 	if (_isFittingRoomOpen) {
 		DrawFittingRoomPanel();
+	} else if (showColor) {
+		RaceColorPicker::GetSingleton()->Draw(baseWidth);
 	} else if (currentMode == 3) {
 		if (!isGamepad) {
 			DrawSculptPanel();
