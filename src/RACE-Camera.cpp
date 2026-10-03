@@ -5,6 +5,7 @@
 
 namespace
 {
+	// Framerate independent lerp factor
 	inline float SmoothFactor(float a_speed, float a_dt)
 	{
 		return 1.0f - std::exp(-a_speed * a_dt);
