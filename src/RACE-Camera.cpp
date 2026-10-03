@@ -288,8 +288,10 @@ void RaceCamera::SyncCameraTab(const FrameInput& a_in)
 	}
 
 	// Rate multiplier, stepped on key press
-	bool rateUp   = FUCK::IsInputDown(Keys::kGP_A) || FUCK::IsKeyDown(ImGuiKey_Enter);
-	bool rateDown = FUCK::IsInputDown(Keys::kGP_B) || FUCK::IsKeyDown(ImGuiKey_Tab) || FUCK::IsKeyDown(ImGuiKey_Escape);
+	// KBM keys are skipped while Ctrl is held, as E orbits/rolls there
+	bool kbmRate  = !a_in.ctrlDown;
+	bool rateUp   = FUCK::IsInputDown(Keys::kGP_A) || (kbmRate && FUCK::IsInputDown(Keys::kKB_E));
+	bool rateDown = FUCK::IsInputDown(Keys::kGP_B) || (kbmRate && FUCK::IsInputDown(Keys::kKB_Tab));
 
 	if (rateUp && !_wasRateUp) {
 		SetCameraTabRate(std::min(MAX_CAMERA_RATE, _cameraRate + 1.0f));
@@ -385,9 +387,9 @@ void RaceCamera::HandleKeyboard(const FrameInput& a_in, const CameraSettings& a_
 	bool isSecondary     = (a_in.isGlobalKBM && a_in.shiftDown) || (isCameraTabOnly && a_in.altDown);
 
 	if (isCameraTabOnly && isSecondary) {
-		// Camera Tab Secondary (Alt): Move Camera X/Z
-		_targetCamOffset.z += ws * speed;
-		_targetCamOffset.x += da * speed;
+		// Camera Tab Secondary (Alt): Zoom & Orbit
+		_targetCamOffset.y += ws * zoomFovSpeed;
+		_targetCamRotZ     += da * rotSpeed;
 	} else if (isSecondary) {
 		// Global Secondary (Ctrl+Shift): Zoom, FOV, Roll & Tilt
 		_targetCamOffset.y += ws * zoomFovSpeed;
@@ -395,10 +397,9 @@ void RaceCamera::HandleKeyboard(const FrameInput& a_in, const CameraSettings& a_
 		_targetCamRoll     += eq * rollSpeed;
 		_targetCamRotX     += rf * rotSpeed;
 	} else if (isCameraTabOnly) {
-		// Camera Tab Primary: Zoom, Orbit & Tilt
-		_targetCamOffset.y += ws * zoomFovSpeed;
-		_targetCamRotZ     += da * rotSpeed;
-		_targetCamRotX     += eq * rotSpeed;
+		// Camera Tab Primary: Move Camera X/Z
+		_targetCamOffset.z += ws * speed;
+		_targetCamOffset.x += da * speed;
 	} else {
 		// Global Primary (Ctrl): Move Camera X/Z, Orbit & Tilt
 		_targetCamOffset.z += ws * speed;
