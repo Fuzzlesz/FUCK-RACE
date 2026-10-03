@@ -16,54 +16,42 @@ void RaceCamera::LoadSettings(CSimpleIniA& a_ini)
 {
 	CameraSettings def;
 	
-	_settings.smoothCamera        = FUCK::INI::LoadBool(a_ini, "Camera", "SmoothCamera",          def.smoothCamera);
-	_settings.lerpMult            = FUCK::INI::LoadFloat(a_ini, "Camera", "LerpMult",             def.lerpMult);
+	_settings.smoothCamera    = FUCK::INI::LoadBool(a_ini, "Camera", "SmoothCamera",    def.smoothCamera);
+	_settings.lerpMult        = FUCK::INI::LoadFloat(a_ini, "Camera", "LerpMult",       def.lerpMult);
 
-	_settings.kbmPanSpeed         = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMPanSpeed",          def.kbmPanSpeed);
-	_settings.kbmRotSpeed         = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMRotSpeed",          def.kbmRotSpeed);
-	_settings.kbmRollSpeed        = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMRollSpeed",         def.kbmRollSpeed);
-	_settings.kbmZoomFovSpeed     = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMFovSpeed",          def.kbmZoomFovSpeed);
+	_settings.kbmPanSpeed     = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMPanSpeed",    def.kbmPanSpeed);
+	_settings.kbmRotSpeed     = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMRotSpeed",    def.kbmRotSpeed);
+	_settings.kbmRollSpeed    = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMRollSpeed",   def.kbmRollSpeed);
+	_settings.kbmZoomFovSpeed = FUCK::INI::LoadFloat(a_ini, "Camera", "KBMFovSpeed",    def.kbmZoomFovSpeed);
 
-	_settings.gpPanSpeed          = FUCK::INI::LoadFloat(a_ini, "Camera", "GPPanSpeed",           def.gpPanSpeed);
-	_settings.gpZoomSpeed         = FUCK::INI::LoadFloat(a_ini, "Camera", "GPZoomSpeed",          def.gpZoomSpeed);
-	_settings.gpRotSpeed          = FUCK::INI::LoadFloat(a_ini, "Camera", "GPRotSpeed",           def.gpRotSpeed);
-	_settings.gpRollSpeed         = FUCK::INI::LoadFloat(a_ini, "Camera", "GPRollSpeed",          def.gpRollSpeed);
-	_settings.gpFovSpeed          = FUCK::INI::LoadFloat(a_ini, "Camera", "GPFovSpeed",           def.gpFovSpeed);
-	_settings.gpCharRotSpeed      = FUCK::INI::LoadFloat(a_ini, "Camera", "GPCharRotSpeed",       def.gpCharRotSpeed);
-	_settings.gpDeadzone          = FUCK::INI::LoadFloat(a_ini, "Camera", "GPDeadzone",           def.gpDeadzone);
-
-	_settings.quickZoomOffset     = FUCK::INI::LoadFloat(a_ini, "Camera", "QuickZoomOffset",      def.quickZoomOffset);
-	_settings.quickZoomDownOffset = FUCK::INI::LoadFloat(a_ini, "Camera", "QuickZoomDownOffset",  def.quickZoomDownOffset);
-	_settings.quickZoomSideOffset = FUCK::INI::LoadFloat(a_ini, "Camera", "QuickZoomSideOffset",  def.quickZoomSideOffset);
-
-	_settings.panZoomScaling      = FUCK::INI::LoadFloat(a_ini, "Camera", "PanZoomScaling",       def.panZoomScaling);
+	_settings.gpPanSpeed      = FUCK::INI::LoadFloat(a_ini, "Camera", "GPPanSpeed",     def.gpPanSpeed);
+	_settings.gpZoomSpeed     = FUCK::INI::LoadFloat(a_ini, "Camera", "GPZoomSpeed",    def.gpZoomSpeed);
+	_settings.gpRotSpeed      = FUCK::INI::LoadFloat(a_ini, "Camera", "GPRotSpeed",     def.gpRotSpeed);
+	_settings.gpRollSpeed     = FUCK::INI::LoadFloat(a_ini, "Camera", "GPRollSpeed",    def.gpRollSpeed);
+	_settings.gpFovSpeed      = FUCK::INI::LoadFloat(a_ini, "Camera", "GPFovSpeed",     def.gpFovSpeed);
+	_settings.gpCharRotSpeed  = FUCK::INI::LoadFloat(a_ini, "Camera", "GPCharRotSpeed", def.gpCharRotSpeed);
+	_settings.gpDeadzone      = FUCK::INI::LoadFloat(a_ini, "Camera", "GPDeadzone",     def.gpDeadzone);
 }
 
 void RaceCamera::SaveSettings(CSimpleIniA& a_ini)
 {
 	CameraSettings def;
 	
-	FUCK::INI::SaveBool  (a_ini, "Camera", "SmoothCamera",        _settings.smoothCamera,         def.smoothCamera);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "LerpMult",            _settings.lerpMult,             def.lerpMult);
+	FUCK::INI::SaveBool  (a_ini, "Camera", "SmoothCamera",   _settings.smoothCamera,    def.smoothCamera);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "LerpMult",       _settings.lerpMult,        def.lerpMult);
 
-	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMPanSpeed",         _settings.kbmPanSpeed,          def.kbmPanSpeed);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMRotSpeed",         _settings.kbmRotSpeed,          def.kbmRotSpeed);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMRollSpeed",        _settings.kbmRollSpeed,         def.kbmRollSpeed);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMFovSpeed",         _settings.kbmZoomFovSpeed,      def.kbmZoomFovSpeed);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMPanSpeed",    _settings.kbmPanSpeed,     def.kbmPanSpeed);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMRotSpeed",    _settings.kbmRotSpeed,     def.kbmRotSpeed);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMRollSpeed",   _settings.kbmRollSpeed,    def.kbmRollSpeed);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "KBMFovSpeed",    _settings.kbmZoomFovSpeed, def.kbmZoomFovSpeed);
 
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPPanSpeed",          _settings.gpPanSpeed,           def.gpPanSpeed);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPZoomSpeed",         _settings.gpZoomSpeed,          def.gpZoomSpeed);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPRotSpeed",          _settings.gpRotSpeed,           def.gpRotSpeed);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPRollSpeed",         _settings.gpRollSpeed,          def.gpRollSpeed);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPFovSpeed",          _settings.gpFovSpeed,           def.gpFovSpeed);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPCharRotSpeed",      _settings.gpCharRotSpeed,       def.gpCharRotSpeed);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "GPDeadzone",          _settings.gpDeadzone,           def.gpDeadzone);
-
-	FUCK::INI::SaveDouble(a_ini, "Camera", "QuickZoomOffset",     _settings.quickZoomOffset,      def.quickZoomOffset);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "QuickZoomDownOffset", _settings.quickZoomDownOffset,  def.quickZoomDownOffset);
-	FUCK::INI::SaveDouble(a_ini, "Camera", "QuickZoomSideOffset", _settings.quickZoomSideOffset,  def.quickZoomSideOffset);
-
-	FUCK::INI::SaveDouble(a_ini, "Camera", "PanZoomScaling",      _settings.panZoomScaling,       def.panZoomScaling);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPPanSpeed",     _settings.gpPanSpeed,      def.gpPanSpeed);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPZoomSpeed",    _settings.gpZoomSpeed,     def.gpZoomSpeed);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPRotSpeed",     _settings.gpRotSpeed,      def.gpRotSpeed);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPRollSpeed",    _settings.gpRollSpeed,     def.gpRollSpeed);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPFovSpeed",     _settings.gpFovSpeed,      def.gpFovSpeed);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPCharRotSpeed", _settings.gpCharRotSpeed,  def.gpCharRotSpeed);
+	FUCK::INI::SaveDouble(a_ini, "Camera", "GPDeadzone",     _settings.gpDeadzone,      def.gpDeadzone);
 }
 
 bool RaceCamera::IsMouseOverWireframe() const
@@ -110,9 +98,11 @@ bool RaceCamera::IsMouseOverWireframe() const
 void RaceCamera::RevertCameraTransform(RE::NiNode* a_cameraRoot)
 {
 	if (a_cameraRoot && _wasModified) {
-		a_cameraRoot->local.translate = _originalTranslate;
-		a_cameraRoot->local.rotate    = _originalRotate;
-		_wasModified                  = false;
+		if (a_cameraRoot->local.translate == _appliedTranslate && a_cameraRoot->local.rotate == _appliedRotate) {
+			a_cameraRoot->local.translate = _originalTranslate;
+			a_cameraRoot->local.rotate    = _originalRotate;
+		}
+		_wasModified = false;
 	}
 }
 
@@ -132,9 +122,6 @@ float RaceCamera::GetFovScale() const
 
 float RaceCamera::GetPanScale() const
 {
-	if (_settings.panZoomScaling <= 0.0f)
-		return 1.0f;
-
 	float scale = 1.0f;
 
 	// Distance: current camera-to-head distance relative to RaceMenu's default.
@@ -145,7 +132,7 @@ float RaceCamera::GetPanScale() const
 		if (auto head = player->GetNodeByName("NPC Head [Head]")) {
 			float baseDist = camera->cameraRoot->local.translate.GetDistance(head->world.translate);
 			if (baseDist > 1.0f) {
-				float zoomIn = _camOffset.y + _currentZoomOffset;  // +Y moves toward the subject
+				float zoomIn = _camOffset.y - _quickZoomDistance * _quickZoomBlend;  // +Y moves toward the subject
 				scale *= std::max(baseDist - zoomIn, 1.0f) / baseDist;
 			}
 		}
@@ -153,8 +140,7 @@ float RaceCamera::GetPanScale() const
 
 	scale *= GetFovScale();
 
-	scale = std::clamp(scale, 0.1f, 10.0f);
-	return std::pow(scale, _settings.panZoomScaling);
+	return std::clamp(scale, 0.1f, 10.0f);
 }
 
 void RaceCamera::HandleInput(float a_interval)
@@ -167,30 +153,24 @@ void RaceCamera::HandleInput(float a_interval)
 	a_interval = std::min(a_interval, 0.1f);
 
 	// Multipliers & Magic Numbers
-	constexpr float MOUSE_WHEEL_MULT    = 0.1f;
-	constexpr float MOUSE_MOVE_MULT     = 0.002f;
-	constexpr float MOUSE_ROT_MULT      = 0.010f;
-	constexpr float GP_DPAD_MULT        = 0.5f;
-	
-	constexpr float LERP_SNAP_TOLERANCE = 0.05f;
-	constexpr float PITCH_CLAMP_LIMIT   = 1.55f;
-	constexpr float SCROLL_SMOOTH_SPEED = 15.0f;
-	constexpr float QUICKZOOM_SPEED     = 5.0f;
-	constexpr float EPSILON             = 0.001f;
+	constexpr float MOUSE_WHEEL_MULT         =  0.1f;
+	constexpr float MOUSE_MOVE_MULT          =  0.002f;
+	constexpr float MOUSE_ROT_MULT           =  0.010f;
+	constexpr float GP_DPAD_MULT             =  0.5f;
+
+	constexpr float QUICKZOOM_SNAP_TOLERANCE =  0.001f;
+	constexpr float PITCH_CLAMP_LIMIT        =  1.55f;
+	constexpr float SCROLL_SMOOTH_SPEED      = 15.0f;
+	constexpr float QUICKZOOM_SPEED          =  5.0f;
+	constexpr float EPSILON                  =  0.001f;
 
 	// Interpolate Quick Zoom swoop
-	const float quickZoomT = SmoothFactor(QUICKZOOM_SPEED, a_interval);
-	_currentZoomOffset     = std::lerp(_currentZoomOffset,     _targetZoomOffset,     quickZoomT);
-	_currentZoomDownOffset = std::lerp(_currentZoomDownOffset, _targetZoomDownOffset, quickZoomT);
-	_currentZoomSideOffset = std::lerp(_currentZoomSideOffset, _targetZoomSideOffset, quickZoomT);
+	const float quickZoomTarget = _isQuickZoomed ? 1.0f : 0.0f;
+	_quickZoomBlend             = std::lerp(_quickZoomBlend, quickZoomTarget, SmoothFactor(QUICKZOOM_SPEED, a_interval));
 
 	// Snap to target to prevent floating point drift keeping the reset button active
-	if (std::abs(_currentZoomOffset - _targetZoomOffset) < LERP_SNAP_TOLERANCE)
-		_currentZoomOffset = _targetZoomOffset;
-	if (std::abs(_currentZoomDownOffset - _targetZoomDownOffset) < LERP_SNAP_TOLERANCE)
-		_currentZoomDownOffset = _targetZoomDownOffset;
-	if (std::abs(_currentZoomSideOffset - _targetZoomSideOffset) < LERP_SNAP_TOLERANCE)
-		_currentZoomSideOffset = _targetZoomSideOffset;
+	if (std::abs(_quickZoomBlend - quickZoomTarget) < QUICKZOOM_SNAP_TOLERANCE)
+		_quickZoomBlend = quickZoomTarget;
 
 	bool hasSkee         = SKEE64Compat::IsPresent();
 	int  mode            = hasSkee ? widget->GetCurrentMode() : 0;
@@ -301,7 +281,7 @@ void RaceCamera::HandleInput(float a_interval)
 
 		// Orbit & pitch only follow FOV: at a narrow FOV the same angular step swings the
 		// subject much further across the screen, so slow rotation down to keep precision
-		float rotScale = std::pow(GetFovScale(), _settings.panZoomScaling);
+		float rotScale = GetFovScale();
 
 		// --- Mouse Controls ---
 		if (ctrlDown && !isAnyUIHovered && !isPopupOpen) {
@@ -601,6 +581,48 @@ void RaceCamera::HandleInput(float a_interval)
 	}
 }
 
+void RaceCamera::UpdateQuickZoomFraming(const RE::NiPoint3& a_headPos, const RE::NiPoint3& a_pelvisPos, const RE::NiPoint3& a_rootPos)
+{
+	// Quick Zoom framing
+	constexpr float QUICKZOOM_MARGIN       = 1.25f;        // 1.0 = feet touch screen edge
+	constexpr float QUICKZOOM_SCREEN_X     = 1.0f / 3.0f;  // -1 = left edge, 1 = right edge (1/3 = right thirds line)
+	constexpr float FALLBACK_TAN_HALF_VFOV = 0.364f;       // ~40 deg vertical FOV
+
+	// Pelvis to root (floor) is the longer half; margin covers the top of the head
+	float halfHeight = (a_pelvisPos - a_rootPos).Length() * QUICKZOOM_MARGIN;
+	if (halfHeight < 1.0f)
+		return;
+
+	// Camera axes: X right, Y forward, Z up
+	const auto&        rot = _originalRotate;
+	const RE::NiPoint3 right{ rot.entry[0][0], rot.entry[1][0], rot.entry[2][0] };
+	const RE::NiPoint3 fwd{ rot.entry[0][1], rot.entry[1][1], rot.entry[2][1] };
+
+	// tan(half FOV) at the current FOV, horizontal from screen aspect
+	float tanV = FALLBACK_TAN_HALF_VFOV * GetFovScale();
+	if (auto worldCam = RE::Main::WorldRootCamera()) {
+		float top = worldCam->GetRuntimeData2().viewFrustum.fTop;
+		if (top > 0.01f)
+			tanV = top;
+	}
+
+	ImVec2 display = FUCK::GetDisplaySize();
+	float  aspect  = (display.x > 0.0f && display.y > 0.0f) ? display.x / display.y : 16.0f / 9.0f;
+	float  tanH    = tanV * aspect;
+
+	// Fit full body height, then shift sideways so the pelvis lands on QUICKZOOM_SCREEN_X
+	float        depth  = halfHeight / tanV;
+	RE::NiPoint3 camPos = a_pelvisPos - fwd * depth - right * (QUICKZOOM_SCREEN_X * depth * tanH);
+
+	float headDepth = (a_headPos - _originalTranslate).Dot(fwd);
+
+	// Stored relative to RaceMenu's camera so idle animation can't drag the framing around
+	_quickZoomCamDelta   = camPos - _originalTranslate;
+	_quickZoomPivotDelta = a_pelvisPos - _originalTranslate;
+	_quickZoomDistance   = std::max(depth - headDepth, 0.0f);
+	_hasQuickZoomFraming = true;
+}
+
 void RaceCamera::ApplyTransform(RE::NiNode* a_cameraRoot)
 {
 	if (!a_cameraRoot || !HasAnyCamera() || RaceWidget::GetSingleton()->IsFittingRoomOpen())
@@ -610,17 +632,36 @@ void RaceCamera::ApplyTransform(RE::NiNode* a_cameraRoot)
 	_originalRotate    = a_cameraRoot->local.rotate;
 	_wasModified       = true;
 
-	RE::NiPoint3 pivot  = _originalTranslate;
-	auto         player = RE::PlayerCharacter::GetSingleton();
-	if (player) {
+	RE::NiPoint3 headPos = _originalTranslate;
+	RE::NiPoint3 rootPos = _originalTranslate;
+	if (auto player = RE::PlayerCharacter::GetSingleton()) {
+		rootPos = player->GetPosition();
 		if (auto headNode = player->GetNodeByName("NPC Head [Head]")) {
-			pivot = headNode->world.translate;
+			headPos = headNode->world.translate;
 		} else {
-			pivot = player->GetPosition();
+			headPos = rootPos;
 		}
 	}
 
-	RE::NiPoint3 radiusVec = _originalTranslate - pivot;
+	if (_isQuickZoomed && !_hasQuickZoomFraming) {
+		RE::NiPoint3 pelvisPos = headPos + (rootPos - headPos) * 0.5f;
+		if (auto player = RE::PlayerCharacter::GetSingleton()) {
+			if (auto pelvisNode = player->GetNodeByName("NPC Pelvis [Pelv]")) {
+				pelvisPos = pelvisNode->world.translate;
+			}
+		}
+		UpdateQuickZoomFraming(headPos, pelvisPos, rootPos);
+	}
+
+	RE::NiPoint3 pivot   = headPos;
+	RE::NiPoint3 camBase = _originalTranslate;
+	if (_hasQuickZoomFraming && _quickZoomBlend > 0.0f) {
+		RE::NiPoint3 bodyPivot = _originalTranslate + _quickZoomPivotDelta;
+		pivot                  = headPos + (bodyPivot - headPos) * _quickZoomBlend;
+		camBase                = _originalTranslate + _quickZoomCamDelta * _quickZoomBlend;
+	}
+
+	RE::NiPoint3 radiusVec = camBase - pivot;
 	radiusVec.z            = 0.0f;
 
 	float cosZ = std::cos(_camRotZ);
@@ -629,7 +670,7 @@ void RaceCamera::ApplyTransform(RE::NiNode* a_cameraRoot)
 	RE::NiPoint3 orbitedTranslate;
 	orbitedTranslate.x = pivot.x + (radiusVec.x * cosZ - radiusVec.y * sinZ);
 	orbitedTranslate.y = pivot.y + (radiusVec.x * sinZ + radiusVec.y * cosZ);
-	orbitedTranslate.z = _originalTranslate.z;
+	orbitedTranslate.z = camBase.z;
 
 	RE::NiMatrix3 orbitedRotate;
 	for (int i = 0; i < 3; ++i) {
@@ -668,14 +709,11 @@ void RaceCamera::ApplyTransform(RE::NiNode* a_cameraRoot)
 	rollMat.entry[2][1] = 0.0f;
 	rollMat.entry[2][2] = cosR;
 
-	RE::NiPoint3 localOffset = _camOffset;
-	localOffset.y += _currentZoomOffset;
-	localOffset.z -= _currentZoomDownOffset;
-	localOffset.x += _currentZoomSideOffset;
-
-	RE::NiPoint3 finalOffset      = orbitedRotate * (pitchMat * localOffset);
+	RE::NiPoint3 finalOffset      = orbitedRotate * (pitchMat * _camOffset);
 	a_cameraRoot->local.translate = orbitedTranslate + finalOffset;
 	a_cameraRoot->local.rotate    = orbitedRotate * pitchMat * rollMat;
+	_appliedTranslate             = a_cameraRoot->local.translate;
+	_appliedRotate                = a_cameraRoot->local.rotate;
 
 	RE::NiUpdateData ctx;
 	a_cameraRoot->UpdateWorldData(&ctx);
@@ -684,15 +722,14 @@ void RaceCamera::ApplyTransform(RE::NiNode* a_cameraRoot)
 void RaceCamera::ToggleQuickZoom()
 {
 	_isQuickZoomed = !_isQuickZoomed;
-	if (_isQuickZoomed) {
-		_targetZoomOffset     = -_settings.quickZoomOffset;
-		_targetZoomDownOffset = _settings.quickZoomDownOffset;
-		_targetZoomSideOffset = _settings.quickZoomSideOffset;
-	} else {
-		_targetZoomOffset     = 0.0f;
-		_targetZoomDownOffset = 0.0f;
-		_targetZoomSideOffset = 0.0f;
-	}
+	if (_isQuickZoomed)
+		_hasQuickZoomFraming = false;
+
+	// Anchor to the face/body framing by easing out manual moves
+	_targetCamOffset  = { 0.0f, 0.0f, 0.0f };
+	_targetCamRotZ    = 0.0f;
+	_targetCamRotX    = 0.0f;
+	_smoothScrollZoom = 0.0f;
 }
 
 void RaceCamera::ResetOffsets()
@@ -702,25 +739,22 @@ void RaceCamera::ResetOffsets()
 			camera->GetRuntimeData2().worldFOV = _baseFov;
 		RevertCameraTransform(camera->cameraRoot.get());
 	}
-	_camOffset             = { 0.0f, 0.0f, 0.0f };
-	_camRotZ               = 0.0f;
-	_camRotX               = 0.0f;
-	_camRoll               = 0.0f;
-	_fovOffset             = 0.0f;	
-	_targetCamOffset       = { 0.0f, 0.0f, 0.0f };
-	_targetCamRotZ         = 0.0f;
-	_targetCamRotX         = 0.0f;
-	_targetCamRoll         = 0.0f;
-	_targetFovOffset       = 0.0f;
-	_baseFov               = 0.0f;
-	_cameraRate            = 5.0f;
-	_isQuickZoomed         = false;
-	_targetZoomOffset      = 0.0f;
-	_currentZoomOffset     = 0.0f;
-	_targetZoomDownOffset  = 0.0f;
-	_currentZoomDownOffset = 0.0f;
-	_targetZoomSideOffset  = 0.0f;
-	_currentZoomSideOffset = 0.0f;
-	_smoothScrollZoom      = 0.0f;
-	_smoothScrollFov       = 0.0f;
+	_camOffset           = { 0.0f, 0.0f, 0.0f };
+	_camRotZ             = 0.0f;
+	_camRotX             = 0.0f;
+	_camRoll             = 0.0f;
+	_fovOffset           = 0.0f;
+	_targetCamOffset     = { 0.0f, 0.0f, 0.0f };
+	_targetCamRotZ       = 0.0f;
+	_targetCamRotX       = 0.0f;
+	_targetCamRoll       = 0.0f;
+	_targetFovOffset     = 0.0f;
+	_baseFov             = 0.0f;
+	_cameraRate          = 5.0f;
+	_isQuickZoomed       = false;
+	_quickZoomBlend      = 0.0f;
+	_quickZoomDistance   = 0.0f;
+	_hasQuickZoomFraming = false;
+	_smoothScrollZoom    = 0.0f;
+	_smoothScrollFov     = 0.0f;
 }

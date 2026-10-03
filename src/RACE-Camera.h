@@ -17,13 +17,6 @@ struct CameraSettings
 	float gpFovSpeed      =  30.0f;
 	float gpCharRotSpeed  =   3.0f;
 	float gpDeadzone      =   0.25f;
-
-	float quickZoomOffset     = 100.0f;
-	float quickZoomDownOffset =  45.0f;
-	float quickZoomSideOffset = -30.0f;
-
-	// 0 = off, 1 = fully proportional. Pan follows zoom distance + FOV; orbit/pitch follow FOV only.
-	float panZoomScaling = 1.0f;
 };
 
 class RaceCamera : public REX::Singleton<RaceCamera>
@@ -42,10 +35,7 @@ public:
 
 	bool HasAnyCamera() const
 	{
-		return IsCameraModified() ||
-		       std::abs(_currentZoomOffset)     > 0.01f ||
-		       std::abs(_currentZoomDownOffset) > 0.01f ||
-		       std::abs(_currentZoomSideOffset) > 0.01f;
+		return IsCameraModified() || _quickZoomBlend > 0.001f;
 	}
 
 	bool IsCameraModified() const
@@ -64,6 +54,7 @@ public:
 private:
 	float GetFovScale() const;
 	float GetPanScale() const;
+	void  UpdateQuickZoomFraming(const RE::NiPoint3& a_headPos, const RE::NiPoint3& a_pelvisPos, const RE::NiPoint3& a_rootPos);
 
 	CameraSettings _settings;
 
@@ -82,13 +73,12 @@ private:
 	float        _targetCamRoll   = 0.0f;
 	float        _targetFovOffset = 0.0f;
 
-	float _currentZoomOffset     = 0.0f;
-	float _targetZoomOffset      = 0.0f;
-	float _currentZoomDownOffset = 0.0f;
-	float _targetZoomDownOffset  = 0.0f;
-	float _currentZoomSideOffset = 0.0f;
-	float _targetZoomSideOffset  = 0.0f;
-	bool  _isQuickZoomed         = false;
+	float        _quickZoomBlend      = 0.0f;  // 0 = face, 1 = body
+	float        _quickZoomDistance   = 0.0f;
+	bool         _isQuickZoomed       = false;
+	bool         _hasQuickZoomFraming = false;
+	RE::NiPoint3 _quickZoomCamDelta  { 0.0f, 0.0f, 0.0f };
+	RE::NiPoint3 _quickZoomPivotDelta{ 0.0f, 0.0f, 0.0f };
 
 	float _smoothScrollZoom = 0.0f;
 	float _smoothScrollFov  = 0.0f;
@@ -98,5 +88,7 @@ private:
 
 	RE::NiPoint3  _originalTranslate;
 	RE::NiMatrix3 _originalRotate;
+	RE::NiPoint3  _appliedTranslate;
+	RE::NiMatrix3 _appliedRotate;
 	bool          _wasModified = false;
 };

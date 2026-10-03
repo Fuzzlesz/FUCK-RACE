@@ -1197,35 +1197,23 @@ bool RaceWidget::DrawCameraSettings()
 		}
 
 		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
-
-		changed |= FUCK::ScaledSliderFloat("$RACE_QuickZoomDist"_T, &camSettings.quickZoomOffset,       10.0f, 200.0f, 0.1f);
-		changed |= FUCK::ScaledSliderFloat("$RACE_QuickZoomDown"_T, &camSettings.quickZoomDownOffset,    0.0f, 100.0f, 0.2f);
-		changed |= FUCK::ScaledSliderFloat("$RACE_QuickZoomPan"_T,  &camSettings.quickZoomSideOffset, -100.0f, 100.0f, 0.1f);
-
-		changed |= FUCK::ScaledSliderFloat("$RACE_PanZoomScaling"_T, &camSettings.panZoomScaling,        0.0f,   1.0f, 20.0f);
-
-		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 	}
 
 	constexpr float EPSILON = 0.001f;
 
-	bool           isModified =
-		std::abs(camSettings.kbmPanSpeed         - def.kbmPanSpeed)         > EPSILON ||
-		std::abs(camSettings.kbmRotSpeed         - def.kbmRotSpeed)         > EPSILON ||
-		std::abs(camSettings.kbmRollSpeed        - def.kbmRollSpeed)        > EPSILON ||
-		std::abs(camSettings.kbmZoomFovSpeed     - def.kbmZoomFovSpeed)     > EPSILON ||
-		std::abs(camSettings.gpPanSpeed          - def.gpPanSpeed)          > EPSILON ||
-		std::abs(camSettings.gpZoomSpeed         - def.gpZoomSpeed)         > EPSILON ||
-		std::abs(camSettings.gpRotSpeed          - def.gpRotSpeed)          > EPSILON ||
-		std::abs(camSettings.gpRollSpeed         - def.gpRollSpeed)         > EPSILON ||
-		std::abs(camSettings.gpFovSpeed          - def.gpFovSpeed)          > EPSILON ||
-		std::abs(camSettings.gpCharRotSpeed      - def.gpCharRotSpeed)      > EPSILON ||
-		std::abs(camSettings.quickZoomOffset     - def.quickZoomOffset)     > EPSILON ||
-		std::abs(camSettings.quickZoomDownOffset - def.quickZoomDownOffset) > EPSILON ||
-		std::abs(camSettings.quickZoomSideOffset - def.quickZoomSideOffset) > EPSILON ||
-		std::abs(camSettings.gpDeadzone          - def.gpDeadzone)          > EPSILON ||
-		std::abs(camSettings.panZoomScaling      - def.panZoomScaling)      > EPSILON ||
-		std::abs(camSettings.lerpMult            - def.lerpMult)            > EPSILON ;
+	bool isModified =
+		std::abs(camSettings.kbmPanSpeed     - def.kbmPanSpeed)     > EPSILON ||
+		std::abs(camSettings.kbmRotSpeed     - def.kbmRotSpeed)     > EPSILON ||
+		std::abs(camSettings.kbmRollSpeed    - def.kbmRollSpeed)    > EPSILON ||
+		std::abs(camSettings.kbmZoomFovSpeed - def.kbmZoomFovSpeed) > EPSILON ||
+		std::abs(camSettings.gpPanSpeed      - def.gpPanSpeed)      > EPSILON ||
+		std::abs(camSettings.gpZoomSpeed     - def.gpZoomSpeed)     > EPSILON ||
+		std::abs(camSettings.gpRotSpeed      - def.gpRotSpeed)      > EPSILON ||
+		std::abs(camSettings.gpRollSpeed     - def.gpRollSpeed)     > EPSILON ||
+		std::abs(camSettings.gpFovSpeed      - def.gpFovSpeed)      > EPSILON ||
+		std::abs(camSettings.gpCharRotSpeed  - def.gpCharRotSpeed)  > EPSILON ||
+		std::abs(camSettings.gpDeadzone      - def.gpDeadzone)      > EPSILON ||
+		std::abs(camSettings.lerpMult        - def.lerpMult)        > EPSILON ;
 
 	if (_showAdvanced && isModified) {
 		if (FUCK::Button("$RACE_RestoreDefaults"_T)) {
