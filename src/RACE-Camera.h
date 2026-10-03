@@ -46,12 +46,14 @@ public:
 	}
 
 	float GetCameraRate() const { return _cameraRate; }
+	bool  GetCurrentFov(float& a_horizontal, float& a_vertical) const;
 
 	CameraSettings& GetSettings() { return _settings; }
 
 	bool IsMouseOverWireframe() const;
 
 private:
+	float GetRaceMenuFov(float a_gameFov);
 	float GetFovScale() const;
 	float GetPanScale() const;
 	void  UpdateQuickZoomFraming(const RE::NiPoint3& a_headPos, const RE::NiPoint3& a_pelvisPos, const RE::NiPoint3& a_rootPos);
@@ -66,6 +68,9 @@ private:
 	float        _camRoll   = 0.0f;
 	float        _fovOffset = 0.0f;
 	float        _baseFov   = 0.0f;
+	float        _gameFov   = 0.0f;  // user's FOV, restored on close
+	float        _fovToTanV = 0.0f;  // tan(half vertical FOV) per tan(half worldFOV)
+	float        _fovAspect = 0.0f;
 
 	RE::NiPoint3 _targetCamOffset{ 0.0f, 0.0f, 0.0f };
 	float        _targetCamRotZ   = 0.0f;

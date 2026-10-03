@@ -279,6 +279,7 @@ void RaceWidget::LoadSettings()
 		_hideRaceStats     = FUCK::INI::LoadBool(ini, "Widget", "HideRaceStats",     false);
 		_showInFittingRoom = FUCK::INI::LoadBool(ini, "Widget", "ShowInFittingRoom", true);
 		_showAdvanced      = FUCK::INI::LoadBool(ini, "Widget", "ShowAdvanced",      false);
+		_showFov           = FUCK::INI::LoadBool(ini, "Widget", "ShowFov",           false);
 
 		RaceCamera::GetSingleton()->LoadSettings(ini);
 	});
@@ -301,6 +302,7 @@ void RaceWidget::SaveSettings()
 		FUCK::INI::SaveBool(ini, "Widget", "HideRaceStats",     _hideRaceStats,     false);
 		FUCK::INI::SaveBool(ini, "Widget", "ShowInFittingRoom", _showInFittingRoom, true);
 		FUCK::INI::SaveBool(ini, "Widget", "ShowAdvanced",      _showAdvanced,      false);
+		FUCK::INI::SaveBool(ini, "Widget", "ShowFov",           _showFov,           false);
 
 		RaceCamera::GetSingleton()->SaveSettings(ini);
 	});
@@ -814,7 +816,11 @@ void RaceWidget::DrawCameraReset(float a_comboWidth, float a_rowStartX, bool a_i
 	bool hasCam       = RaceCamera::GetSingleton()->IsCameraModified();
 	bool drawCheckbox = a_isRaceTab;
 
-	if (!hasCam && !drawCheckbox)
+	float hFov    = 0.0f;
+	float vFov    = 0.0f;
+	bool  drawFov = _showFov && RaceCamera::GetSingleton()->GetCurrentFov(hFov, vFov);
+
+	if (!hasCam && !drawCheckbox && !drawFov)
 		return;
 
 	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
@@ -827,13 +833,20 @@ void RaceWidget::DrawCameraReset(float a_comboWidth, float a_rowStartX, bool a_i
 		}
 	}
 
+	bool fovInline = drawFov && !drawCheckbox;
+	if (fovInline) {
+		FUCK::SetCursorPosX(a_rowStartX);
+		FUCK::AlignTextToFramePadding();
+		FUCK::TextDisabled("%s %.1f\u00B0 x %.1f\u00B0", "$RACE_FOV"_T, hFov, vFov);
+	}
+
 	if (hasCam) {
 		float clusterScale = 0.8f;
 		float dynScale     = FUCK::GetGlobalScale() * clusterScale;
 		float btnPadX      = 8.0f * dynScale;
 		float resetWidth   = FUCK::CalcTextSize("$RACE_ResetCam"_T).x + (btnPadX * 2.0f);
 
-		if (drawCheckbox) {
+		if (drawCheckbox || fovInline) {
 			FUCK::SameLine();
 		}
 
@@ -852,6 +865,11 @@ void RaceWidget::DrawCameraReset(float a_comboWidth, float a_rowStartX, bool a_i
 				}
 			}
 		}
+	}
+
+	if (drawFov && !fovInline) {
+		FUCK::SetCursorPosX(a_rowStartX);
+		FUCK::TextDisabled("%s %.1f\u00B0 x %.1f\u00B0", "$RACE_FOV"_T, hFov, vFov);
 	}
 }
 
@@ -1229,6 +1247,10 @@ bool RaceWidget::DrawCameraSettings()
 
 	if (camSettings.smoothCamera && _showAdvanced) {
 		changed |= SpeedSlider("$RACE_LerpMult"_T, &camSettings.lerpMult, def.lerpMult);
+	}
+
+	if (_showAdvanced) {
+		changed |= FUCK::Checkbox("$RACE_ShowFov"_T, &_showFov, true, true);
 	}
 	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 

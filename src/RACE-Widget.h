@@ -87,6 +87,7 @@ private:
 	bool _hideRaceStats     = false;
 	bool _showInFittingRoom = true;
 	bool _showAdvanced      = false;
+	bool _showFov           = false;
 
 	int _lastMode = -1;
 };

@@ -120,6 +120,43 @@ float RaceCamera::GetFovScale() const
 	return std::clamp(scale, 0.1f, 10.0f);
 }
 
+float RaceCamera::GetRaceMenuFov(float a_gameFov)
+{
+	constexpr float RACEMENU_VFOV = 60.0f;  // vertical FOV in RaceMenu, same at any aspect or game FOV
+	constexpr float DEG2RAD       = std::numbers::pi_v<float> / 180.0f;
+
+	// worldFOV isn't the vertical FOV, so measure how it maps to the frustum once per aspect
+	ImVec2 display = FUCK::GetDisplaySize();
+	float  aspect  = display.y > 0.0f ? display.x / display.y : 0.0f;
+	if (_fovToTanV <= 0.0f || std::abs(aspect - _fovAspect) > 0.01f) {
+		auto  worldCam = RE::Main::WorldRootCamera();
+		float top      = worldCam ? worldCam->GetRuntimeData2().viewFrustum.fTop : 0.0f;
+		float tanGame  = std::tan(a_gameFov * 0.5f * DEG2RAD);
+		if (top <= 0.01f || tanGame <= 0.0f)
+			return a_gameFov;
+
+		_fovToTanV = top / tanGame;
+		_fovAspect = aspect;
+	}
+
+	return 2.0f * std::atan(std::tan(RACEMENU_VFOV * 0.5f * DEG2RAD) / _fovToTanV) / DEG2RAD;
+}
+
+bool RaceCamera::GetCurrentFov(float& a_horizontal, float& a_vertical) const
+{
+	if (_baseFov <= 0.0f || _fovToTanV <= 0.0f)
+		return false;
+
+	constexpr float DEG2RAD = std::numbers::pi_v<float> / 180.0f;
+
+	float fov  = std::clamp(_baseFov + _fovOffset, 1.0f, 170.0f);
+	float tanV = _fovToTanV * std::tan(fov * 0.5f * DEG2RAD);
+
+	a_vertical   = 2.0f * std::atan(tanV) / DEG2RAD;
+	a_horizontal = 2.0f * std::atan(tanV * _fovAspect) / DEG2RAD;
+	return true;
+}
+
 float RaceCamera::GetPanScale() const
 {
 	float scale = 1.0f;
@@ -574,8 +611,10 @@ void RaceCamera::HandleInput(float a_interval)
 
 	if (auto camera = RE::PlayerCamera::GetSingleton()) {
 		auto& worldFOV = camera->GetRuntimeData2().worldFOV;
-		if (_baseFov == 0.0f && worldFOV != 0.0f)
-			_baseFov = worldFOV;
+		if (_baseFov == 0.0f && worldFOV != 0.0f) {
+			_gameFov = worldFOV;
+			_baseFov = GetRaceMenuFov(worldFOV);
+		}
 		if (_baseFov != 0.0f)
 			worldFOV = _baseFov + _fovOffset;
 	}
@@ -735,8 +774,8 @@ void RaceCamera::ToggleQuickZoom()
 void RaceCamera::ResetOffsets()
 {
 	if (auto camera = RE::PlayerCamera::GetSingleton()) {
-		if (_baseFov != 0.0f)
-			camera->GetRuntimeData2().worldFOV = _baseFov;
+		if (_gameFov != 0.0f)
+			camera->GetRuntimeData2().worldFOV = _gameFov;
 		RevertCameraTransform(camera->cameraRoot.get());
 	}
 	_camOffset           = { 0.0f, 0.0f, 0.0f };
@@ -750,6 +789,7 @@ void RaceCamera::ResetOffsets()
 	_targetCamRoll       = 0.0f;
 	_targetFovOffset     = 0.0f;
 	_baseFov             = 0.0f;
+	_gameFov             = 0.0f;
 	_cameraRate          = 5.0f;
 	_isQuickZoomed       = false;
 	_quickZoomBlend      = 0.0f;
