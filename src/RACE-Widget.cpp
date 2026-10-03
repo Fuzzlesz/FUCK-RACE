@@ -9,16 +9,13 @@
 #include "RACE-Inputs.h"
 #include "RACE-Light.h"
 #include "RACE-Reference.h"
+#include "RACE-Settings.h"
 #include "RACE-Widget.h"
-
-inline FUCK::PluginSettings& GetSettings()
-{
-	static FUCK::PluginSettings s;
-	return s;
-}
 
 namespace
 {
+	WidgetSettings& Prefs() { return RaceSettings::GetSingleton()->widget; }
+
 	// KBM/GP speeds use different units and have shipped in user INIs, so rather than
 	// migrate them, map each to a shared 1-20 display with the default at 10
 	bool SpeedSlider(const char* a_label, float* a_value, float a_default)
@@ -29,9 +26,7 @@ namespace
 
 void RaceWidget::Initialize()
 {
-	_anchorPos  = { -1.0f, -1.0f };
-	_currentPos = _anchorPos;
-	LoadSettings();
+	LoadPosition();
 
 	FittingRoomCompat::Detect();
 
@@ -76,11 +71,11 @@ void RaceWidget::Initialize()
 				if (opening) {
 					// Latch the setting for this session, so toggling it inside the
 					// Fitting Room takes effect next time instead of hiding the widget mid-use
-					widget->_fittingRoomVisible = widget->_showInFittingRoom;
+					widget->_fittingRoomVisible = Prefs().showInFittingRoom;
 
 					if (widget->_fittingRoomVisible) {
 						widget->_wasActive = true;
-						if (widget->_startFrozen && !widget->_isRaceMenuOpen) {
+						if (Prefs().startFrozen && !widget->_isRaceMenuOpen) {
 							RaceAnimManager::GetSingleton()->SetPlayerFrozen(true);
 						}
 					}
@@ -265,47 +260,25 @@ void RaceWidget::OnAdvanceMovie(RE::RaceSexMenu* a_menu)
 	}
 }
 
-void RaceWidget::LoadSettings()
+void RaceWidget::LoadPosition()
 {
-	GetSettings().Load([this](CSimpleIniA& ini) {
-		float savedX = FUCK::INI::LoadFloat(ini, "Widget", "X", -1.0f);
-		float savedY = FUCK::INI::LoadFloat(ini, "Widget", "Y", -1.0f);
-
-		_anchorPos = FUCK::Scale({ savedX, savedY });
-
-		_startFrozen       = FUCK::INI::LoadBool(ini, "Widget", "StartFrozen",       false);
-		_hideIdles         = FUCK::INI::LoadBool(ini, "Widget", "HideIdles",         false);
-		_disableMirror     = FUCK::INI::LoadBool(ini, "Widget", "DisableMirror",     false);
-		_hideRaceStats     = FUCK::INI::LoadBool(ini, "Widget", "HideRaceStats",     false);
-		_showInFittingRoom = FUCK::INI::LoadBool(ini, "Widget", "ShowInFittingRoom", true);
-		_showAdvanced      = FUCK::INI::LoadBool(ini, "Widget", "ShowAdvanced",      false);
-		_showFov           = FUCK::INI::LoadBool(ini, "Widget", "ShowFov",           false);
-
-		RaceCamera::GetSingleton()->LoadSettings(ini);
-	});
-
+	_anchorPos  = FUCK::Scale(RaceSettings::GetSingleton()->widget.pos);
 	_currentPos = _anchorPos;
 }
 
 void RaceWidget::SaveSettings()
 {
-	GetSettings().Save([this](CSimpleIniA& ini) {
-		float  resScale   = FUCK::GetResolutionScale();
-		ImVec2 defaultPos = RaceWidgetWindow::GetSingleton()->GetDefaultPos();
+	float  resScale   = FUCK::GetResolutionScale();
+	ImVec2 defaultPos = RaceWidgetWindow::GetSingleton()->GetDefaultPos();
 
-		FUCK::INI::SaveDouble(ini, "Widget", "X", _anchorPos.x / resScale, defaultPos.x / resScale);
-		FUCK::INI::SaveDouble(ini, "Widget", "Y", _anchorPos.y / resScale, defaultPos.y / resScale);
+	auto toStored = [resScale](float a_pos, float a_default) {
+		float pos = a_pos / resScale;
+		return std::abs(pos - a_default / resScale) < 0.00001f ? -1.0f : pos;
+	};
 
-		FUCK::INI::SaveBool(ini, "Widget", "StartFrozen",       _startFrozen,       false);
-		FUCK::INI::SaveBool(ini, "Widget", "HideIdles",         _hideIdles,         false);
-		FUCK::INI::SaveBool(ini, "Widget", "DisableMirror",     _disableMirror,     false);
-		FUCK::INI::SaveBool(ini, "Widget", "HideRaceStats",     _hideRaceStats,     false);
-		FUCK::INI::SaveBool(ini, "Widget", "ShowInFittingRoom", _showInFittingRoom, true);
-		FUCK::INI::SaveBool(ini, "Widget", "ShowAdvanced",      _showAdvanced,      false);
-		FUCK::INI::SaveBool(ini, "Widget", "ShowFov",           _showFov,           false);
-
-		RaceCamera::GetSingleton()->SaveSettings(ini);
-	});
+	auto settings        = RaceSettings::GetSingleton();
+	settings->widget.pos = { toStored(_anchorPos.x, defaultPos.x), toStored(_anchorPos.y, defaultPos.y) };
+	settings->Save();
 }
 
 bool RaceWidget::IsOpen() const
@@ -453,7 +426,7 @@ void RaceWidget::Draw()
 		if (hasMenu) {
 			SKEE64Compat::OnModeChanged(currentMode, _lastMode, menuInstance);
 		}
-		if (_lastMode == -1 && _startFrozen) {
+		if (_lastMode == -1 && Prefs().startFrozen) {
 			animManager->SetPlayerFrozen(true);
 		}
 
@@ -589,7 +562,7 @@ void RaceWidget::DrawIdleSelector(float a_comboWidth, bool& a_requestFocus)
 {
 	auto animManager = RaceAnimManager::GetSingleton();
 
-	if (!_hideIdles) {
+	if (!Prefs().hideIdles) {
 		if (a_requestFocus) {
 			FUCK::SetKeyboardFocusHere(0);
 			a_requestFocus = false;
@@ -650,7 +623,7 @@ void RaceWidget::DrawPlaybackControls()
 	}
 	FUCK::PopID();
 
-	if (!_hideIdles && !IsOnSculptTab()) {
+	if (!Prefs().hideIdles && !IsOnSculptTab()) {
 		FUCK::SameLine();
 		FUCK::PushID("RACE_Replay");
 		if (FUCK::Button(ICON_FA_BACKWARD)) {
@@ -818,7 +791,7 @@ void RaceWidget::DrawCameraReset(float a_comboWidth, float a_rowStartX, bool a_i
 
 	float hFov    = 0.0f;
 	float vFov    = 0.0f;
-	bool  drawFov = _showFov && !a_isRaceTab && RaceCamera::GetSingleton()->GetCurrentFov(hFov, vFov);
+	bool  drawFov = Prefs().showFov && !a_isRaceTab && RaceCamera::GetSingleton()->GetCurrentFov(hFov, vFov);
 
 	if (!hasCam && !drawCheckbox && !drawFov) {
 		if (a_reserveRow) {
@@ -834,7 +807,7 @@ void RaceWidget::DrawCameraReset(float a_comboWidth, float a_rowStartX, bool a_i
 
 	if (drawCheckbox) {
 		FUCK::SetCursorPos(ImVec2(a_rowStartX, rowY + FUCK::Scale(4.0f)));
-		if (FUCK::Checkbox("$RACE_HideRaceStats"_T, &_hideRaceStats, false)) {
+		if (FUCK::Checkbox("$RACE_HideRaceStats"_T, &Prefs().hideRaceStats, false)) {
 			SaveSettings();
 			ToggleRaceStats();
 		}
@@ -1080,6 +1053,11 @@ void RaceWidget::CloseSettings()
 	_showLightSettings = false;
 }
 
+bool RaceWidget::IsRaceStatsHidden() const
+{
+	return Prefs().hideRaceStats;
+}
+
 void RaceWidget::ToggleRaceStats()
 {
 	if (!_cachedRaceMenuMovie)
@@ -1104,6 +1082,8 @@ void RaceWidget::ToggleRaceStats()
 
 void RaceWidget::DrawSettingsPanel(bool a_includeCamera)
 {
+	auto& prefs = RaceSettings::GetSingleton()->widget;
+
 	// !a_includeCamera is pretty much Fitting Room only right now
 	if (!a_includeCamera) {
 		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
@@ -1145,7 +1125,7 @@ void RaceWidget::DrawSettingsPanel(bool a_includeCamera)
 		changed |= DrawGeneralSettings();
 
 		if (a_includeCamera) {
-			changed |= FUCK::Checkbox("$RACE_ShowAdvanced"_T, &_showAdvanced, true, true);
+			changed |= FUCK::Checkbox("$RACE_ShowAdvanced"_T, &prefs.showAdvanced, true, true);
 			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 		}
 
@@ -1164,7 +1144,8 @@ void RaceWidget::DrawSettingsPanel(bool a_includeCamera)
 
 bool RaceWidget::DrawCameraSettings()
 {
-	auto& camSettings = RaceCamera::GetSingleton()->GetSettings();
+	auto& prefs       = RaceSettings::GetSingleton()->widget;
+	auto& camSettings = RaceSettings::GetSingleton()->camera;
 	bool  changed     = false;
 	bool  isGamepad   = FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
 
@@ -1196,7 +1177,7 @@ bool RaceWidget::DrawCameraSettings()
 		std::abs(camSettings.gpCharRotSpeed  - def.gpCharRotSpeed)  > EPSILON ||
 		std::abs(camSettings.gpDeadzone - def.gpDeadzone)           > EPSILON ;
 
-	if (_showAdvanced) {
+	if (prefs.showAdvanced) {
 		ImVec2 tabRowPos   = FUCK::GetCursorPos();
 		float  tabRowWidth = FUCK::GetContentRegionAvail().x;
 
@@ -1259,8 +1240,8 @@ bool RaceWidget::DrawCameraSettings()
 		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
 	}
 
-	if (_showAdvanced) {
-		changed |= FUCK::Checkbox("$RACE_ShowFov"_T, &_showFov, true, true);
+	if (prefs.showAdvanced) {
+		changed |= FUCK::Checkbox("$RACE_ShowFov"_T, &prefs.showFov, true, true);
 	}
 
 	if (FUCK::Checkbox("$RACE_SmoothCamera"_T, &camSettings.smoothCamera, true, true)) {
@@ -1272,13 +1253,14 @@ bool RaceWidget::DrawCameraSettings()
 
 bool RaceWidget::DrawGeneralSettings()
 {
-	bool changed = false;
+	auto& prefs   = RaceSettings::GetSingleton()->widget;
+	bool  changed = false;
 
-	changed |= FUCK::Checkbox("$RACE_HideIdles"_T, &_hideIdles, true, true);
-	changed |= FUCK::Checkbox("$RACE_StartFrozen"_T, &_startFrozen, true, true);
+	changed |= FUCK::Checkbox("$RACE_HideIdles"_T, &prefs.hideIdles, true, true);
+	changed |= FUCK::Checkbox("$RACE_StartFrozen"_T, &prefs.startFrozen, true, true);
 
 	if (FittingRoomCompat::IsPresent()) {
-		changed |= FUCK::Checkbox("$RACE_ShowInFittingRoom"_T, &_showInFittingRoom, true, true);
+		changed |= FUCK::Checkbox("$RACE_ShowInFittingRoom"_T, &prefs.showInFittingRoom, true, true);
 	}
 
 	FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
@@ -1291,7 +1273,7 @@ void RaceWidget::ApplyMirrorLock()
 	if (!SKEE64Compat::IsPresent() || !_cachedRaceMenuMovie)
 		return;
 
-	double targetValue = _disableMirror ? 0.0 : 1.0;
+	double targetValue = Prefs().disableMirror ? 0.0 : 1.0;
 
 	RE::GFxValue charGen;
 	bool         hasCharGen = _cachedRaceMenuMovie->GetVariable(&charGen, "_global.skse.plugins.CharGen");
@@ -1377,7 +1359,7 @@ void RaceWidget::DrawSculptPanel()
 	float cbWidthMirror = cbSquare + spacingX + cbTextMirror;
 
 	FUCK::SetCursorPosX(rowStartX + comboWidth - cbWidthMirror);
-	if (FUCK::Checkbox("$RACE_DisableMirror"_T, &_disableMirror, false)) {
+	if (FUCK::Checkbox("$RACE_DisableMirror"_T, &Prefs().disableMirror, false)) {
 		SaveSettings();
 		ApplyMirrorLock();
 	}

@@ -41,14 +41,14 @@ public:
 	bool GetMenuInstance(RE::GFxMovieView* a_movie, RE::GFxValue& a_outInstance) const;
 
 	bool IsWireframeFrozen() const { return _freezeWireframe; }
-	bool IsRaceStatsHidden() const { return _hideRaceStats; }
+	bool IsRaceStatsHidden() const;
 
 	bool HasOpenPanels() const { return _showSettings || _showLightSettings; }
 	void CloseSettings();
 	void ToggleRaceStats();
 
 private:
-	void LoadSettings();
+	void LoadPosition();
 	void SaveSettings();
 	void HandlePositioning(ImVec2& expectedPos);
 	void ApplyMirrorLock();
@@ -80,14 +80,7 @@ private:
 	bool _settingsJustOpened = false;
 	bool _showLightSettings  = false;
 
-	bool _startFrozen       = false;
-	bool _hideIdles         = false;
-	bool _disableMirror     = false;
-	bool _freezeWireframe   = false;
-	bool _hideRaceStats     = false;
-	bool _showInFittingRoom = true;
-	bool _showAdvanced      = false;
-	bool _showFov           = false;
+	bool _freezeWireframe = false;
 
 	int _lastMode = -1;
 };

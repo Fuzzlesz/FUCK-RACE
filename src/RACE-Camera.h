@@ -1,23 +1,5 @@
 #pragma once
 
-struct CameraSettings
-{
-	bool smoothCamera     = true;
-
-	float kbmPanSpeed     =  15.0f;
-	float kbmRotSpeed     =   1.5f;
-	float kbmRollSpeed    =   1.5f;
-	float kbmZoomFovSpeed =  30.0f;
-
-	float gpPanSpeed      = 100.0f;
-	float gpZoomSpeed     = 100.0f;
-	float gpRotSpeed      =   2.0f;
-	float gpRollSpeed     =   2.0f;
-	float gpFovSpeed      =  30.0f;
-	float gpCharRotSpeed  =   3.0f;
-	float gpDeadzone      =   0.25f;
-};
-
 class RaceCamera : public REX::Singleton<RaceCamera>
 {
 public:
@@ -25,9 +7,6 @@ public:
 	void ApplyTransform(RE::NiNode* a_cameraRoot);
 	void RevertCameraTransform(RE::NiNode* a_cameraRoot);
 	void ResetOffsets();
-
-	void LoadSettings(CSimpleIniA& a_ini);
-	void SaveSettings(CSimpleIniA& a_ini);
 
 	void ToggleQuickZoom();
 	void AccumulateScroll(float a_delta) { _pendingScroll += a_delta; }
@@ -47,8 +26,6 @@ public:
 	float GetCameraRate() const { return _cameraRate; }
 	bool  GetCurrentFov(float& a_horizontal, float& a_vertical) const;
 
-	CameraSettings& GetSettings() { return _settings; }
-
 	bool IsMouseOverWireframe() const;
 
 private:
@@ -56,8 +33,6 @@ private:
 	float GetFovScale() const;
 	float GetPanScale() const;
 	void  UpdateQuickZoomFraming(const RE::NiPoint3& a_headPos, const RE::NiPoint3& a_pelvisPos, const RE::NiPoint3& a_rootPos);
-
-	CameraSettings _settings;
 
 	float _pendingScroll = 0.0f;
 

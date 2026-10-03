@@ -11,5 +11,6 @@ set(headers ${headers}
 	src/RACE-Inputs.h
 	src/RACE-Light.h
 	src/RACE-Reference.h
+	src/RACE-Settings.h
 	src/RACE-Widget.h
 )

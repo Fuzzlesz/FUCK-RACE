@@ -6,6 +6,7 @@
 #include "RACE-Inputs.h"
 #include "RACE-Light.h"
 #include "RACE-Reference.h"
+#include "RACE-Settings.h"
 #include "RACE-Widget.h"
 
 class RaceWidgetWindow : public FUCK::IWindow, public REX::Singleton<RaceWidgetWindow>
@@ -287,6 +288,8 @@ namespace FUCK_Register
 {
 	inline void Install()
 	{
+		RaceSettings::GetSingleton()->Load();
+
 		RaceAnimManager::GetSingleton()->Initialize();
 		RaceEquipManager::GetSingleton()->Initialize();
 		RaceLightManager::GetSingleton()->Initialize();

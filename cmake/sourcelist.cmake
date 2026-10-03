@@ -6,6 +6,7 @@ set(sources ${sources}
 	src/RACE-Hooks.cpp
 	src/RACE-Light.cpp
 	src/RACE-Reference.cpp
+	src/RACE-Settings.cpp
 	src/RACE-Widget.cpp
 	src/main.cpp
 )
