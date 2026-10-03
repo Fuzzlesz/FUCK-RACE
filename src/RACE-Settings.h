@@ -2,8 +2,6 @@
 
 struct CameraSettings
 {
-	bool smoothCamera = true;
-
 	float kbmPanSpeed     = 15.0f;
 	float kbmRotSpeed     = 1.5f;
 	float kbmRollSpeed    = 1.5f;
@@ -41,4 +39,6 @@ public:
 
 	CameraSettings camera;
 	WidgetSettings widget;
+
+	bool smoothCamera = true;
 };

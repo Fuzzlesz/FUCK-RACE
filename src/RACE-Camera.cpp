@@ -205,7 +205,7 @@ void RaceCamera::HandleInput(float a_interval)
 	}
 
 	HandleCharacterRotation(in, settings, a_interval);
-	UpdateSmoothing(settings.smoothCamera, a_interval);
+	UpdateSmoothing(RaceSettings::GetSingleton()->smoothCamera, a_interval);
 	ApplyFov();
 }
 

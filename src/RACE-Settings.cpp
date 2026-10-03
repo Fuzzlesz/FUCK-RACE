@@ -16,8 +16,6 @@ namespace
 		const CameraSettings def;
 		const char*          sec = kCameraSection;
 
-		a_out.smoothCamera    = FUCK::INI::LoadBool (a_ini, sec, "SmoothCamera",   def.smoothCamera);
-
 		a_out.kbmPanSpeed     = FUCK::INI::LoadFloat(a_ini, sec, "KBMPanSpeed",    def.kbmPanSpeed);
 		a_out.kbmRotSpeed     = FUCK::INI::LoadFloat(a_ini, sec, "KBMRotSpeed",    def.kbmRotSpeed);
 		a_out.kbmRollSpeed    = FUCK::INI::LoadFloat(a_ini, sec, "KBMRollSpeed",   def.kbmRollSpeed);
@@ -36,8 +34,6 @@ namespace
 	{
 		const CameraSettings def;
 		const char*          sec = kCameraSection;
-
-		FUCK::INI::SaveBool  (a_ini, sec, "SmoothCamera",   a_in.smoothCamera,    def.smoothCamera);
 
 		FUCK::INI::SaveDouble(a_ini, sec, "KBMPanSpeed",    a_in.kbmPanSpeed,     def.kbmPanSpeed);
 		FUCK::INI::SaveDouble(a_ini, sec, "KBMRotSpeed",    a_in.kbmRotSpeed,     def.kbmRotSpeed);
@@ -113,6 +109,8 @@ void RaceSettings::Load()
 	GetINI().Load([this](CSimpleIniA& ini) {
 		LoadWidget(ini, widget);
 		LoadCamera(ini, camera);
+
+		smoothCamera = FUCK::INI::LoadBool(ini, kCameraSection, "SmoothCamera", true);
 	});
 }
 
@@ -121,5 +119,7 @@ void RaceSettings::Save() const
 	GetINI().Save([this](CSimpleIniA& ini) {
 		SaveWidget(ini, widget);
 		SaveCamera(ini, camera);
+
+		FUCK::INI::SaveBool(ini, kCameraSection, "SmoothCamera", smoothCamera, true);
 	});
 }
