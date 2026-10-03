@@ -205,7 +205,7 @@ void RaceCamera::HandleInput(float a_interval)
 	}
 
 	HandleCharacterRotation(in, settings, a_interval);
-	UpdateSmoothing(RaceSettings::GetSingleton()->smoothCamera, a_interval);
+	UpdateCinematic(RaceSettings::GetSingleton()->cinematicCamera, a_interval);
 	ApplyFov();
 }
 
@@ -500,9 +500,9 @@ void RaceCamera::HandleCharacterRotation(const FrameInput& a_in, const CameraSet
 	}
 }
 
-void RaceCamera::UpdateSmoothing(bool a_smooth, float a_interval)
+void RaceCamera::UpdateCinematic(bool a_enabled, float a_interval)
 {
-	if (!a_smooth) {
+	if (!a_enabled) {
 		_camOffset = _targetCamOffset;
 		_camRotZ   = _targetCamRotZ;
 		_camRotX   = _targetCamRotX;

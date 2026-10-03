@@ -183,7 +183,7 @@ bool RaceWidget::DrawCameraSettings()
 		changed |= FUCK::Checkbox("$RACE_ShowFov"_T, &prefs.showFov, true, true);
 	}
 
-	changed |= FUCK::Checkbox("$RACE_SmoothCamera"_T, &RaceSettings::GetSingleton()->smoothCamera, true, true);
+	changed |= FUCK::Checkbox("$RACE_CinematicCamera"_T, &RaceSettings::GetSingleton()->cinematicCamera, true, true);
 
 	return changed;
 }

@@ -40,5 +40,5 @@ public:
 	CameraSettings camera;
 	WidgetSettings widget;
 
-	bool smoothCamera = true;
+	bool cinematicCamera = true;
 };

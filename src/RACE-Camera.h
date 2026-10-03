@@ -64,7 +64,7 @@ private:
 	void       HandleKeyboard(const FrameInput& a_in, const CameraSettings& a_settings, float a_interval);
 	void       HandleGamepad(const FrameInput& a_in, const CameraSettings& a_settings, float a_interval);
 	void       HandleCharacterRotation(const FrameInput& a_in, const CameraSettings& a_settings, float a_interval);
-	void       UpdateSmoothing(bool a_smooth, float a_interval);
+	void       UpdateCinematic(bool a_enabled, float a_interval);
 	void       ApplyFov();
 
 	void SetCameraTabRate(float a_rate);

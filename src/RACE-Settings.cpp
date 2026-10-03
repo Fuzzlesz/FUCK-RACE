@@ -110,7 +110,7 @@ void RaceSettings::Load()
 		LoadWidget(ini, widget);
 		LoadCamera(ini, camera);
 
-		smoothCamera = FUCK::INI::LoadBool(ini, kCameraSection, "SmoothCamera", true);
+		cinematicCamera = FUCK::INI::LoadBool(ini, kCameraSection, "CinematicCamera", true);
 	});
 }
 
@@ -120,6 +120,6 @@ void RaceSettings::Save() const
 		SaveWidget(ini, widget);
 		SaveCamera(ini, camera);
 
-		FUCK::INI::SaveBool(ini, kCameraSection, "SmoothCamera", smoothCamera, true);
+		FUCK::INI::SaveBool(ini, kCameraSection, "CinematicCamera", cinematicCamera, true);
 	});
 }
