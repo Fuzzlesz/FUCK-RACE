@@ -618,7 +618,7 @@ void RaceColorPicker::CommitRecent()
 
 	auto settings = RaceSettings::GetSingleton();
 	if (settings->color.recent.Push(rgba)) {
-		settings->Save();
+		settings->SaveColors();
 	}
 }
 
@@ -648,7 +648,7 @@ void RaceColorPicker::DrawPalette(FUCK::ColorPalette& a_palette, const char* a_i
 		QueueColor(PackArgb(_rgba));
 	}
 	if (result.changed) {
-		RaceSettings::GetSingleton()->Save();
+		RaceSettings::GetSingleton()->SaveColors();
 	}
 }
 

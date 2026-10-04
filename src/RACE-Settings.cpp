@@ -12,6 +12,12 @@ namespace
 		return s;
 	}
 
+	std::string GetColorsPath()
+	{
+		static std::string path = FUCK::PluginSettings().GetConfigDirectory() + "\\colours.ini";
+		return path;
+	}
+
 	void LoadCamera(const CSimpleIniA& a_ini, CameraSettings& a_out)
 	{
 		const CameraSettings def;
@@ -112,10 +118,34 @@ void RaceSettings::Load()
 		LoadCamera(ini, camera);
 
 		cinematicCamera = FUCK::INI::LoadBool(ini, kCameraSection, "CinematicCamera", true);
-
-		color.recent.Load(ini, kColorSection, "Recent");
-		color.swatches.Load(ini, kColorSection, "Swatches");
 	});
+
+	CSimpleIniA colorsIni;
+	colorsIni.SetUnicode();
+	if (colorsIni.LoadFile(GetColorsPath().c_str()) >= 0) {
+		color.recent.Load(colorsIni, kColorSection, "Recent");
+		color.swatches.Load(colorsIni, kColorSection, "Swatches");
+	}
+}
+
+void RaceSettings::SaveColors() const
+{
+	std::string path = GetColorsPath();
+	
+	std::error_code ec;
+	if (!fs::exists(path, ec) && color.recent.Empty() && color.swatches.Empty()) {
+		return;
+	}
+
+	CSimpleIniA colorsIni;
+	colorsIni.SetUnicode();
+	
+	colorsIni.LoadFile(path.c_str());
+	
+	color.recent.Save(colorsIni, kColorSection, "Recent");
+	color.swatches.Save(colorsIni, kColorSection, "Swatches");
+	
+	colorsIni.SaveFile(path.c_str());
 }
 
 void RaceSettings::Save() const
@@ -125,8 +155,5 @@ void RaceSettings::Save() const
 		SaveCamera(ini, camera);
 
 		FUCK::INI::SaveBool(ini, kCameraSection, "CinematicCamera", cinematicCamera, true);
-
-		color.recent.Save(ini, kColorSection, "Recent");
-		color.swatches.Save(ini, kColorSection, "Swatches");
 	});
 }

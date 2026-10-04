@@ -50,6 +50,7 @@ class RaceSettings : public REX::Singleton<RaceSettings>
 public:
 	void Load();
 	void Save() const;
+	void SaveColors() const;
 
 	CameraSettings camera;
 	WidgetSettings widget;
