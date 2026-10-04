@@ -4,6 +4,7 @@ namespace
 {
 	constexpr const char* kCameraSection = "Camera";
 	constexpr const char* kWidgetSection = "Widget";
+	constexpr const char* kColorSection  = "Colour";
 
 	FUCK::PluginSettings& GetINI()
 	{
@@ -111,6 +112,9 @@ void RaceSettings::Load()
 		LoadCamera(ini, camera);
 
 		cinematicCamera = FUCK::INI::LoadBool(ini, kCameraSection, "CinematicCamera", true);
+
+		color.recent.Load(ini, kColorSection, "Recent");
+		color.swatches.Load(ini, kColorSection, "Swatches");
 	});
 }
 
@@ -121,5 +125,8 @@ void RaceSettings::Save() const
 		SaveCamera(ini, camera);
 
 		FUCK::INI::SaveBool(ini, kCameraSection, "CinematicCamera", cinematicCamera, true);
+
+		color.recent.Save(ini, kColorSection, "Recent");
+		color.swatches.Save(ini, kColorSection, "Swatches");
 	});
 }

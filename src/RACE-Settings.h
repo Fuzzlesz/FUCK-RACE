@@ -1,5 +1,7 @@
 #pragma once
 
+#include "API/FUCK_ColorPalette.h"
+
 struct CameraSettings
 {
 	float kbmPanSpeed     = 15.0f;
@@ -31,6 +33,18 @@ struct WidgetSettings
 	bool showFov           = false;
 };
 
+struct ColorSettings
+{
+	ColorSettings()
+	{
+		recent.acceptDrops   = false;
+		swatches.showAddSlot = true;
+	}
+
+	FUCK::ColorPalette recent{ 8, FUCK::ColorPalette::Mode::kRecent };
+	FUCK::ColorPalette swatches{ 16, FUCK::ColorPalette::Mode::kFixed };
+};
+
 class RaceSettings : public REX::Singleton<RaceSettings>
 {
 public:
@@ -39,6 +53,7 @@ public:
 
 	CameraSettings camera;
 	WidgetSettings widget;
+	ColorSettings  color;
 
 	bool cinematicCamera = true;
 };

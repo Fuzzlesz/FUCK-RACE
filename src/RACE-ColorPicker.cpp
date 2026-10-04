@@ -1,4 +1,5 @@
 #include "RACE-ColorPicker.h"
+#include "RACE-Settings.h"
 #include "RACE-Widget.h"
 
 namespace
@@ -12,6 +13,13 @@ namespace
 		RE::GFxValue visible;
 		return a_menuInstance.GetMember("colorField", &a_colorField) && a_colorField.IsObject() &&
 		       a_colorField.GetMember("_visible", &visible) && visible.IsBool() && visible.GetBool();
+	}
+
+	std::uint32_t FieldArgb(double a_rgb, double a_alpha)
+	{
+		auto rgb   = static_cast<std::uint32_t>(a_rgb) & 0xFFFFFF;
+		auto alpha = static_cast<std::uint32_t>(std::clamp(a_alpha, 0.0, 255.0));
+		return (alpha << 24) | rgb;
 	}
 
 	std::uint32_t ToByte(float a_value)
@@ -36,34 +44,66 @@ namespace
 void RaceColorPicker::InstallHooks(RE::GFxMovieView* a_movie, RE::GFxValue& a_menuInstance)
 {
 	RE::GFxValue colorField;
-	RE::GFxValue origHandleInput;
-	if (!a_menuInstance.GetMember("colorField", &colorField) || !colorField.IsObject() ||
-		!colorField.GetMember("handleInput", &origHandleInput) || !origHandleInput.IsObject()) {
+	if (!a_menuInstance.GetMember("colorField", &colorField) || !colorField.IsObject())
 		return;
+
+	RE::GFxValue origHandleInput;
+	if (colorField.GetMember("handleInput", &origHandleInput) && origHandleInput.IsObject()) {
+		colorField.SetMember("FUCK_origHandleInput", origHandleInput);
+
+		// Swallow keys while typing in the picker, or E/Tab would accept/cancel the field
+		class ColorFieldInputHandler : public RE::GFxFunctionHandler
+		{
+		public:
+			void Call(Params& a_params) override
+			{
+				if (FUCK::IsAnyItemActive()) {
+					if (a_params.retVal) {
+						*a_params.retVal = RE::GFxValue(true);
+					}
+					return;
+				}
+				if (a_params.thisPtr) {
+					a_params.thisPtr->Invoke("FUCK_origHandleInput", a_params.retVal, a_params.args, a_params.argCount);
+				}
+			}
+		};
+		RE::GFxValue newHandleInput;
+		a_movie->CreateFunction(&newHandleInput, new ColorFieldInputHandler());
+		colorField.SetMember("handleInput", newHandleInput);
 	}
 
-	colorField.SetMember("FUCK_origHandleInput", origHandleInput);
+	RE::GFxValue origOnAccept;
+	if (colorField.GetMember("onAccept", &origOnAccept) && origOnAccept.IsObject()) {
+		colorField.SetMember("FUCK_origOnAccept", origOnAccept);
 
-	// Swallow keys while typing in the picker, or E/Tab would accept/cancel the field
-	class ColorFieldInputHandler : public RE::GFxFunctionHandler
-	{
-	public:
-		void Call(Params& a_params) override
+		// Record accepted colours for the recent row
+		class ColorFieldAcceptHandler : public RE::GFxFunctionHandler
 		{
-			if (FUCK::IsAnyItemActive()) {
-				if (a_params.retVal) {
-					*a_params.retVal = RE::GFxValue(true);
+		public:
+			void Call(Params& a_params) override
+			{
+				if (!a_params.thisPtr)
+					return;
+
+				RE::GFxValue colorSelector;
+				RE::GFxValue color;
+				RE::GFxValue alpha;
+				if (a_params.thisPtr->GetMember("colorSelector", &colorSelector) &&
+					colorSelector.Invoke("getColor", &color, nullptr, 0) && colorSelector.Invoke("getAlpha", &alpha, nullptr, 0) &&
+					color.IsNumber() && alpha.IsNumber()) {
+					auto             picker = RaceColorPicker::GetSingleton();
+					std::scoped_lock lock(picker->_pendingLock);
+					picker->_acceptedArgb = FieldArgb(color.GetNumber(), alpha.GetNumber());
 				}
-				return;
+
+				a_params.thisPtr->Invoke("FUCK_origOnAccept", a_params.retVal, a_params.args, a_params.argCount);
 			}
-			if (a_params.thisPtr) {
-				a_params.thisPtr->Invoke("FUCK_origHandleInput", a_params.retVal, a_params.args, a_params.argCount);
-			}
-		}
-	};
-	RE::GFxValue newHandleInput;
-	a_movie->CreateFunction(&newHandleInput, new ColorFieldInputHandler());
-	colorField.SetMember("handleInput", newHandleInput);
+		};
+		RE::GFxValue newOnAccept;
+		a_movie->CreateFunction(&newOnAccept, new ColorFieldAcceptHandler());
+		colorField.SetMember("onAccept", newOnAccept);
+	}
 }
 
 void RaceColorPicker::OnAdvanceMovie(RE::GFxMovieView* a_movie, RE::GFxValue& a_menuInstance)
@@ -110,9 +150,7 @@ void RaceColorPicker::SyncFromField(RE::GFxValue& a_colorSelector)
 		return;
 	}
 
-	auto          rgb  = static_cast<std::uint32_t>(color.GetNumber()) & 0xFFFFFF;
-	auto          a    = static_cast<std::uint32_t>(std::clamp(alpha.GetNumber(), 0.0, 255.0));
-	std::uint32_t argb = (a << 24) | rgb;
+	std::uint32_t argb = FieldArgb(color.GetNumber(), alpha.GetNumber());
 
 	// Only resync on outside changes, so our own edits aren't rounded to 8 bits every frame
 	if (_lastArgb == argb)
@@ -209,6 +247,55 @@ void RaceColorPicker::ApplyWhileBusy(RE::GFxValue& a_menuInstance)
 	_awaitingApply = false;
 }
 
+void RaceColorPicker::CommitRecent()
+{
+	std::optional<std::uint32_t> argb;
+	{
+		std::scoped_lock lock(_pendingLock);
+		argb = std::exchange(_acceptedArgb, std::nullopt);
+	}
+	if (!argb)
+		return;
+
+	float rgba[4];
+	UnpackArgb(*argb, rgba);
+
+	auto settings = RaceSettings::GetSingleton();
+	if (settings->color.recent.Push(rgba)) {
+		settings->Save();
+	}
+}
+
+void RaceColorPicker::QueueColor(std::uint32_t a_argb)
+{
+	// The gradient reports a change every frame it's held, even when the colour hasn't moved
+	if (_lastArgb == a_argb)
+		return;
+
+	_lastArgb = a_argb;
+
+	std::scoped_lock lock(_pendingLock);
+	_pendingArgb = a_argb;
+}
+
+void RaceColorPicker::DrawPalette(FUCK::ColorPalette& a_palette, const char* a_id, const char* a_title, bool a_noAlpha)
+{
+	FUCK::SeparatorText(a_title);
+
+	auto swatchFlags = a_noAlpha ? FUCK::ColorEditFlags::kNoAlpha : FUCK::ColorEditFlags::kAlphaPreviewHalf;
+	auto result      = a_palette.Draw(a_id, _rgba, 0.0f, swatchFlags);
+
+	if (result.picked) {
+		if (a_noAlpha) {
+			_rgba[3] = 1.0f;
+		}
+		QueueColor(PackArgb(_rgba));
+	}
+	if (result.changed) {
+		RaceSettings::GetSingleton()->Save();
+	}
+}
+
 void RaceColorPicker::Draw(float a_width)
 {
 	RE::GFxValue colorField;
@@ -227,10 +314,11 @@ void RaceColorPicker::Draw(float a_width)
 		SyncFromField(colorSelector);
 	}
 
-	int flags = ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf;
+	RE::GFxValue noAlphaValue;
+	bool         noAlpha = colorField.GetMember("bNoAlpha", &noAlphaValue) && noAlphaValue.IsBool() && noAlphaValue.GetBool();
 
-	RE::GFxValue noAlpha;
-	if (colorField.GetMember("bNoAlpha", &noAlpha) && noAlpha.IsBool() && noAlpha.GetBool()) {
+	int flags = ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf;
+	if (noAlpha) {
 		flags |= ImGuiColorEditFlags_NoAlpha;
 	}
 
@@ -243,15 +331,14 @@ void RaceColorPicker::Draw(float a_width)
 
 		FUCK::SetNextItemWidth(-1.0f);
 		if (FUCK::ColorEdit4("##RaceMenuColor", _rgba, flags)) {
-			// The gradient reports a change every frame it's held, even when the colour hasn't moved
-			std::uint32_t argb = PackArgb(_rgba);
-			if (_lastArgb != argb) {
-				_lastArgb = argb;
-
-				std::scoped_lock lock(_pendingLock);
-				_pendingArgb = argb;
-			}
+			QueueColor(PackArgb(_rgba));
 		}
+
+		auto& colors = RaceSettings::GetSingleton()->color;
+		if (!colors.recent.Empty()) {
+			DrawPalette(colors.recent, "##Recent", "$RACE_ColorRecent"_T, noAlpha);
+		}
+		DrawPalette(colors.swatches, "##Swatches", "$RACE_ColorSwatches"_T, noAlpha);
 
 		FUCK::EndTable();
 	}
