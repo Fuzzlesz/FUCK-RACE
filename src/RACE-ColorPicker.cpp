@@ -691,10 +691,12 @@ void RaceColorPicker::Draw(float a_width)
 		}
 
 		auto& colors = RaceSettings::GetSingleton()->color;
+
+		DrawPalette(colors.swatches, "##Swatches", "$RACE_ColorSwatches"_T, noAlpha);
+
 		if (!colors.recent.Empty()) {
 			DrawPalette(colors.recent, "##Recent", "$RACE_ColorRecent"_T, noAlpha);
 		}
-		DrawPalette(colors.swatches, "##Swatches", "$RACE_ColorSwatches"_T, noAlpha);
 
 		FUCK::EndTable();
 	}
