@@ -375,6 +375,8 @@ void RaceWidget::Draw()
 		SaveSettings();
 	}
 
+	RaceColorPicker::GetSingleton()->CommitRecent();
+
 	int currentMode = GetCurrentMode();
 
 	auto animManager = RaceAnimManager::GetSingleton();
