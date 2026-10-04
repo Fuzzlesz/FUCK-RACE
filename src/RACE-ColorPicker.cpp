@@ -8,6 +8,44 @@ namespace
 
 	constexpr auto APPLY_INTERVAL = std::chrono::milliseconds(100);  // Same pace as RaceMenu's requestUpdate
 
+	bool IsGamepad()
+	{
+		return FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
+	}
+
+	class WrappedHandler : public RE::GFxFunctionHandler
+	{
+	public:
+		explicit WrappedHandler(std::string a_origName) :
+			_origName(std::move(a_origName)) {}
+
+	protected:
+		void CallOriginal(Params& a_params) const
+		{
+			if (a_params.thisPtr) {
+				a_params.thisPtr->Invoke(_origName.c_str(), a_params.retVal, a_params.args, a_params.argCount);
+			}
+		}
+
+	private:
+		std::string _origName;
+	};
+
+	template <class THandler>
+	void WrapMember(RE::GFxMovieView* a_movie, RE::GFxValue& a_object, const char* a_name)
+	{
+		RE::GFxValue orig;
+		if (!a_object.GetMember(a_name, &orig) || !orig.IsObject())
+			return;
+
+		std::string origName = std::string("FUCK_orig_") + a_name;
+		a_object.SetMember(origName.c_str(), orig);
+
+		RE::GFxValue wrapped;
+		a_movie->CreateFunction(&wrapped, new THandler(std::move(origName)));
+		a_object.SetMember(a_name, wrapped);
+	}
+
 	bool FindOpenField(RE::GFxValue& a_menuInstance, RE::GFxValue& a_colorField)
 	{
 		RE::GFxValue visible;
@@ -47,63 +85,64 @@ void RaceColorPicker::InstallHooks(RE::GFxMovieView* a_movie, RE::GFxValue& a_me
 	if (!a_menuInstance.GetMember("colorField", &colorField) || !colorField.IsObject())
 		return;
 
-	RE::GFxValue origHandleInput;
-	if (colorField.GetMember("handleInput", &origHandleInput) && origHandleInput.IsObject()) {
-		colorField.SetMember("FUCK_origHandleInput", origHandleInput);
+	// Swallow keys while typing in the picker, or E/Tab would accept/cancel the field
+	class InputHandler : public WrappedHandler
+	{
+	public:
+		using WrappedHandler::WrappedHandler;
 
-		// Swallow keys while typing in the picker, or E/Tab would accept/cancel the field
-		class ColorFieldInputHandler : public RE::GFxFunctionHandler
+		void Call(Params& a_params) override
 		{
-		public:
-			void Call(Params& a_params) override
-			{
-				if (FUCK::IsAnyItemActive()) {
-					if (a_params.retVal) {
-						*a_params.retVal = RE::GFxValue(true);
-					}
-					return;
+			if (FUCK::IsAnyItemActive()) {
+				if (a_params.retVal) {
+					*a_params.retVal = RE::GFxValue(true);
 				}
-				if (a_params.thisPtr) {
-					a_params.thisPtr->Invoke("FUCK_origHandleInput", a_params.retVal, a_params.args, a_params.argCount);
-				}
+				return;
 			}
-		};
-		RE::GFxValue newHandleInput;
-		a_movie->CreateFunction(&newHandleInput, new ColorFieldInputHandler());
-		colorField.SetMember("handleInput", newHandleInput);
-	}
+			CallOriginal(a_params);
+		}
+	};
 
-	RE::GFxValue origOnAccept;
-	if (colorField.GetMember("onAccept", &origOnAccept) && origOnAccept.IsObject()) {
-		colorField.SetMember("FUCK_origOnAccept", origOnAccept);
+	// Record accepted colours for the recent row
+	class AcceptHandler : public WrappedHandler
+	{
+	public:
+		using WrappedHandler::WrappedHandler;
 
-		// Record accepted colours for the recent row
-		class ColorFieldAcceptHandler : public RE::GFxFunctionHandler
+		void Call(Params& a_params) override
 		{
-		public:
-			void Call(Params& a_params) override
-			{
-				if (!a_params.thisPtr)
-					return;
-
-				RE::GFxValue colorSelector;
-				RE::GFxValue color;
-				RE::GFxValue alpha;
-				if (a_params.thisPtr->GetMember("colorSelector", &colorSelector) &&
-					colorSelector.Invoke("getColor", &color, nullptr, 0) && colorSelector.Invoke("getAlpha", &alpha, nullptr, 0) &&
-					color.IsNumber() && alpha.IsNumber()) {
-					auto             picker = RaceColorPicker::GetSingleton();
-					std::scoped_lock lock(picker->_pendingLock);
-					picker->_acceptedArgb = FieldArgb(color.GetNumber(), alpha.GetNumber());
-				}
-
-				a_params.thisPtr->Invoke("FUCK_origOnAccept", a_params.retVal, a_params.args, a_params.argCount);
+			RE::GFxValue colorSelector;
+			RE::GFxValue color;
+			RE::GFxValue alpha;
+			if (a_params.thisPtr && a_params.thisPtr->GetMember("colorSelector", &colorSelector) &&
+				colorSelector.Invoke("getColor", &color, nullptr, 0) && colorSelector.Invoke("getAlpha", &alpha, nullptr, 0) &&
+				color.IsNumber() && alpha.IsNumber()) {
+				auto             picker = RaceColorPicker::GetSingleton();
+				std::scoped_lock lock(picker->_pendingLock);
+				picker->_acceptedArgb = FieldArgb(color.GetNumber(), alpha.GetNumber());
 			}
-		};
-		RE::GFxValue newOnAccept;
-		a_movie->CreateFunction(&newOnAccept, new ColorFieldAcceptHandler());
-		colorField.SetMember("onAccept", newOnAccept);
-	}
+			CallOriginal(a_params);
+		}
+	};
+
+	// RaceMenu's single save/load slot, replaced by our swatches outside gamepad
+	class PresetHandler : public WrappedHandler
+	{
+	public:
+		using WrappedHandler::WrappedHandler;
+
+		void Call(Params& a_params) override
+		{
+			if (IsGamepad()) {
+				CallOriginal(a_params);
+			}
+		}
+	};
+
+	WrapMember<InputHandler>(a_movie, colorField, "handleInput");
+	WrapMember<AcceptHandler>(a_movie, colorField, "onAccept");
+	WrapMember<PresetHandler>(a_movie, colorField, "onLoadColor");
+	WrapMember<PresetHandler>(a_movie, colorField, "onSaveColor");
 }
 
 void RaceColorPicker::OnAdvanceMovie(RE::GFxMovieView* a_movie, RE::GFxValue& a_menuInstance)
@@ -118,6 +157,11 @@ void RaceColorPicker::OnAdvanceMovie(RE::GFxMovieView* a_movie, RE::GFxValue& a_
 	RE::GFxValue colorField;
 	if (FindOpenField(a_menuInstance, colorField)) {
 		DisableHairAlpha(colorField);
+
+		RE::GFxValue presetPanel;
+		if (colorField.GetMember("presetPanel", &presetPanel) && presetPanel.IsObject()) {
+			presetPanel.SetMember("_visible", RE::GFxValue(IsGamepad()));
+		}
 		if (argb) {
 			SendColor(a_movie, colorField, *argb);
 		}
