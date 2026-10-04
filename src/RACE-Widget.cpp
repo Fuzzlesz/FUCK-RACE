@@ -387,8 +387,8 @@ void RaceWidget::Draw()
 	RE::GFxValue menuInstance;
 	bool         hasMenu = _cachedRaceMenuMovie && GetMenuInstance(_cachedRaceMenuMovie, menuInstance);
 
-	// Stay up for our picker while RaceMenu's colour field fades modeSelect out (gamepad keeps RaceMenu's sliders)
-	bool showColor = FUCK::GetInputDevice() != FUCK::InputDevice::kGamepad && RaceColorPicker::GetSingleton()->IsFieldOpen();
+	// Stay up for our picker while RaceMenu's colour field fades modeSelect out
+	bool showColor = RaceColorPicker::GetSingleton()->IsFieldOpen();
 
 	if (hasMenu && !showColor) {
 		// Sync to modeSelect's alpha safely using the IsFlagSet bitmask check.

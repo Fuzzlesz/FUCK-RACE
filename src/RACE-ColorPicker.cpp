@@ -13,11 +13,6 @@ namespace
 	constexpr double GUARD_WINDOW    = 2.0;
 	constexpr double GUARD_INTERVAL  = 0.2;
 
-	bool IsGamepad()
-	{
-		return FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
-	}
-
 	// Replaces an ActionScript function while keeping the original callable
 	class WrappedHandler : public RE::GFxFunctionHandler
 	{
@@ -259,17 +254,15 @@ void RaceColorPicker::InstallHooks(RE::GFxMovieView* a_movie, RE::GFxValue& a_me
 		}
 	};
 
-	// RaceMenu's single save/load slot, replaced by our swatches outside gamepad
+	// RaceMenu's single save/load slot, replaced entirely by our swatches
 	class PresetHandler : public WrappedHandler
 	{
 	public:
 		using WrappedHandler::WrappedHandler;
 
-		void Call(Params& a_params) override
+		void Call(Params&) override
 		{
-			if (IsGamepad()) {
-				CallOriginal(a_params);
-			}
+			// Block RaceMenu's native system entirely in favour of ours
 		}
 	};
 
@@ -295,7 +288,7 @@ void RaceColorPicker::OnAdvanceMovie(RE::GFxMovieView* a_movie, RE::GFxValue& a_
 
 		RE::GFxValue presetPanel;
 		if (colorField.GetMember("presetPanel", &presetPanel) && presetPanel.IsObject()) {
-			presetPanel.SetMember("_visible", RE::GFxValue(IsGamepad()));
+			presetPanel.SetMember("_visible", RE::GFxValue(false));
 		}
 		if (argb) {
 			SendColor(a_movie, colorField, *argb);
