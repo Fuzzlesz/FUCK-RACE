@@ -6,6 +6,14 @@ void RaceAnimManager::Initialize()
 		return _stricmp(a.first.c_str(), b.first.c_str()) < 0;
 	});
 
+	// Rebuild indices after sort
+	_idleIndexByForm.clear();
+	_idleIndexByName.clear();
+	for (std::size_t i = 0; i < _allIdles.size(); ++i) {
+		_idleIndexByForm[_allIdles[i].second]                            = i;
+		_idleIndexByName[clib_util::string::tolower(_allIdles[i].first)] = i;
+	}
+
 	_pluginNames.clear();
 	_pluginNames.push_back(std::string("$RACE_AllPlugins"_T) + "##NOFILTER");
 	_pluginNamesCStr.clear();
@@ -14,24 +22,29 @@ void RaceAnimManager::Initialize()
 
 void RaceAnimManager::AddIdle(const std::string& a_name, RE::TESIdleForm* a_idle)
 {
-	auto ptrIt = std::find_if(_allIdles.begin(), _allIdles.end(), [&](const auto& pair) {
-		return pair.second == a_idle;
-	});
+	auto nameKey = clib_util::string::tolower(a_name);
 
-	if (ptrIt != _allIdles.end()) {
-		ptrIt->first = a_name;
+	// Same form, new EditorID
+	if (const auto it = _idleIndexByForm.find(a_idle); it != _idleIndexByForm.end()) {
+		auto& entry = _allIdles[it->second];
+		_idleIndexByName.erase(clib_util::string::tolower(entry.first));
+		entry.first               = a_name;
+		_idleIndexByName[nameKey] = it->second;
 		return;
 	}
 
-	auto nameIt = std::find_if(_allIdles.begin(), _allIdles.end(), [&](const auto& pair) {
-		return _stricmp(pair.first.c_str(), a_name.c_str()) == 0;
-	});
-
-	if (nameIt != _allIdles.end()) {
-		nameIt->second = a_idle;
-	} else {
-		_allIdles.emplace_back(a_name, a_idle);
+	// Same EditorID, new form
+	if (const auto it = _idleIndexByName.find(nameKey); it != _idleIndexByName.end()) {
+		auto& entry = _allIdles[it->second];
+		_idleIndexByForm.erase(entry.second);
+		entry.second             = a_idle;
+		_idleIndexByForm[a_idle] = it->second;
+		return;
 	}
+
+	_idleIndexByForm[a_idle]  = _allIdles.size();
+	_idleIndexByName[nameKey] = _allIdles.size();
+	_allIdles.emplace_back(a_name, a_idle);
 }
 
 void RaceAnimManager::UpdateValidIdles()
@@ -40,40 +53,42 @@ void RaceAnimManager::UpdateValidIdles()
 	if (!player || !player->Is3DLoaded())
 		return;
 
-	std::sort(_allIdles.begin(), _allIdles.end(), [](const auto& a, const auto& b) {
-		return _stricmp(a.first.c_str(), b.first.c_str()) < 0;
-	});
-
 	std::string targetPlugin = _selectedPluginIndex > 0 && _selectedPluginIndex < static_cast<int>(_pluginNames.size()) ? _pluginNames[_selectedPluginIndex] : "";
 
-	std::set<std::string> activePlugins;
+	struct UsableIdle
+	{
+		const std::pair<std::string, RE::TESIdleForm*>* idle;
+		std::string_view                                plugin;
+	};
+
+	std::vector<UsableIdle>    usable;
+	std::set<std::string_view> activePlugins;
+	usable.reserve(_allIdles.size());
+
 	for (const auto& pair : _allIdles) {
-		if (player->CanUseIdle(pair.second) && pair.second->CheckConditions(player, nullptr, false)) {
-			if (auto file = pair.second->GetFile(0)) {
-				activePlugins.insert(std::string(file->GetFilename()));
-			} else {
-				activePlugins.insert("Unknown");
-			}
-		}
+		if (!player->CanUseIdle(pair.second) || !pair.second->CheckConditions(player, nullptr, false))
+			continue;
+
+		const auto       file   = pair.second->GetFile(0);
+		std::string_view plugin = file ? file->GetFilename() : "Unknown"sv;
+
+		usable.push_back({ &pair, plugin });
+		activePlugins.insert(plugin);
 	}
 
 	_pluginNames.clear();
-	_pluginNames.push_back("$RACE_AllPlugins"_T);
+	_pluginNames.push_back(std::string("$RACE_AllPlugins"_T) + "##NOFILTER");
 
 	if (auto dataHandler = RE::TESDataHandler::GetSingleton()) {
 		for (auto* file : dataHandler->files) {
-			if (file) {
-				std::string fileName(file->GetFilename());
-				if (activePlugins.contains(fileName)) {
-					_pluginNames.push_back(fileName);
-					activePlugins.erase(fileName);
-				}
+			if (file && activePlugins.erase(file->GetFilename())) {
+				_pluginNames.emplace_back(file->GetFilename());
 			}
 		}
 	}
 
 	for (const auto& p : activePlugins) {
-		_pluginNames.push_back(p);
+		_pluginNames.emplace_back(p);
 	}
 
 	_pluginNamesCStr.clear();
@@ -91,30 +106,23 @@ void RaceAnimManager::UpdateValidIdles()
 		}
 	}
 
-	_validIdles.clear();
-	_idleNames.clear();
-
-	_validIdles.reserve(_allIdles.size() + 1);
-	_idleNames.reserve(_allIdles.size() + 1);
-
-	_validIdles.push_back({ std::string("$RACE_SelectIdle"_T) + "##NOFILTER", nullptr });
-	_idleNames.push_back(_validIdles.back().first.c_str());
-
 	targetPlugin = _selectedPluginIndex > 0 ? _pluginNames[_selectedPluginIndex] : "";
 
-	for (const auto& pair : _allIdles) {
-		if (player->CanUseIdle(pair.second) && pair.second->CheckConditions(player, nullptr, false)) {
-			if (!targetPlugin.empty()) {
-				auto        file  = pair.second->GetFile(0);
-				std::string pName = file ? std::string(file->GetFilename()) : "Unknown";
-				if (pName != targetPlugin) {
-					continue;
-				}
-			}
+	_validIdles.clear();
+	_validIdles.reserve(usable.size() + 1);
+	_validIdles.push_back({ std::string("$RACE_SelectIdle"_T) + "##NOFILTER", nullptr });
 
-			_validIdles.push_back(pair);
-			_idleNames.push_back(_validIdles.back().first.c_str());
+	for (const auto& u : usable) {
+		if (targetPlugin.empty() || u.plugin == targetPlugin) {
+			_validIdles.push_back(*u.idle);
 		}
+	}
+
+	// Build after _validIdles is final so c_str() pointers stay valid
+	_idleNames.clear();
+	_idleNames.reserve(_validIdles.size());
+	for (const auto& v : _validIdles) {
+		_idleNames.push_back(v.first.c_str());
 	}
 
 	_selectedIndex = 0;

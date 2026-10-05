@@ -28,6 +28,8 @@ public:
 
 private:
 	std::vector<std::pair<std::string, RE::TESIdleForm*>> _allIdles;
+	std::unordered_map<RE::TESIdleForm*, std::size_t>     _idleIndexByForm;
+	std::unordered_map<std::string, std::size_t>          _idleIndexByName;  // lowercase
 	std::vector<std::pair<std::string, RE::TESIdleForm*>> _validIdles;
 	std::vector<const char*>                              _idleNames;
 
