@@ -193,7 +193,7 @@ void RaceColorPicker::InstallHooks(RE::GFxMovieView* a_movie, RE::GFxValue& a_me
 		layer.Forget();
 	}
 
-	// RaceMenu's only route from the game's tints to the swatches. On the instance, this shadows the class method
+	// Hook SetSliderColors, the only place RaceMenu copies the game's tints onto the swatches. Set on the instance, so it overrides the class method
 	class SliderColorsHandler : public WrappedHandler
 	{
 	public:
@@ -433,7 +433,7 @@ void RaceColorPicker::ApplyWhileBusy(RE::GFxValue& a_menuInstance)
 
 void RaceColorPicker::OnSliderColorsSet(RE::GFxValue& a_menuInstance)
 {
-	// RaceMenu's colours here can be stale or from a stray mask. SetMakeup redraws the list after
+	// Replace RaceMenu's swatch colours with ours, as they can be stale or from a stray mask. No redraw needed, SetMakeup does one afterwards
 	RE::GFxValue colorField;
 	bool         fieldOpen = FindOpenField(a_menuInstance, colorField);
 	double       now       = FUCK::GetTime();
@@ -520,7 +520,7 @@ void RaceColorPicker::FollowGame(TintLayer& a_layer, double a_now)
 		a_layer.restoreUntil = 0.0;
 	}
 
-	// No texture keeps the colour for the next one picked
+	// Keep our colour while no texture is applied, so the next one picked from the slider gets it rather than the game's default
 	if (applied) {
 		a_layer.color = applied;
 	}

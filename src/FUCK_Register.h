@@ -132,6 +132,7 @@ public:
 			bool mmbDown  = FUCK::IsInputDown(RACE::Keys::kMouse_Middle);
 
 			if (!isVisible) {
+				// Pass input to the game while the UI is hidden so the name can be typed, unless camera modifiers are held
 				if (!ctrlDown && !rbDown && !mmbDown) {
 					flags = flags | FUCK::WindowFlags::kPassInputToGame;
 				}

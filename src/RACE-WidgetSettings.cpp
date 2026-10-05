@@ -45,7 +45,7 @@ void RaceWidget::DrawSettingsPanel(bool a_includeCamera)
 {
 	auto& prefs = RaceSettings::GetSingleton()->widget;
 
-	// !a_includeCamera is pretty much Fitting Room only right now
+	// Pad the top of the Fitting Room panel, the only one drawn without camera settings
 	if (!a_includeCamera) {
 		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(5.0f)));
 	}

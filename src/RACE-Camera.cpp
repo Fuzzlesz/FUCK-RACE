@@ -669,7 +669,7 @@ void RaceCamera::ToggleQuickZoom()
 	if (_isQuickZoomed)
 		_hasQuickZoomFraming = false;
 
-	// Anchor to the face/body framing by easing out manual moves
+	// Ease out manual moves so the camera settles on the new face or body framing
 	_targetCamOffset  = { 0.0f, 0.0f, 0.0f };
 	_targetCamRotZ    = 0.0f;
 	_targetCamRotX    = 0.0f;
