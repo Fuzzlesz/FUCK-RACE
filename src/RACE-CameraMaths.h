@@ -91,6 +91,7 @@ namespace RACE::CameraMath
 	// Camera axes: X right, Y forward, Z up
 	inline RE::NiPoint3 RightAxis(const RE::NiMatrix3& a_rot) { return { a_rot.entry[0][0], a_rot.entry[1][0], a_rot.entry[2][0] }; }
 	inline RE::NiPoint3 ForwardAxis(const RE::NiMatrix3& a_rot) { return { a_rot.entry[0][1], a_rot.entry[1][1], a_rot.entry[2][1] }; }
+	inline RE::NiPoint3 UpAxis(const RE::NiMatrix3& a_rot) { return { a_rot.entry[0][2], a_rot.entry[1][2], a_rot.entry[2][2] }; }
 
 	inline RE::NiPoint3 OrbitAroundZ(const RE::NiPoint3& a_pivot, const RE::NiPoint3& a_point, float a_yaw)
 	{
@@ -113,27 +114,34 @@ namespace RACE::CameraMath
 		float        depth;
 	};
 
+	// Screen region from -1 to 1 on each axis, X right and Y up
+	struct ScreenRect
+	{
+		float centreX;
+		float centreY;
+		float halfHeight;
+	};
+
 	inline std::optional<BodyFraming> FrameFullBody(
 		const RE::NiPoint3&  a_pelvisPos,
 		const RE::NiPoint3&  a_rootPos,
 		const RE::NiMatrix3& a_camRotate,
 		float                a_tanHalfV,
-		float                a_aspect,
+		float                a_tanHalfH,
 		float                a_margin,
-		float                a_screenX)
+		const ScreenRect&    a_rect)
 	{
 		// Pelvis to root (floor) is the longer half; margin covers the top of the head
 		float halfHeight = (a_pelvisPos - a_rootPos).Length() * a_margin;
-		if (halfHeight < 1.0f)
+		if (halfHeight < 1.0f || a_rect.halfHeight < 0.01f)
 			return std::nullopt;
 
-		const RE::NiPoint3 right = RightAxis(a_camRotate);
-		const RE::NiPoint3 fwd   = ForwardAxis(a_camRotate);
+		// Fit the body to the rect's height, then shift so the pelvis lands on its centre
+		float depth = halfHeight / (a_tanHalfV * a_rect.halfHeight);
 
-		float tanH  = a_tanHalfV * a_aspect;
-		float depth = halfHeight / a_tanHalfV;
-
-		RE::NiPoint3 camPos = a_pelvisPos - fwd * depth - right * (a_screenX * depth * tanH);
+		RE::NiPoint3 camPos = a_pelvisPos - ForwardAxis(a_camRotate) * depth -
+		                      RightAxis(a_camRotate) * (a_rect.centreX * depth * a_tanHalfH) -
+		                      UpAxis(a_camRotate) * (a_rect.centreY * depth * a_tanHalfV);
 		return BodyFraming{ camPos, depth };
 	}
 

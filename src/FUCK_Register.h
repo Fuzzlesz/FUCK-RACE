@@ -144,12 +144,7 @@ public:
 		return flags;
 	}
 
-	ImVec2 GetDefaultPos() const override
-	{
-		ImVec2 displaySize = FUCK::GetDisplaySize();
-		float  startX      = displaySize.x - FUCK::Scale(334.0f);
-		return { std::max(0.0f, startX), FUCK::Scale(100.0f) };
-	}
+	ImVec2 GetDefaultPos() const override { return RaceWidget::GetDefaultPos(); }
 
 private:
 	ImVec2 _lastPos{};

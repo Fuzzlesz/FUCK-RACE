@@ -38,6 +38,9 @@ public:
 	bool              IsJournalOpen() const { return _isJournalOpen; }
 	RE::GFxMovieView* GetCachedMenuMovie() const { return _cachedRaceMenuMovie; }
 
+	// Widget's starting position, also used as the right bound for framing Quick Zoom
+	static ImVec2 GetDefaultPos();
+
 	int  GetCurrentMode() const;
 	bool IsOnSculptTab() const { return GetCurrentMode() == 3; }
 	bool IsOnCameraTab() const { return GetCurrentMode() == 2; }

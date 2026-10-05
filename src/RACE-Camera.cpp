@@ -16,10 +16,9 @@ namespace
 	constexpr float MOUSE_ROT_MULT           =  0.010f;
 	constexpr float GP_DPAD_MULT             =  0.5f;
 
-	constexpr float QUICKZOOM_SNAP_TOLERANCE =  0.001f;
 	constexpr float PITCH_CLAMP_LIMIT        =  1.55f;
 	constexpr float SCROLL_SMOOTH_SPEED      = 15.0f;
-	constexpr float QUICKZOOM_SPEED          =  5.0f;
+	constexpr float QUICKZOOM_DURATION       =  0.8f;
 	constexpr float CINEMATIC_SPEED          = 10.0f;
 	constexpr float EPSILON                  =  0.001f;
 
@@ -32,13 +31,41 @@ namespace
 		return (FUCK::IsInputDown(a_positive) ? 1.0f : 0.0f) - (FUCK::IsInputDown(a_negative) ? 1.0f : 0.0f);
 	}
 
-	bool GetCameraEditor(RE::GFxValue& a_out)
+	bool GetMenuMember(const char* a_name, RE::GFxValue& a_out)
 	{
 		auto widget = RaceWidget::GetSingleton();
 		auto movie  = widget->GetCachedMenuMovie();
 
 		RE::GFxValue menuInstance;
-		return movie && widget->GetMenuInstance(movie, menuInstance) && menuInstance.GetMember("cameraEditor", &a_out);
+		return movie && widget->GetMenuInstance(movie, menuInstance) && menuInstance.GetMember(a_name, &a_out);
+	}
+
+	bool GetCameraEditor(RE::GFxValue& a_out) { return GetMenuMember("cameraEditor", a_out); }
+
+	// Find where RaceMenu's slider list ends on screen, to use as the left bound for framing Quick Zoom.
+	// Falls back to the default layout if a UI theme leaves it unreadable
+	float GetSliderPanelEdge()
+	{
+		constexpr float DEFAULT_EDGE = 439.0f;  // slider list's right edge in default RaceMenu, in stage units
+
+		auto         movie = RaceWidget::GetSingleton()->GetCachedMenuMovie();
+		RE::GFxValue itemList, root, bounds, xMax;
+
+		// Use the slider list itself, as racePanel's bounds also include the hidden category tabs and come out far too wide
+		if (GetMenuMember("itemList", itemList) && itemList.IsDisplayObject() && movie->GetVariable(&root, "_root")) {
+			itemList.Invoke("getBounds", &bounds, &root, 1);
+			if (bounds.IsObject() && bounds.GetMember("xMax", &xMax) && xMax.IsNumber()) {
+				float edge = FUCK::TranslateScaleformToScreen(static_cast<float>(xMax.GetNumber()), 0.0f).x;
+
+				// Ignore anything past mid-screen, as a theme has laid it out unexpectedly
+				if (edge > 0.0f && edge < FUCK::GetDisplaySize().x * 0.5f)
+					return edge;
+			}
+		}
+
+		// Translate the width rather than the position, as the panel stays on the screen's left edge while stage x 0 moves inward on ultrawide
+		logger::warn("Quick Zoom: couldn't read RaceMenu's slider list edge, using the default layout");
+		return FUCK::TranslateScaleformToScreen(DEFAULT_EDGE, 0.0f).x - FUCK::TranslateScaleformToScreen(0.0f, 0.0f).x;
 	}
 
 	void RotatePlayer(float a_amount)
@@ -102,13 +129,16 @@ bool RaceCamera::IsMouseOverWireframe() const
 
 bool RaceCamera::GetCurrentFov(float& a_horizontal, float& a_vertical) const
 {
-	if (_baseFov <= 0.0f || _fovToTanV <= 0.0f)
+	auto worldCam = RE::Main::WorldRootCamera();
+	if (!worldCam)
 		return false;
 
-	float tanV = _fovToTanV * TanHalf(ClampFov(_baseFov + _fovOffset));
+	const auto& frustum = worldCam->GetRuntimeData2().viewFrustum;
+	if (frustum.fTop <= 0.0f || frustum.fRight <= 0.0f)
+		return false;
 
-	a_vertical   = FovFromTanHalf(tanV);
-	a_horizontal = FovFromTanHalf(tanV * _fovAspect);
+	a_vertical   = FovFromTanHalf(frustum.fTop);
+	a_horizontal = FovFromTanHalf(frustum.fRight);
 	return true;
 }
 
@@ -117,30 +147,8 @@ float RaceCamera::GetFovScale() const
 	if (_baseFov <= 0.0f)
 		return 1.0f;
 
-	// Visible width grows with tan(fov / 2), so this is how much more (or less)
-	// of the scene is on screen compared to RaceMenu's default FOV
+	// Scale by how much more (or less) of the scene is on screen than at the player's FOV, as visible width grows with tan(fov / 2)
 	return FovScale(_baseFov, _baseFov + _fovOffset);
-}
-
-float RaceCamera::GetRaceMenuFov(float a_gameFov)
-{
-	constexpr float RACEMENU_VFOV = 60.0f;  // vertical FOV in RaceMenu, same at any aspect or game FOV
-
-	// worldFOV isn't the vertical FOV, so measure how it maps to the frustum once per aspect
-	ImVec2 display = FUCK::GetDisplaySize();
-	float  aspect  = display.y > 0.0f ? display.x / display.y : 0.0f;
-	if (_fovToTanV <= 0.0f || std::abs(aspect - _fovAspect) > 0.01f) {
-		auto  worldCam = RE::Main::WorldRootCamera();
-		float top      = worldCam ? worldCam->GetRuntimeData2().viewFrustum.fTop : 0.0f;
-		float tanGame  = TanHalf(a_gameFov);
-		if (top <= 0.01f || tanGame <= 0.0f)
-			return a_gameFov;
-
-		_fovToTanV = top / tanGame;
-		_fovAspect = aspect;
-	}
-
-	return FovFromTanHalf(TanHalf(RACEMENU_VFOV) / _fovToTanV);
 }
 
 float RaceCamera::GetPanScale() const
@@ -179,14 +187,18 @@ void RaceCamera::HandleInput(float a_interval)
 
 	UpdateQuickZoomBlend(a_interval);
 
-	// Keep easing and FOV running while locked so the camera holds its framing without snapping
 	if (widget->IsCameraInputLocked()) {
 		ClearInputState();
-		UpdateCinematic(RaceSettings::GetSingleton()->cinematicCamera, a_interval);
-		ApplyFov();
-		return;
+	} else {
+		HandleControls(settings, a_interval);
 	}
 
+	UpdateCinematic(RaceSettings::GetSingleton()->cinematicCamera, a_interval);
+	ApplyFov();
+}
+
+void RaceCamera::HandleControls(const CameraSettings& a_settings, float a_interval)
+{
 	FrameInput in = GatherInput();
 
 	if (in.isCameraMode) {
@@ -204,28 +216,23 @@ void RaceCamera::HandleInput(float a_interval)
 		// subject much further across the screen, so slow rotation down to keep precision
 		in.rotScale = GetFovScale();
 
-		HandleMouse(in, settings, a_interval);
-		HandleKeyboard(in, settings, a_interval);
-		HandleGamepad(in, settings, a_interval);
+		HandleMouse   (in, a_settings, a_interval);
+		HandleKeyboard(in, a_settings, a_interval);
+		HandleGamepad (in, a_settings, a_interval);
 
 		// Clamp Pitch to prevent gimbal flips when viewing directly from top/bottom
 		_targetCamRotX = std::clamp(_targetCamRotX, -PITCH_CLAMP_LIMIT, PITCH_CLAMP_LIMIT);
 	}
 
-	HandleCharacterRotation(in, settings, a_interval);
-	UpdateCinematic(RaceSettings::GetSingleton()->cinematicCamera, a_interval);
-	ApplyFov();
+	HandleCharacterRotation(in, a_settings, a_interval);
 }
 
 void RaceCamera::UpdateQuickZoomBlend(float a_interval)
 {
-	// Interpolate Quick Zoom swoop
-	const float target = _isQuickZoomed ? 1.0f : 0.0f;
-	_quickZoomBlend    = std::lerp(_quickZoomBlend, target, SmoothFactor(QUICKZOOM_SPEED, a_interval));
-
-	// Snap to target to prevent floating point drift keeping the reset button active
-	if (std::abs(_quickZoomBlend - target) < QUICKZOOM_SNAP_TOLERANCE)
-		_quickZoomBlend = target;
+	// Ease the Quick Zoom swoop in and out, landing exactly on face or body so no drift keeps the camera active
+	float step         = a_interval / QUICKZOOM_DURATION;
+	_quickZoomProgress = std::clamp(_quickZoomProgress + (_isQuickZoomed ? step : -step), 0.0f, 1.0f);
+	_quickZoomBlend    = _quickZoomProgress * _quickZoomProgress * (3.0f - 2.0f * _quickZoomProgress);
 }
 
 void RaceCamera::ClearInputState()
@@ -237,8 +244,8 @@ void RaceCamera::ClearInputState()
 	_kbmAcceleration  = 1.0f;
 	_wasMouseCharRot  = false;
 
-	// Buttons used to answer the prompt (A/B, E/Tab, X/Y) must be released
-	// before they can step the camera rate or turn the player again
+	// Wait for the buttons used on the Done prompt or name entry (A/B, E/Tab, X/Y) to be released,
+	// so they don't step the camera rate or turn the player afterwards
 	_wasRateUp        = true;
 	_wasRateDown      = true;
 	_lockoutGPCharRot = true;
@@ -556,10 +563,9 @@ void RaceCamera::ApplyFov()
 
 	auto& worldFOV = camera->GetRuntimeData2().worldFOV;
 
-	if (_baseFov == 0.0f && worldFOV != 0.0f) {
-		_gameFov = worldFOV;
-		_baseFov = GetRaceMenuFov(worldFOV);
-	}
+	// Grab the player's FOV on the first frame (restored on close), so RaceMenu matches vanilla until it's adjusted
+	if (_baseFov == 0.0f)
+		_baseFov = worldFOV;
 
 	if (_baseFov != 0.0f)
 		worldFOV = _baseFov + _fovOffset;
@@ -567,24 +573,34 @@ void RaceCamera::ApplyFov()
 
 void RaceCamera::UpdateQuickZoomFraming(const RE::NiPoint3& a_headPos, const RE::NiPoint3& a_pelvisPos, const RE::NiPoint3& a_rootPos)
 {
-	// Quick Zoom framing
-	constexpr float QUICKZOOM_MARGIN       = 1.25f;        // 1.0 = feet touch screen edge
-	constexpr float QUICKZOOM_SCREEN_X     = 1.0f / 3.0f;  // -1 = left edge, 1 = right edge (1/3 = right thirds line)
-	constexpr float FALLBACK_TAN_HALF_VFOV = 0.364f;       // ~40 deg vertical FOV
+	// Use a fixed bottom rather than RaceMenu's bottom bar, as UI themes may remove it
+	constexpr float QUICKZOOM_MARGIN = 1.25f;  // 1.0 = feet touch FRAME_BOTTOM
+	constexpr float FRAME_BOTTOM     = -0.8f;  // -1 is the screen bottom, 1 the top
 
-	// tan(half FOV) at the current FOV, horizontal from screen aspect
-	float tanV = FALLBACK_TAN_HALF_VFOV * GetFovScale();
-	if (auto worldCam = RE::Main::WorldRootCamera()) {
-		float top = worldCam->GetRuntimeData2().viewFrustum.fTop;
-		if (top > 0.01f)
-			tanV = top;
+	// Bail if the camera isn't ready yet, it's retried next frame
+	auto   worldCam = RE::Main::WorldRootCamera();
+	ImVec2 display  = FUCK::GetDisplaySize();
+	if (!worldCam || display.x <= 0.0f)
+		return;
+
+	const auto& frustum = worldCam->GetRuntimeData2().viewFrustum;
+	if (frustum.fTop <= 0.01f || frustum.fRight <= 0.01f)
+		return;
+
+	// Centre between the slider list and the widget's default x, so dragging the widget doesn't move the framing
+	float left = 0.0f, right = display.x;
+	if (!RaceWidget::GetSingleton()->IsUIHidden()) {
+		left  = GetSliderPanelEdge();
+		right = std::max(RaceWidget::GetDefaultPos().x, left + 1.0f);
 	}
 
-	ImVec2 display = FUCK::GetDisplaySize();
-	float  aspect  = (display.x > 0.0f && display.y > 0.0f) ? display.x / display.y : 16.0f / 9.0f;
+	ScreenRect rect{
+		(left + right) / display.x - 1.0f,
+		(1.0f + FRAME_BOTTOM) * 0.5f,
+		(1.0f - FRAME_BOTTOM) * 0.5f
+	};
 
-	// Fit full body height, then shift sideways so the pelvis lands on QUICKZOOM_SCREEN_X
-	auto framing = FrameFullBody(a_pelvisPos, a_rootPos, _originalRotate, tanV, aspect, QUICKZOOM_MARGIN, QUICKZOOM_SCREEN_X);
+	auto framing = FrameFullBody(a_pelvisPos, a_rootPos, _originalRotate, frustum.fTop, frustum.fRight, QUICKZOOM_MARGIN, rect);
 	if (!framing)
 		return;
 
@@ -679,8 +695,8 @@ void RaceCamera::ToggleQuickZoom()
 void RaceCamera::ResetOffsets()
 {
 	if (auto camera = RE::PlayerCamera::GetSingleton()) {
-		if (_gameFov != 0.0f)
-			camera->GetRuntimeData2().worldFOV = _gameFov;
+		if (_baseFov != 0.0f)
+			camera->GetRuntimeData2().worldFOV = _baseFov;
 		RevertCameraTransform(camera->cameraRoot.get());
 	}
 	_camOffset           = { 0.0f, 0.0f, 0.0f };
@@ -694,9 +710,9 @@ void RaceCamera::ResetOffsets()
 	_targetCamRoll       = 0.0f;
 	_targetFovOffset     = 0.0f;
 	_baseFov             = 0.0f;
-	_gameFov             = 0.0f;
 	_cameraRate          = DEFAULT_CAMERA_RATE;
 	_isQuickZoomed       = false;
+	_quickZoomProgress   = 0.0f;
 	_quickZoomBlend      = 0.0f;
 	_quickZoomDistance   = 0.0f;
 	_hasQuickZoomFraming = false;

@@ -58,6 +58,7 @@ private:
 
 	void       UpdateQuickZoomBlend(float a_interval);
 	void       ClearInputState();
+	void       HandleControls(const CameraSettings& a_settings, float a_interval);
 	FrameInput GatherInput();
 	void       UpdateWireframeLock(bool a_mmbDown);
 	void       SyncCameraTab(const FrameInput& a_in);
@@ -70,7 +71,6 @@ private:
 
 	void SetCameraTabRate(float a_rate);
 
-	float GetRaceMenuFov(float a_gameFov);
 	float GetFovScale() const;
 	float GetPanScale() const;
 	void  UpdateQuickZoomFraming(const RE::NiPoint3& a_headPos, const RE::NiPoint3& a_pelvisPos, const RE::NiPoint3& a_rootPos);
@@ -87,11 +87,9 @@ private:
 	float        _targetCamRoll   = 0.0f;
 	float        _targetFovOffset = 0.0f;
 
-	float _baseFov   = 0.0f;
-	float _gameFov   = 0.0f;  // user's FOV, restored on close
-	float _fovToTanV = 0.0f;  // tan(half vertical FOV) per tan(half worldFOV)
-	float _fovAspect = 0.0f;
+	float _baseFov = 0.0f;  // player's FOV, restored on close
 
+	float        _quickZoomProgress   = 0.0f;  // linear swoop progress, eased into _quickZoomBlend
 	float        _quickZoomBlend      = 0.0f;  // 0 = face, 1 = body
 	float        _quickZoomDistance   = 0.0f;
 	bool         _isQuickZoomed       = false;

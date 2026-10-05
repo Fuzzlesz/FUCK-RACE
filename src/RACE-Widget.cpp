@@ -92,6 +92,13 @@ void RaceWidget::Initialize()
 	}
 }
 
+ImVec2 RaceWidget::GetDefaultPos()
+{
+	ImVec2 displaySize = FUCK::GetDisplaySize();
+	float  startX      = displaySize.x - FUCK::Scale(334.0f);
+	return { std::max(0.0f, startX), FUCK::Scale(100.0f) };
+}
+
 bool RaceWidget::GetMenuInstance(RE::GFxMovieView* a_movie, RE::GFxValue& a_outInstance) const
 {
 	if (!a_movie)
