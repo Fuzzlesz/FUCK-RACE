@@ -24,6 +24,9 @@ public:
 	bool HasLightStudio() const { return _hasLightStudio; }
 
 private:
+	RE::TESObjectLIGH*       GetRaceMenuLightBase();
+	static RE::NiPointLight* FindPointLight(RE::NiAVObject* a_node);
+
 	void ScanForRaceMenuLight();
 	void ApplyToLight();
 
@@ -34,6 +37,7 @@ private:
 	bool   _requestSpawnPos = false;
 	double _lastCloseTime   = 0.0;
 
+	RE::TESObjectLIGH*  _rmLightBase = nullptr;
 	RE::ObjectRefHandle _rmLightRef;
 	bool                _lightFound = false;
 

@@ -19,14 +19,40 @@ void RaceLightManager::Initialize()
 	});
 }
 
+RE::TESObjectLIGH* RaceLightManager::GetRaceMenuLightBase()
+{
+	if (!_rmLightBase) {
+		if (auto dataHandler = RE::TESDataHandler::GetSingleton()) {
+			_rmLightBase = dataHandler->LookupForm<RE::TESObjectLIGH>(0x803, "RaceMenu.esp");
+		}
+	}
+	return _rmLightBase;
+}
+
+RE::NiPointLight* RaceLightManager::FindPointLight(RE::NiAVObject* a_node)
+{
+	if (!a_node)
+		return nullptr;
+
+	if (auto light = netimmerse_cast<RE::NiPointLight*>(a_node))
+		return light;
+
+	if (auto node = a_node->AsNode()) {
+		for (auto& child : node->GetChildren()) {
+			if (auto light = FindPointLight(child.get()))
+				return light;
+		}
+	}
+	return nullptr;
+}
+
 void RaceLightManager::OnRaceMenuOpen()
 {
 	_isOpen     = false;
 	_lightFound = false;
 	_rmLightRef.reset();
 
-	auto dataHandler = RE::TESDataHandler::GetSingleton();
-	auto rmLightBase = dataHandler ? dataHandler->LookupForm<RE::TESObjectLIGH>(0x803, "RaceMenu.esp") : nullptr;
+	auto rmLightBase = GetRaceMenuLightBase();
 
 	if (rmLightBase) {
 		_radius = rmLightBase->data.radius;
@@ -48,8 +74,7 @@ void RaceLightManager::ScanForRaceMenuLight()
 		return;
 	}
 
-	auto dataHandler = RE::TESDataHandler::GetSingleton();
-	auto rmLightBase = dataHandler ? dataHandler->LookupForm<RE::TESObjectLIGH>(0x803, "RaceMenu.esp") : nullptr;
+	auto rmLightBase = GetRaceMenuLightBase();
 
 	if (!rmLightBase) {
 		return;
@@ -84,25 +109,7 @@ void RaceLightManager::ApplyToLight()
 
 	if (ref->Is3DLoaded()) {
 		if (auto root = ref->Get3D()) {
-			RE::NiPointLight* pointLight = nullptr;
-
-			std::function<void(RE::NiAVObject*)> findLight = [&](RE::NiAVObject* node) {
-				if (pointLight)
-					return;
-				if (auto l = netimmerse_cast<RE::NiPointLight*>(node)) {
-					pointLight = l;
-					return;
-				}
-				if (auto niNode = node->AsNode()) {
-					for (auto& child : niNode->GetChildren()) {
-						if (child)
-							findLight(child.get());
-					}
-				}
-			};
-			findLight(root);
-
-			if (pointLight) {
+			if (auto pointLight = FindPointLight(root)) {
 				auto& lightData  = pointLight->GetLightRuntimeData();
 				lightData.radius = { (float)_radius, (float)_radius, (float)_radius };
 				pointLight->SetLightAttenuation((float)_radius);
