@@ -16,6 +16,19 @@
 namespace
 {
 	WidgetSettings& Prefs() { return RaceSettings::GetSingleton()->widget; }
+
+	// RaceMenu fades modeSelect out whenever a full-screen panel takes over (name entry, colour field, overlays)
+	bool IsModeSelectFaded(const RE::GFxValue& a_menuInstance)
+	{
+		RE::GFxValue modeSelect;
+		if (!a_menuInstance.GetMember("modeSelect", &modeSelect))
+			return false;
+
+		// If the Alpha flag is set, evaluate the fade. Otherwise, it is 100% visible.
+		RE::GFxValue::DisplayInfo dinfo;
+		return modeSelect.GetDisplayInfo(&dinfo) &&
+		       dinfo.IsFlagSet(RE::GFxValue::DisplayInfo::Flag::kAlpha) && dinfo.GetAlpha() < 50.0;
+	}
 }
 
 void RaceWidget::Initialize()
@@ -105,9 +118,15 @@ void RaceWidget::OnAdvanceMovie(RE::RaceSexMenu* a_menu)
 {
 	RaceAnimManager::GetSingleton()->OnAdvanceMovie();
 
+	// Check for Done's confirmation box
+	auto ui           = RE::UI::GetSingleton();
+	_isConfirmingDone = ui && ui->IsMenuOpen(RE::MessageBoxMenu::MENU_NAME);
+
 	if (a_menu && a_menu->uiMovie) {
 		RE::GFxValue menuInstance;
 		if (GetMenuInstance(a_menu->uiMovie.get(), menuInstance)) {
+			UpdateNameEntryLock(menuInstance);
+
 			if (SKEE64Compat::IsPresent()) {
 				if (!menuInstance.HasMember("FUCK_HooksApplied")) {
 					// Hijack Quick Zoom
@@ -258,6 +277,20 @@ void RaceWidget::OnAdvanceMovie(RE::RaceSexMenu* a_menu)
 	}
 }
 
+void RaceWidget::UpdateNameEntryLock(const RE::GFxValue& a_menuInstance)
+{
+	RE::GFxValue textEntry, isVisible;
+	bool         isEntryShown = a_menuInstance.GetMember("textEntry", &textEntry) && textEntry.IsObject() &&
+	                    textEntry.GetMember("_visible", &isVisible) && isVisible.GetBool();
+
+	if (isEntryShown) {
+		_isNameEntry = true;
+	} else if (_isNameEntry) {
+		// Keep the lock until modeSelect fades back in, as accepting a name hides the field a moment before the menu closes
+		_isNameEntry = IsModeSelectFaded(a_menuInstance);
+	}
+}
+
 bool RaceWidget::IsOpen() const
 {
 	bool isActive = IsActive();
@@ -271,6 +304,7 @@ bool RaceWidget::IsOpen() const
 		self->_uiHidden          = false;
 		self->_showSettings      = false;
 		self->_showLightSettings = false;
+		self->_isNameEntry       = false;
 		self->_wasActive         = false;
 
 		if (animManager->IsFrozen()) {
@@ -390,20 +424,7 @@ void RaceWidget::Draw()
 	// Stay up for our picker while RaceMenu's colour field fades modeSelect out
 	bool showColor = RaceColorPicker::GetSingleton()->IsFieldOpen();
 
-	_isMenuFaded = false;
-	if (hasMenu && !showColor) {
-		// Sync to modeSelect's alpha safely using the IsFlagSet bitmask check.
-		RE::GFxValue modeSelect;
-		if (menuInstance.GetMember("modeSelect", &modeSelect)) {
-			RE::GFxValue::DisplayInfo dinfo;
-			if (modeSelect.GetDisplayInfo(&dinfo)) {
-				// If the Alpha flag is set, evaluate the fade. Otherwise, it is 100% visible.
-				if (dinfo.IsFlagSet(RE::GFxValue::DisplayInfo::Flag::kAlpha) && dinfo.GetAlpha() < 50.0) {
-					_isMenuFaded = true;
-				}
-			}
-		}
-	}
+	_isMenuFaded = hasMenu && !showColor && IsModeSelectFaded(menuInstance);
 
 	if (currentMode != _lastMode) {
 		if (hasMenu) {

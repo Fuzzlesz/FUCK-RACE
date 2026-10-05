@@ -62,7 +62,7 @@ namespace
 bool RaceCamera::IsMouseOverWireframe() const
 {
 	auto widget = RaceWidget::GetSingleton();
-	if (!widget->IsOnSculptTab()) {
+	if (!widget->IsVisible() || !widget->IsOnSculptTab()) {
 		return false;
 	}
 
@@ -179,6 +179,14 @@ void RaceCamera::HandleInput(float a_interval)
 
 	UpdateQuickZoomBlend(a_interval);
 
+	// Keep easing and FOV running while locked so the camera holds its framing without snapping
+	if (widget->IsCameraInputLocked()) {
+		ClearInputState();
+		UpdateCinematic(RaceSettings::GetSingleton()->cinematicCamera, a_interval);
+		ApplyFov();
+		return;
+	}
+
 	FrameInput in = GatherInput();
 
 	if (in.isCameraMode) {
@@ -220,6 +228,22 @@ void RaceCamera::UpdateQuickZoomBlend(float a_interval)
 		_quickZoomBlend = target;
 }
 
+void RaceCamera::ClearInputState()
+{
+	// Drop anything queued up so it doesn't fire the moment the lock lifts
+	_pendingScroll    = 0.0f;
+	_smoothScrollZoom = 0.0f;
+	_smoothScrollFov  = 0.0f;
+	_kbmAcceleration  = 1.0f;
+	_wasMouseCharRot  = false;
+
+	// Buttons used to answer the prompt (A/B, E/Tab, X/Y) must be released
+	// before they can step the camera rate or turn the player again
+	_wasRateUp        = true;
+	_wasRateDown      = true;
+	_lockoutGPCharRot = true;
+}
+
 RaceCamera::FrameInput RaceCamera::GatherInput()
 {
 	auto widget = RaceWidget::GetSingleton();
@@ -240,8 +264,10 @@ RaceCamera::FrameInput RaceCamera::GatherInput()
 	in.rmbDown      = FUCK::IsMouseDown(1);
 
 	in.isPopupOpen  = FUCK::IsPopupOpen(nullptr, FUCK::PopupFlags::kAnyPopup);
-	in.isUIHovered  = FUCK::IsWindowHovered(1) || FUCK::IsAnyItemHovered();
-	in.isItemActive = FUCK::IsAnyItemActive();
+
+	bool isHidden   = !widget->IsVisible();
+	in.isUIHovered  = !isHidden && (FUCK::IsWindowHovered(1) || FUCK::IsAnyItemHovered());
+	in.isItemActive = !isHidden && FUCK::IsAnyItemActive();
 
 	UpdateWireframeLock(in.mmbDown);
 

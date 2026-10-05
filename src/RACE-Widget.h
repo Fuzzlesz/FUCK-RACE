@@ -29,6 +29,9 @@ public:
 	bool IsMenuFaded() const { return _isMenuFaded; }
 	bool IsVisible() const { return !_uiHidden && !_isMenuFaded; }
 
+	// Lock camera controls while the Done confirmation or name entry is up
+	bool IsCameraInputLocked() const { return _isConfirmingDone || _isNameEntry; }
+
 	bool              IsActive() const { return _isRaceMenuOpen || (_isFittingRoomOpen && _fittingRoomVisible); }
 	bool              IsRaceMenuOpen() const { return _isRaceMenuOpen; }
 	bool              IsFittingRoomOpen() const { return _isFittingRoomOpen; }
@@ -55,6 +58,7 @@ private:
 	void SaveSettings();
 	void HandlePositioning(ImVec2& expectedPos);
 	void ApplyMirrorLock();
+	void UpdateNameEntryLock(const RE::GFxValue& a_menuInstance);
 
 	// Shared panel pieces
 	bool  UpdateGamepadFocus();
@@ -78,6 +82,8 @@ private:
 	bool              _fittingRoomVisible  = false;
 	bool              _wasActive           = false;
 	bool              _isJournalOpen       = false;
+	bool              _isConfirmingDone    = false;
+	bool              _isNameEntry         = false;
 	RE::GFxMovieView* _cachedRaceMenuMovie = nullptr;
 
 	bool _showSettings       = false;

@@ -57,6 +57,7 @@ private:
 	};
 
 	void       UpdateQuickZoomBlend(float a_interval);
+	void       ClearInputState();
 	FrameInput GatherInput();
 	void       UpdateWireframeLock(bool a_mmbDown);
 	void       SyncCameraTab(const FrameInput& a_in);
