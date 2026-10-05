@@ -390,6 +390,7 @@ void RaceWidget::Draw()
 	// Stay up for our picker while RaceMenu's colour field fades modeSelect out
 	bool showColor = RaceColorPicker::GetSingleton()->IsFieldOpen();
 
+	_isMenuFaded = false;
 	if (hasMenu && !showColor) {
 		// Sync to modeSelect's alpha safely using the IsFlagSet bitmask check.
 		RE::GFxValue modeSelect;
@@ -398,7 +399,7 @@ void RaceWidget::Draw()
 			if (modeSelect.GetDisplayInfo(&dinfo)) {
 				// If the Alpha flag is set, evaluate the fade. Otherwise, it is 100% visible.
 				if (dinfo.IsFlagSet(RE::GFxValue::DisplayInfo::Flag::kAlpha) && dinfo.GetAlpha() < 50.0) {
-					return;
+					_isMenuFaded = true;
 				}
 			}
 		}
@@ -450,7 +451,7 @@ void RaceWidget::Draw()
 	s_l3Pressed  = l3Down;
 	s_r3Pressed  = r3Down;
 
-	if (_uiHidden) {
+	if (!IsVisible()) {
 		return;
 	}
 

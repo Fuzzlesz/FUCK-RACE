@@ -24,7 +24,10 @@ public:
 
 	void SetSkee64Present(bool a_present) { _skee64Present = a_present; }
 	bool IsSkee64Present() const { return _skee64Present; }
+
 	bool IsUIHidden() const { return _uiHidden; }
+	bool IsMenuFaded() const { return _isMenuFaded; }
+	bool IsVisible() const { return !_uiHidden && !_isMenuFaded; }
 
 	bool              IsActive() const { return _isRaceMenuOpen || (_isFittingRoomOpen && _fittingRoomVisible); }
 	bool              IsRaceMenuOpen() const { return _isRaceMenuOpen; }
@@ -67,6 +70,7 @@ private:
 	ImVec2 _currentPos;
 
 	bool _uiHidden      = false;
+	bool _isMenuFaded   = false;
 	bool _skee64Present = false;
 
 	bool              _isRaceMenuOpen      = false;

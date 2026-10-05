@@ -29,7 +29,7 @@ public:
 		static bool s_pendingJournal = false;
 
 		auto widget    = RaceWidget::GetSingleton();
-		bool isRSM     = widget->IsRaceMenuOpen() && !widget->IsFittingRoomOpen();
+		bool isRSM     = widget->IsRaceMenuOpen() && !widget->IsFittingRoomOpen() && widget->IsVisible();
 		bool isJournal = widget->IsJournalOpen();
 
 		for (auto event = *inputEvents; event; event = event->next) {
@@ -125,13 +125,17 @@ public:
 			               mouse.y >= _lastPos.y && mouse.y <= _lastPos.y + _lastSize.y;
 
 			bool isPopupOpen = FUCK::IsPopupOpen(nullptr, FUCK::PopupFlags::kAnyPopup);
-			bool isHidden    = RaceWidget::GetSingleton()->IsUIHidden();
+			bool isVisible   = RaceWidget::GetSingleton()->IsVisible();
 
 			bool ctrlDown = FUCK::IsModifierPressed(FUCK::Modifier::kCtrl);
 			bool rbDown   = FUCK::IsInputDown(RACE::Keys::kGP_RB);
 			bool mmbDown  = FUCK::IsInputDown(RACE::Keys::kMouse_Middle);
 
-			if (!hovered && !FUCK::IsAnyItemActive() && !isPopupOpen && !ctrlDown && !rbDown && !mmbDown && !isHidden) {
+			if (!isVisible) {
+				if (!ctrlDown && !rbDown && !mmbDown) {
+					flags = flags | FUCK::WindowFlags::kPassInputToGame;
+				}
+			} else if (!hovered && !FUCK::IsAnyItemActive() && !isPopupOpen && !ctrlDown && !rbDown && !mmbDown) {
 				flags = flags | FUCK::WindowFlags::kPassInputToGame;
 			}
 		}
@@ -175,7 +179,7 @@ public:
 
 	bool IsOpen() const override
 	{
-		return RaceEquipManager::GetSingleton()->IsWindowOpen();
+		return RaceEquipManager::GetSingleton()->IsWindowOpen() && RaceWidget::GetSingleton()->IsVisible();
 	}
 
 	void SetOpen(bool a_open) override
@@ -199,9 +203,11 @@ public:
 		               mouse.y >= _lastPos.y && mouse.y <= _lastPos.y + _lastSize.y;
 
 		bool isPopupOpen = FUCK::IsPopupOpen(nullptr, FUCK::PopupFlags::kAnyPopup);
-		bool isHidden    = RaceWidget::GetSingleton()->IsUIHidden();
+		bool isVisible   = RaceWidget::GetSingleton()->IsVisible();
 
-		if (!hovered && !FUCK::IsAnyItemActive() && !isPopupOpen && !isHidden) {
+		if (!isVisible) {
+			flags = flags | FUCK::WindowFlags::kPassInputToGame;
+		} else if (!hovered && !FUCK::IsAnyItemActive() && !isPopupOpen) {
 			flags = flags | FUCK::WindowFlags::kPassInputToGame;
 		}
 
@@ -241,7 +247,7 @@ public:
 
 	bool IsOpen() const override
 	{
-		return RaceLightManager::GetSingleton()->IsWindowOpen();
+		return RaceLightManager::GetSingleton()->IsWindowOpen() && RaceWidget::GetSingleton()->IsVisible();
 	}
 
 	void SetOpen(bool a_open) override
@@ -265,9 +271,11 @@ public:
 		               mouse.y >= _lastPos.y && mouse.y <= _lastPos.y + _lastSize.y;
 
 		bool isPopupOpen = FUCK::IsPopupOpen(nullptr, FUCK::PopupFlags::kAnyPopup);
-		bool isHidden    = RaceWidget::GetSingleton()->IsUIHidden();
+		bool isVisible   = RaceWidget::GetSingleton()->IsVisible();
 
-		if (!hovered && !FUCK::IsAnyItemActive() && !isPopupOpen && !isHidden) {
+		if (!isVisible) {
+			flags = flags | FUCK::WindowFlags::kPassInputToGame;
+		} else if (!hovered && !FUCK::IsAnyItemActive() && !isPopupOpen) {
 			flags = flags | FUCK::WindowFlags::kPassInputToGame;
 		}
 

@@ -1,4 +1,5 @@
 #include "RACE-Reference.h"
+#include "RACE-Widget.h"
 
 // --- RaceRefWindow ---
 
@@ -16,7 +17,7 @@ void RaceRefWindow::Draw()
 
 bool RaceRefWindow::IsOpen() const
 {
-	return RaceReferenceManager::GetSingleton()->IsReferenceOpen(_index);
+	return RaceReferenceManager::GetSingleton()->IsReferenceOpen(_index) && RaceWidget::GetSingleton()->IsVisible();
 }
 
 void RaceRefWindow::SetOpen(bool a_open)
@@ -31,7 +32,8 @@ FUCK::WindowFlags RaceRefWindow::GetFlags() const
 	bool              hovered = mouse.x >= _lastPos.x && mouse.x <= _lastPos.x + _lastSize.x &&
 	               mouse.y >= _lastPos.y && mouse.y <= _lastPos.y + _lastSize.y;
 
-	if (!hovered) {
+	bool isVisible = RaceWidget::GetSingleton()->IsVisible();
+	if (!isVisible || !hovered) {
 		flags = flags | FUCK::WindowFlags::kPassInputToGame;
 	}
 
