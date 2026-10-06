@@ -51,9 +51,10 @@ private:
 		bool isUIHovered   = false;
 		bool isItemActive  = false;
 
-		float rateMult = 1.0f;
-		float panScale = 1.0f;
-		float rotScale = 1.0f;
+		float rateMult  = 1.0f;
+		float panScale  = 1.0f;
+		float zoomScale = 1.0f;
+		float rotScale  = 1.0f;
 	};
 
 	void       UpdateQuickZoomBlend(float a_interval);
@@ -72,7 +73,7 @@ private:
 	void SetCameraTabRate(float a_rate);
 
 	float GetFovScale() const;
-	float GetPanScale() const;
+	float GetDistanceScale() const;
 	void  UpdateQuickZoomFraming(const RE::NiPoint3& a_headPos, const RE::NiPoint3& a_pelvisPos, const RE::NiPoint3& a_rootPos);
 
 	RE::NiPoint3 _camOffset{ 0.0f, 0.0f, 0.0f };

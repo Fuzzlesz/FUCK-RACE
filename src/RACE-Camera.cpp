@@ -151,7 +151,7 @@ float RaceCamera::GetFovScale() const
 	return FovScale(_baseFov, _baseFov + _fovOffset);
 }
 
-float RaceCamera::GetPanScale() const
+float RaceCamera::GetDistanceScale() const
 {
 	float scale = 1.0f;
 
@@ -168,8 +168,6 @@ float RaceCamera::GetPanScale() const
 			}
 		}
 	}
-
-	scale *= GetFovScale();
 
 	return std::clamp(scale, 0.1f, 10.0f);
 }
@@ -210,7 +208,10 @@ void RaceCamera::HandleControls(const CameraSettings& a_settings, float a_interv
 		in.rateMult = in.isCameraTab ? (_cameraRate / DEFAULT_CAMERA_RATE) : 1.0f;
 
 		// Pan faster when zoomed out / wide FOV so the subject crosses the screen at a consistent rate
-		in.panScale = GetPanScale();
+		in.panScale = std::clamp(GetDistanceScale() * GetFovScale(), 0.1f, 10.0f);
+
+		// Zoom by distance only, so each step covers the same share of the way to the subject at any range
+		in.zoomScale = GetDistanceScale();
 
 		// Orbit & pitch only follow FOV: at a narrow FOV the same angular step swings the
 		// subject much further across the screen, so slow rotation down to keep precision
@@ -358,7 +359,7 @@ void RaceCamera::HandleMouse(const FrameInput& a_in, const CameraSettings& a_set
 				_smoothScrollFov += amount;
 			} else {
 				// Zoom (CTRL + Scroll)
-				_smoothScrollZoom += amount;
+				_smoothScrollZoom += amount * a_in.zoomScale;
 			}
 		}
 	}
@@ -408,7 +409,8 @@ void RaceCamera::HandleKeyboard(const FrameInput& a_in, const CameraSettings& a_
 	float speed        = a_settings.kbmPanSpeed     * _kbmAcceleration * a_in.rateMult * a_in.panScale * a_interval;
 	float rotSpeed     = a_settings.kbmRotSpeed     * a_in.rateMult * a_in.rotScale * a_interval;
 	float rollSpeed    = a_settings.kbmRollSpeed    * a_in.rateMult * a_interval;
-	float zoomFovSpeed = a_settings.kbmZoomFovSpeed * a_in.rateMult * a_interval;
+	float fovSpeed     = a_settings.kbmZoomFovSpeed * a_in.rateMult * a_interval;
+	float zoomSpeed    = fovSpeed * a_in.zoomScale;
 
 	float ws = InputAxis(Keys::kKB_W, Keys::kKB_S);
 	float da = InputAxis(Keys::kKB_D, Keys::kKB_A);
@@ -421,12 +423,12 @@ void RaceCamera::HandleKeyboard(const FrameInput& a_in, const CameraSettings& a_
 
 	if (isCameraTabOnly && isSecondary) {
 		// Camera Tab Secondary (Alt): Zoom & Orbit
-		_targetCamOffset.y += ws * zoomFovSpeed;
+		_targetCamOffset.y += ws * zoomSpeed;
 		_targetCamRotZ     += da * rotSpeed;
 	} else if (isSecondary) {
 		// Global Secondary (Ctrl+Shift): Zoom, FOV, Roll & Tilt
-		_targetCamOffset.y += ws * zoomFovSpeed;
-		_targetFovOffset   += da * zoomFovSpeed;
+		_targetCamOffset.y += ws * zoomSpeed;
+		_targetFovOffset   += da * fovSpeed;
 		_targetCamRoll     += eq * rollSpeed;
 		_targetCamRotX     += rf * rotSpeed;
 	} else if (isCameraTabOnly) {
@@ -448,7 +450,7 @@ void RaceCamera::HandleGamepad(const FrameInput& a_in, const CameraSettings& a_s
 		return;
 
 	float panSpeed  = a_settings.gpPanSpeed  * a_in.rateMult * a_in.panScale * a_interval;
-	float zoomSpeed = a_settings.gpZoomSpeed * a_in.rateMult * a_interval;
+	float zoomSpeed = a_settings.gpZoomSpeed * a_in.rateMult * a_in.zoomScale * a_interval;
 	float rotSpeed  = a_settings.gpRotSpeed  * a_in.rateMult * a_in.rotScale * a_interval;
 	float rollSpeed = a_settings.gpRollSpeed * a_in.rateMult * a_interval;
 	float fovSpeed  = a_settings.gpFovSpeed  * a_in.rateMult * a_interval;
