@@ -265,8 +265,7 @@ void RaceLightManager::DrawWindow()
 			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(8.0f)));
 			FUCK::Separator();
 			FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
-			std::string btnText = std::string(ICON_FA_GEAR " ") + FUCK::Translate("$RACE_LightStudio");
-			if (FUCK::Button(btnText.c_str())) {
+			if (FUCK::Button(FUCK::IconText(ICON_FA_GEAR, "$RACE_LightStudio"_T))) {
 				auto         widget = RaceWidget::GetSingleton();
 				RE::GFxValue menuInstance;
 				if (auto movie = widget->GetCachedMenuMovie()) {
