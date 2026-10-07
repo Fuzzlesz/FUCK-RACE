@@ -38,8 +38,11 @@ public:
 	bool              IsJournalOpen() const { return _isJournalOpen; }
 	RE::GFxMovieView* GetCachedMenuMovie() const { return _cachedRaceMenuMovie; }
 
-	// Widget's starting position, also used as the right bound for framing Quick Zoom
+	// Widget's starting top-right corner, before the user moves it in FUCK's editor
 	static ImVec2 GetDefaultPos();
+
+	// Base size of the widget and its panels, including the user's resize
+	static float GetClusterScale();
 
 	int  GetCurrentMode() const;
 	bool IsOnSculptTab() const { return GetCurrentMode() == 3; }
@@ -57,9 +60,7 @@ public:
 	void ToggleRaceStats();
 
 private:
-	void LoadPosition();
 	void SaveSettings();
-	void HandlePositioning(ImVec2& expectedPos);
 	void ApplyMirrorLock();
 	void UpdateNameEntryLock(const RE::GFxValue& a_menuInstance);
 
@@ -71,10 +72,7 @@ private:
 	bool  DrawCameraSettings();
 	bool  DrawGeneralSettings();
 
-	bool _isDragging = false;
-
-	ImVec2 _anchorPos;
-	ImVec2 _currentPos;
+	float _windowScale = 1.0f;
 
 	bool _uiHidden      = false;
 	bool _isMenuFaded   = false;

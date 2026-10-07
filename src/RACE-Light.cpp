@@ -186,7 +186,7 @@ void RaceLightManager::DrawInlineSettings()
 		return;
 	}
 
-	float clusterScale  = 0.8f;
+	float clusterScale  = RaceWidget::GetClusterScale();
 	float settingsWidth = FUCK::Scale(360.0f * clusterScale);
 
 	// RB is held to keep gamepad focus on the widget, so stop it also acting as ImGui's
@@ -245,7 +245,7 @@ void RaceLightManager::DrawInlineSettings()
 
 void RaceLightManager::DrawWindow()
 {
-	float clusterScale  = 0.8f;
+	float clusterScale  = RaceWidget::GetClusterScale();
 	float expectedWidth = FUCK::Scale(360.0f * clusterScale);
 
 	FUCK::PushScale(clusterScale);

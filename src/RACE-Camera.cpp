@@ -11,6 +11,9 @@ namespace Keys = RACE::Keys;
 namespace
 {
 	// Multipliers & Magic Numbers
+
+	constexpr float RIGHT_INSET              = 334.0f;  // from the screen's right edge at 1080p, quickzoom framing.
+
 	constexpr float MOUSE_WHEEL_MULT         =  0.1f;
 	constexpr float MOUSE_MOVE_MULT          =  0.002f;
 	constexpr float MOUSE_ROT_MULT           =  0.010f;
@@ -589,11 +592,11 @@ void RaceCamera::UpdateQuickZoomFraming(const RE::NiPoint3& a_headPos, const RE:
 	if (frustum.fTop <= 0.01f || frustum.fRight <= 0.01f)
 		return;
 
-	// Centre between the slider list and the widget's default x, so dragging the widget doesn't move the framing
+	// Centre between the slider list and a fixed right inset
 	float left = 0.0f, right = display.x;
 	if (!RaceWidget::GetSingleton()->IsUIHidden()) {
 		left  = GetSliderPanelEdge();
-		right = std::max(RaceWidget::GetDefaultPos().x, left + 1.0f);
+		right = std::max(display.x - FUCK::Scale(RIGHT_INSET), left + 1.0f);
 	}
 
 	ScreenRect rect{

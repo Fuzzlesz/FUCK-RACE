@@ -33,8 +33,6 @@ namespace
 
 void RaceWidget::Initialize()
 {
-	LoadPosition();
-
 	FittingRoomCompat::Detect();
 
 	RaceReferenceManager::GetSingleton()->ScanReferences();
@@ -94,9 +92,18 @@ void RaceWidget::Initialize()
 
 ImVec2 RaceWidget::GetDefaultPos()
 {
-	ImVec2 displaySize = FUCK::GetDisplaySize();
-	float  startX      = displaySize.x - FUCK::Scale(334.0f);
-	return { std::max(0.0f, startX), FUCK::Scale(100.0f) };
+	constexpr float DEFAULT_INSET_X = 7.0f;    // from the screen's right edge, at 1080p
+	constexpr float DEFAULT_Y       = 100.0f;  // from the screen's top edge, at 1080p
+
+	// Top-right corner, as the window is right-anchored
+	return { FUCK::GetDisplaySize().x - FUCK::Scale(DEFAULT_INSET_X), FUCK::Scale(DEFAULT_Y) };
+}
+
+float RaceWidget::GetClusterScale()
+{
+	// Cached from the widget's own window, so the Equip and Light windows can match it
+	constexpr float BASE_SCALE = 0.8f;
+	return BASE_SCALE * GetSingleton()->_windowScale;
 }
 
 bool RaceWidget::GetMenuInstance(RE::GFxMovieView* a_movie, RE::GFxValue& a_outInstance) const
@@ -330,32 +337,6 @@ bool RaceWidget::IsOpen() const
 	return isActive && !_isJournalOpen;
 }
 
-void RaceWidget::HandlePositioning(ImVec2& expectedPos)
-{
-	bool isHovered = FUCK::IsWindowHovered(0);
-
-	float nx = 0.0f, ny = 0.0f;
-	if (FUCK::WASDNudge(nx, ny, isHovered)) {
-		_anchorPos.x += FUCK::Scale(nx);
-		_anchorPos.y += FUCK::Scale(ny);
-		expectedPos = _anchorPos;
-		SaveSettings();
-	}
-
-	if (isHovered && FUCK::IsMouseClicked(0)) {
-		_isDragging = true;
-	}
-
-	if (_isDragging && FUCK::IsMouseReleased(0)) {
-		_isDragging = false;
-		SaveSettings();
-	}
-
-	if (!FUCK::IsMouseDown(0)) {
-		_isDragging = false;
-	}
-}
-
 int RaceWidget::GetCurrentMode() const
 {
 	if (!_cachedRaceMenuMovie) {
@@ -402,19 +383,7 @@ bool RaceWidget::IsOnRaceTab() const
 
 void RaceWidget::Draw()
 {
-	static bool s_clamped = false;
-	auto        initRes   = FUCK::InitializeCustomPosition(
-        _anchorPos,
-        RaceWidgetWindow::GetSingleton()->GetDefaultPos(),
-        s_clamped);
-
-	if (initRes == FUCK::PosInitResult::kNotReady) {
-		return;
-	}
-	if (initRes == FUCK::PosInitResult::kChanged) {
-		_currentPos = _anchorPos;
-		SaveSettings();
-	}
+	_windowScale = FUCK::GetWindowScale();
 
 	RaceColorPicker::GetSingleton()->CommitRecent();
 
@@ -497,35 +466,8 @@ void RaceWidget::Draw()
 	auto lightManager = RaceLightManager::GetSingleton();
 	lightManager->Update();
 
-	float clusterScale = 0.8f;
-	float alignOffset  = 0.0f;
-
-	float baseWidth = FUCK::Scale(360.0f * clusterScale);
-
-	// Calculate alignment shift so the right edge stays firmly anchored to the screen edge
-	if (isGamepad && eqManager->HasItems()) {
-		float equipWidth = baseWidth * 1.5f;
-		alignOffset      = equipWidth - baseWidth;
-	}
-
-	bool   isEditing   = FUCK::IsMenuOpen();
-	ImVec2 expectedPos = _anchorPos;
-
-	if (isEditing) {
-		HandlePositioning(expectedPos);
-	}
-
-	ImVec2 renderPos = expectedPos;
-	renderPos.x -= alignOffset;
-
-	if (!isEditing || (!_isDragging && !FUCK::IsMouseDown(0))) {
-		_currentPos = renderPos;
-		FUCK::SetWindowPos(_currentPos, ImGuiCond_Always);
-	} else if (_isDragging) {
-		_currentPos  = FUCK::GetWindowPos();
-		_anchorPos.x = _currentPos.x + alignOffset;
-		_anchorPos.y = _currentPos.y;
-	}
+	float clusterScale = GetClusterScale();
+	float baseWidth    = FUCK::Scale(360.0f * clusterScale);
 
 	FUCK::PushScale(clusterScale);
 
@@ -556,19 +498,6 @@ void RaceWidget::Draw()
 	FUCK::EndGroup();
 
 	FUCK::PopScale();
-
-	if (isEditing) {
-		ImVec2 winMin = FUCK::GetItemRectMin();
-		ImVec2 winMax = FUCK::GetItemRectMax();
-
-		float padding = FUCK::Scale(4.0f);
-		winMin.x -= padding;
-		winMin.y -= padding;
-		winMax.x += padding;
-		winMax.y += padding;
-
-		FUCK::DrawEditorBounds(winMin, winMax, FUCK::IsWindowHovered(0) ? FUCK::EditorBoundsState::kHovered : FUCK::EditorBoundsState::kNormal, 2.0f, true);
-	}
 }
 
 void RaceWidget::DrawIdleSelector(float a_comboWidth, bool& a_requestFocus)
@@ -682,7 +611,7 @@ void RaceWidget::DrawToolButtons(float a_comboWidth, float a_rowStartX)
 
 	float spacingX = FUCK::GetStyleVarVec(ImGuiStyleVar_ItemSpacing).x;
 
-	float clusterScale = 0.8f;
+	float clusterScale = GetClusterScale();
 	float dynScale     = FUCK::GetGlobalScale() * clusterScale;
 
 	float btnPadX    = 8.0f * dynScale;
@@ -838,7 +767,7 @@ void RaceWidget::DrawCameraReset(float a_comboWidth, float a_rowStartX, bool a_i
 	}
 
 	if (hasCam) {
-		float clusterScale = 0.8f;
+		float clusterScale = GetClusterScale();
 		float dynScale     = FUCK::GetGlobalScale() * clusterScale;
 		float btnPadX      = 8.0f * dynScale;
 		float resetWidth   = FUCK::CalcTextSize("$RACE_ResetCam"_T).x + (btnPadX * 2.0f);
@@ -994,7 +923,7 @@ void RaceWidget::DrawMainPanel()
 {
 	bool  requestFocus = UpdateGamepadFocus();
 	bool  isGamepad    = FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
-	float clusterScale = 0.8f;
+	float clusterScale = GetClusterScale();
 	float comboWidth   = FUCK::Scale(360.0f * clusterScale);
 	bool  isRaceTab    = IsOnRaceTab();
 
@@ -1034,7 +963,7 @@ void RaceWidget::DrawMainPanel()
 void RaceWidget::DrawFittingRoomPanel()
 {
 	bool  requestFocus = UpdateGamepadFocus();
-	float clusterScale = 0.8f;
+	float clusterScale = GetClusterScale();
 	float comboWidth   = FUCK::Scale(360.0f * clusterScale);
 
 	float equipIndent = DrawGamepadEquipCombo(comboWidth, requestFocus);
@@ -1158,7 +1087,7 @@ void RaceWidget::DrawSculptPanel()
 	if (!SKEE64Compat::IsPresent())
 		return;
 
-	float clusterScale = 0.8f;
+	float clusterScale = GetClusterScale();
 	float comboWidth   = FUCK::Scale(360.0f * clusterScale);
 	float rowStartX    = FUCK::GetCursorPos().x;
 

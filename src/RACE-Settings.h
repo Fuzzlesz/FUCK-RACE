@@ -22,8 +22,6 @@ struct CameraSettings
 
 struct WidgetSettings
 {
-	ImVec2 pos{ -1.0f, -1.0f };  // unscaled, -1 = default
-
 	bool startFrozen       = false;
 	bool hideIdles         = false;
 	bool disableMirror     = false;

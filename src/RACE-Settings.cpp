@@ -61,9 +61,6 @@ namespace
 		const WidgetSettings def;
 		const char*          sec = kWidgetSection;
 
-		a_out.pos.x             = FUCK::INI::LoadFloat(a_ini, sec, "X",                 def.pos.x);
-		a_out.pos.y             = FUCK::INI::LoadFloat(a_ini, sec, "Y",                 def.pos.y);
-
 		a_out.startFrozen       = FUCK::INI::LoadBool (a_ini, sec, "StartFrozen",       def.startFrozen);
 		a_out.hideIdles         = FUCK::INI::LoadBool (a_ini, sec, "HideIdles",         def.hideIdles);
 		a_out.disableMirror     = FUCK::INI::LoadBool (a_ini, sec, "DisableMirror",     def.disableMirror);
@@ -77,9 +74,6 @@ namespace
 	{
 		const WidgetSettings def;
 		const char*          sec = kWidgetSection;
-
-		FUCK::INI::SaveDouble(a_ini, sec, "X",                 a_in.pos.x,             def.pos.x);
-		FUCK::INI::SaveDouble(a_ini, sec, "Y",                 a_in.pos.y,             def.pos.y);
 
 		FUCK::INI::SaveBool  (a_ini, sec, "StartFrozen",       a_in.startFrozen,       def.startFrozen);
 		FUCK::INI::SaveBool  (a_ini, sec, "HideIdles",         a_in.hideIdles,         def.hideIdles);

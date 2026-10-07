@@ -14,25 +14,9 @@ namespace
 	}
 }
 
-void RaceWidget::LoadPosition()
-{
-	_anchorPos  = FUCK::Scale(RaceSettings::GetSingleton()->widget.pos);
-	_currentPos = _anchorPos;
-}
-
 void RaceWidget::SaveSettings()
 {
-	float  resScale   = FUCK::GetResolutionScale();
-	ImVec2 defaultPos = RaceWidgetWindow::GetSingleton()->GetDefaultPos();
-
-	auto toStored = [resScale](float a_pos, float a_default) {
-		float pos = a_pos / resScale;
-		return std::abs(pos - a_default / resScale) < 0.00001f ? -1.0f : pos;
-	};
-
-	auto settings        = RaceSettings::GetSingleton();
-	settings->widget.pos = { toStored(_anchorPos.x, defaultPos.x), toStored(_anchorPos.y, defaultPos.y) };
-	settings->Save();
+	RaceSettings::GetSingleton()->Save();
 }
 
 void RaceWidget::CloseSettings()
@@ -57,7 +41,7 @@ void RaceWidget::DrawSettingsPanel(bool a_includeCamera)
 	}
 
 	float panelScale    = 0.9f;
-	float clusterScale  = 0.8f * panelScale;
+	float clusterScale  = GetClusterScale() * panelScale;
 	float settingsWidth = FUCK::Scale(440.0f * clusterScale);
 
 	FUCK::PushScale(clusterScale);

@@ -1,4 +1,5 @@
 #include "RACE-Equip.h"
+#include "RACE-Widget.h"
 
 void RaceEquipManager::Initialize()
 {
@@ -133,7 +134,7 @@ void RaceEquipManager::ToggleItem(int a_index)
 
 void RaceEquipManager::DrawWindow()
 {
-	float clusterScale  = 0.8f;
+	float clusterScale  = RaceWidget::GetClusterScale();
 	float expectedWidth = FUCK::Scale(360.0f * clusterScale);
 
 	FUCK::PushScale(clusterScale);

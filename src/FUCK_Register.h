@@ -115,11 +115,11 @@ public:
 			FUCK::WindowFlags::kIgnoreUserScale |
 			FUCK::WindowFlags::kAutoResize      |
 			FUCK::WindowFlags::kNoResize        |
-			FUCK::WindowFlags::kCustomPosition  ;
+			FUCK::WindowFlags::kEditable        |
+			FUCK::WindowFlags::kScalable        |
+			FUCK::WindowFlags::kAnchorRight     ;
 
 		if (!FUCK::IsMenuOpen()) {
-			flags = flags | FUCK::WindowFlags::kNoMove;
-
 			ImVec2 mouse   = FUCK::GetMousePos();
 			bool   hovered = mouse.x >= _lastPos.x && mouse.x <= _lastPos.x + _lastSize.x &&
 			               mouse.y >= _lastPos.y && mouse.y <= _lastPos.y + _lastSize.y;
