@@ -1,6 +1,6 @@
 #include "FUCK_Register.h"
 
-#include "IconsFontAwesome6.h"
+#include "API/IconsFontAwesome6.h"
 
 #include "RACE-Anims.h"
 #include "RACE-Camera.h"

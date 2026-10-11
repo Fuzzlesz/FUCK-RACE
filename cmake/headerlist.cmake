@@ -1,7 +1,8 @@
 set(headers ${headers}
 	src/API/FUCK_API.h
+	src/API/FUCK_ColorPalette.h
+	src/API/IconsFontAwesome6.h
 	src/FUCK_Register.h
-	src/IconsFontAwesome6.h
 	src/PCH.h
 	src/RACE-Anims.h
 	src/RACE-Camera.h

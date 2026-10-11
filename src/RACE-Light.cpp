@@ -1,7 +1,7 @@
 #include "RACE-Light.h"
 #include "RACE-Widget.h"
 
-#include "IconsFontAwesome6.h"
+#include "API/IconsFontAwesome6.h"
 
 void RaceLightManager::Initialize()
 {
