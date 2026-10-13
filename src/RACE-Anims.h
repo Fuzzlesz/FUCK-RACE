@@ -11,8 +11,6 @@ public:
 	void SetPlayerFrozen(bool a_frozen);
 	bool IsFrozen() const { return _isFrozen; }
 
-	void OnAdvanceMovie();
-
 	bool AreIdlesValid() const { return _idlesValid; }
 	void InvalidateIdles() { _idlesValid = false; }
 

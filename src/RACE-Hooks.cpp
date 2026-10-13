@@ -25,17 +25,13 @@ namespace Hooks
 	{
 		static void thunk(RE::RaceSexMenu* a_this, float a_interval, std::uint32_t a_currentTime)
 		{
-			auto camera = RE::PlayerCamera::GetSingleton();
-			auto root   = camera ? camera->cameraRoot.get() : nullptr;
-
-			RaceCamera::GetSingleton()->RevertCameraTransform(root);
+			RaceCamera::GetSingleton()->Revert();
 
 			func(a_this, a_interval, a_currentTime);
 
 			RaceWidget::GetSingleton()->OnAdvanceMovie(a_this);
 
-			RaceCamera::GetSingleton()->HandleInput(a_interval);
-			RaceCamera::GetSingleton()->ApplyTransform(root);
+			RaceCamera::GetSingleton()->Update(a_interval);
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;

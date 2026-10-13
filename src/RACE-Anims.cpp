@@ -129,70 +129,11 @@ void RaceAnimManager::UpdateValidIdles()
 	_idlesValid    = true;
 }
 
+// FUCK holds the player still and keeps their eyes open, and remembers this hold is RaceMenu's
 void RaceAnimManager::SetPlayerFrozen(bool a_frozen)
 {
-	auto player = RE::PlayerCharacter::GetSingleton();
-	if (!player)
-		return;
-
-	if (a_frozen) {
-		if (const auto currentProcess = player->GetActorRuntimeData().currentProcess) {
-			currentProcess->ClearMuzzleFlashes();
-		}
-
-		player->GetActorRuntimeData().boolFlags.reset(RE::Actor::BOOL_FLAGS::kShouldAnimGraphUpdate);
-
-		if (const auto charController = player->GetCharController()) {
-			charController->flags.set(RE::CHARACTER_FLAGS::kNotPushable);
-			charController->flags.reset(RE::CHARACTER_FLAGS::kRecordHits);
-			charController->flags.reset(RE::CHARACTER_FLAGS::kHitFlags);
-		}
-
-		player->EnableAI(false);
-		player->StopMoving(1.0f);
-
-		if (const auto animData = player->GetFaceGenAnimationData()) {
-			animData->eyesHeadingOffset = 0.0f;
-			animData->eyesPitchOffset   = 0.0f;
-			animData->eyesOffsetTimer   = FLT_MAX;
-			animData->eyesBlinkingTimer = FLT_MAX;
-			animData->eyesBlinkingStage = RE::BSFaceGenAnimationData::EyesBlinkingStage::BlinkDelay;
-		}
-	} else {
-		player->GetActorRuntimeData().boolFlags.set(RE::Actor::BOOL_FLAGS::kShouldAnimGraphUpdate);
-
-		if (const auto charController = player->GetCharController()) {
-			charController->flags.reset(RE::CHARACTER_FLAGS::kNotPushable);
-			charController->flags.set(RE::CHARACTER_FLAGS::kRecordHits);
-			charController->flags.set(RE::CHARACTER_FLAGS::kHitFlags);
-		}
-
-		player->EnableAI(true);
-
-		if (const auto animData = player->GetFaceGenAnimationData()) {
-			animData->eyesOffsetTimer   = 0.0f;
-			animData->eyesBlinkingTimer = 0.0f;
-		}
-	}
-
+	FUCK::SetActorFrozen(RE::PlayerCharacter::GetSingleton(), a_frozen);
 	_isFrozen = a_frozen;
-}
-
-void RaceAnimManager::OnAdvanceMovie()
-{
-	if (_isFrozen) {
-		auto player = RE::PlayerCharacter::GetSingleton();
-		if (player) {
-			if (const auto animData = player->GetFaceGenAnimationData()) {
-				animData->eyesHeadingOffset                                                            = 0.0f;
-				animData->eyesPitchOffset                                                              = 0.0f;
-				animData->eyesOffsetTimer                                                              = FLT_MAX;
-				animData->eyesBlinkingTimer                                                            = FLT_MAX;
-				animData->modifierKeyFrame.values[RE::BSFaceGenKeyframeMultiple::Modifier::BlinkLeft]  = 0.0f;
-				animData->modifierKeyFrame.values[RE::BSFaceGenKeyframeMultiple::Modifier::BlinkRight] = 0.0f;
-			}
-		}
-	}
 }
 
 void RaceAnimManager::PlaySelectedIdle()

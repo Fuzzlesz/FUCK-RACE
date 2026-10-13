@@ -1,12 +1,12 @@
 set(headers ${headers}
 	src/API/FUCK_API.h
+	src/API/FUCK_Camera.h
 	src/API/FUCK_ColorPalette.h
 	src/API/IconsFontAwesome6.h
 	src/FUCK_Register.h
 	src/PCH.h
 	src/RACE-Anims.h
 	src/RACE-Camera.h
-	src/RACE-CameraMaths.h
 	src/RACE-ColorPicker.h
 	src/RACE-Compat.h
 	src/RACE-Equip.h

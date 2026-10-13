@@ -15,6 +15,7 @@ public:
 
 	void DrawIdleSelector(float a_comboWidth, bool& a_requestFocus);
 	bool DrawReferenceSelector(float a_comboWidth, bool* a_requestFocus = nullptr);
+	bool DrawCameraPresets(float a_comboWidth);
 	void DrawPlaybackControls();
 	void DrawToolButtons(float a_comboWidth, float a_rowStartX);
 	void DrawCameraHelpMarker();

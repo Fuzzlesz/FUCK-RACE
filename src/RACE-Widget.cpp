@@ -130,8 +130,6 @@ bool RaceWidget::GetMenuInstance(RE::GFxMovieView* a_movie, RE::GFxValue& a_outI
 
 void RaceWidget::OnAdvanceMovie(RE::RaceSexMenu* a_menu)
 {
-	RaceAnimManager::GetSingleton()->OnAdvanceMovie();
-
 	// Check for Done's confirmation box
 	auto ui           = RE::UI::GetSingleton();
 	_isConfirmingDone = ui && ui->IsMenuOpen(RE::MessageBoxMenu::MENU_NAME);
@@ -325,7 +323,7 @@ bool RaceWidget::IsOpen() const
 			animManager->SetPlayerFrozen(false);
 		}
 
-		RaceCamera::GetSingleton()->ResetOffsets();
+		RaceCamera::GetSingleton()->EndSession();
 
 		RaceEquipManager::GetSingleton()->RestoreEquipped();
 		RaceEquipManager::GetSingleton()->Clear();
@@ -546,6 +544,16 @@ bool RaceWidget::DrawReferenceSelector(float a_comboWidth, bool* a_requestFocus)
 	return false;
 }
 
+bool RaceWidget::DrawCameraPresets(float a_comboWidth)
+{
+	// Takes the reference images' place, as those are hidden on the Camera tab
+	if (!IsOnCameraTab())
+		return false;
+
+	FUCK::DrawCameraPresets(RaceCamera::GetSingleton(), a_comboWidth);
+	return true;
+}
+
 void RaceWidget::DrawPlaybackControls()
 {
 	auto        animManager = RaceAnimManager::GetSingleton();
@@ -592,11 +600,7 @@ void RaceWidget::DrawCameraHelpMarker()
 {
 	// Pull the help marker inwards
 	FUCK::SameLine(0.0f, FUCK::Scale(2.0f));
-	if (FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad) {
-		FUCK::HelpMarker("$RACE_CamTooltip_GP"_T);
-	} else {
-		FUCK::HelpMarker("$RACE_CamTooltip_KBM"_T);
-	}
+	FUCK::DrawCameraHelpMarker(FUCK::CameraSessionFlags::kNone, "$RACE_CamTooltip_KBM"_T, "$RACE_CamTooltip_GP"_T);
 }
 
 void RaceWidget::DrawToolButtons(float a_comboWidth, float a_rowStartX)
@@ -933,7 +937,7 @@ void RaceWidget::DrawMainPanel()
 
 	DrawIdleSelector(comboWidth, requestFocus);
 
-	if (DrawReferenceSelector(comboWidth, &requestFocus)) {
+	if (DrawReferenceSelector(comboWidth, &requestFocus) || DrawCameraPresets(comboWidth)) {
 		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(2.0f)));
 	}
 

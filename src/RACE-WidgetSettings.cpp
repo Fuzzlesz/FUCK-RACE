@@ -1,18 +1,9 @@
 #include "FUCK_Register.h"
 
+#include "RACE-Camera.h"
 #include "RACE-Compat.h"
 #include "RACE-Settings.h"
 #include "RACE-Widget.h"
-
-namespace
-{
-	// KBM/GP speeds use different units and have shipped in user INIs, so rather than
-	// migrate them, map each to a shared 1-20 display with the default at 10
-	bool SpeedSlider(const char* a_label, float* a_value, float a_default)
-	{
-		return FUCK::ScaledSliderFloat(a_label, a_value, a_default / 10.0f, a_default * 2.0f, 10.0f / a_default);
-	}
-}
 
 void RaceWidget::SaveSettings()
 {
@@ -89,85 +80,22 @@ void RaceWidget::DrawSettingsPanel(bool a_includeCamera)
 
 bool RaceWidget::DrawCameraSettings()
 {
-	constexpr int TAB_SET_SELECTED = 2;  // ImGuiTabItemFlags_SetSelected
+	auto& prefs   = RaceSettings::GetSingleton()->widget;
+	bool  changed = false;
 
-	auto& prefs       = RaceSettings::GetSingleton()->widget;
-	auto& camSettings = RaceSettings::GetSingleton()->camera;
-	bool  changed     = false;
-	bool  isGamepad   = FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad;
-
-	const CameraSettings def;
-
-	// Open on the tab for whichever device is in use
-	int flagsKBM = (_settingsJustOpened && !isGamepad) ? TAB_SET_SELECTED : 0;
-	int flagsGP  = (_settingsJustOpened && isGamepad) ? TAB_SET_SELECTED : 0;
+	// FUCK saves its own camera settings, so only our own changes are reported
+	auto flags = FUCK::CameraSettingsFlags::kNone;
+	if (prefs.showAdvanced) {
+		flags = flags | FUCK::CameraSettingsFlags::kSpeeds;
+	}
+	if (_settingsJustOpened) {
+		flags = flags | FUCK::CameraSettingsFlags::kSelectDeviceTab;
+	}
+	FUCK::DrawCameraSettings(flags);
 
 	if (prefs.showAdvanced) {
-		ImVec2 tabRowPos   = FUCK::GetCursorPos();
-		float  tabRowWidth = FUCK::GetContentRegionAvail().x;
-
-		if (FUCK::BeginTabBar("RaceSettingsTabs", 0)) {
-			// Keyboard & Mouse Tab
-			if (!isGamepad) {
-				if (FUCK::BeginTabItem("$RACE_CamSettings_KBM"_T, flagsKBM)) {
-					FUCK::PushID("KBM");
-					FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
-
-					changed |= SpeedSlider("$RACE_SpeedPan"_T,   &camSettings.kbmPanSpeed,     def.kbmPanSpeed);
-					changed |= SpeedSlider("$RACE_SpeedOrbit"_T, &camSettings.kbmRotSpeed,     def.kbmRotSpeed);
-					changed |= SpeedSlider("$RACE_SpeedRoll"_T,  &camSettings.kbmRollSpeed,    def.kbmRollSpeed);
-					changed |= SpeedSlider("$RACE_SpeedFOV"_T,   &camSettings.kbmZoomFovSpeed, def.kbmZoomFovSpeed);
-
-					FUCK::PopID();
-					FUCK::EndTabItem();
-				}
-			}
-
-			// Gamepad Tab
-			if (FUCK::BeginTabItem("$RACE_CamSettings_GP"_T, flagsGP)) {
-				FUCK::PushID("GP");
-				FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
-
-				changed |= SpeedSlider("$RACE_SpeedPan"_T,     &camSettings.gpPanSpeed,     def.gpPanSpeed);
-				changed |= SpeedSlider("$RACE_SpeedZoom"_T,    &camSettings.gpZoomSpeed,    def.gpZoomSpeed);
-				changed |= SpeedSlider("$RACE_SpeedOrbit"_T,   &camSettings.gpRotSpeed,     def.gpRotSpeed);
-				changed |= SpeedSlider("$RACE_SpeedRoll"_T,    &camSettings.gpRollSpeed,    def.gpRollSpeed);
-				changed |= SpeedSlider("$RACE_SpeedFOV_GP"_T,  &camSettings.gpFovSpeed,     def.gpFovSpeed);
-				changed |= SpeedSlider("$RACE_SpeedCharRot"_T, &camSettings.gpCharRotSpeed, def.gpCharRotSpeed);
-
-				changed |= FUCK::ScaledSliderFloat("$RACE_Deadzone"_T, &camSettings.gpDeadzone, 0.0f, 0.5f, 40.0f);
-
-				FUCK::PopID();
-				FUCK::EndTabItem();
-			}
-			FUCK::EndTabBar();
-		}
-
-		if (camSettings.HasCustomSpeeds()) {
-			static float s_resetWidth = 0.0f;
-
-			ImVec2 afterTabs  = FUCK::GetCursorPos();
-			float  resetWidth = s_resetWidth > 0.0f ? s_resetWidth : FUCK::CalcTextSize("$RACE_RestoreDefaults"_T).x + FUCK::GetStyleVarVec(ImGuiStyleVar_FramePadding).x * 2.0f;
-
-			FUCK::SetCursorPos(ImVec2(tabRowPos.x + tabRowWidth - resetWidth - FUCK::Scale(30.0f), tabRowPos.y - FUCK::Scale(3.0f)));
-
-			bool resetPressed = FUCK::Button("$RACE_RestoreDefaults"_T);
-			s_resetWidth      = FUCK::GetItemRectSize().x;
-
-			if (resetPressed) {
-				camSettings = def;
-				changed     = true;
-			}
-
-			FUCK::SetCursorPos(afterTabs);
-		}
-
-		FUCK::Dummy(ImVec2(0.0f, FUCK::Scale(4.0f)));
-
 		changed |= FUCK::Checkbox("$RACE_ShowFov"_T, &prefs.showFov, true, true);
 	}
-
-	changed |= FUCK::Checkbox("$RACE_CinematicCamera"_T, &RaceSettings::GetSingleton()->cinematicCamera, true, true);
 
 	return changed;
 }

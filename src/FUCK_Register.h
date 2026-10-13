@@ -75,15 +75,10 @@ public:
 
 	void Draw() override
 	{
-		float mouseWheel = FUCK::GetMouseWheel();
-		if (mouseWheel != 0.0f) {
-			RaceCamera::GetSingleton()->AccumulateScroll(mouseWheel);
-		}
-
 		RaceWidget::GetSingleton()->Draw();
 
 		// Detect click outside to close the inline settings panel
-		bool isMouseDown = FUCK::IsInputDown(RACE::Keys::kMBBase) || FUCK::IsInputDown(RACE::Keys::kMouse_Right);
+		bool isMouseDown = FUCK::IsInputDown(RACE::Keys::kMouse_Left) || FUCK::IsInputDown(RACE::Keys::kMouse_Right);
 		bool clicked = isMouseDown && !_wasMouseDown;
 		_wasMouseDown = isMouseDown;
 
@@ -127,16 +122,9 @@ public:
 			bool isPopupOpen = FUCK::IsPopupOpen(nullptr, FUCK::PopupFlags::kAnyPopup);
 			bool isVisible   = RaceWidget::GetSingleton()->IsVisible();
 
-			bool ctrlDown = FUCK::IsModifierPressed(FUCK::Modifier::kCtrl);
-			bool rbDown   = FUCK::IsInputDown(RACE::Keys::kGP_RB);
-			bool mmbDown  = FUCK::IsInputDown(RACE::Keys::kMouse_Middle);
-
-			if (!isVisible) {
-				// Pass input to the game while the UI is hidden so the name can be typed, unless camera modifiers are held
-				if (!ctrlDown && !rbDown && !mmbDown) {
-					flags = flags | FUCK::WindowFlags::kPassInputToGame;
-				}
-			} else if (!hovered && !FUCK::IsAnyItemActive() && !isPopupOpen && !ctrlDown && !rbDown && !mmbDown) {
+			// FUCK holds RaceMenu's input itself while the camera's controls are held, so only the widget's own use matters here.
+			// While the UI is hidden it's all RaceMenu's, so the name can be typed
+			if (!isVisible || (!hovered && !FUCK::IsAnyItemActive() && !isPopupOpen)) {
 				flags = flags | FUCK::WindowFlags::kPassInputToGame;
 			}
 		}
