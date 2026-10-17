@@ -23,11 +23,7 @@ public:
 
 	void OnAdvanceMovie(RE::RaceSexMenu* a_menu);
 
-	void SetSkee64Present(bool a_present) { _skee64Present = a_present; }
-	bool IsSkee64Present() const { return _skee64Present; }
-
 	bool IsUIHidden() const { return _uiHidden; }
-	bool IsMenuFaded() const { return _isMenuFaded; }
 	bool IsVisible() const { return !_uiHidden && !_isMenuFaded; }
 
 	// Lock camera controls while the Done confirmation or name entry is up
@@ -75,9 +71,8 @@ private:
 
 	float _windowScale = 1.0f;
 
-	bool _uiHidden      = false;
-	bool _isMenuFaded   = false;
-	bool _skee64Present = false;
+	bool _uiHidden    = false;
+	bool _isMenuFaded = false;
 
 	bool              _isRaceMenuOpen      = false;
 	bool              _isFittingRoomOpen   = false;

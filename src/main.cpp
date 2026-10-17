@@ -57,7 +57,7 @@ SKSE_PLUGIN_LOAD(const SKSE::LoadInterface* a_skse)
 	messaging->RegisterListener([](SKSE::MessagingInterface::Message* msg) {
 		if (msg->type == SKSE::MessagingInterface::kDataLoaded) {
 			if (FUCK::Connect("FUCK-RACE")) {
-				RaceWidget::GetSingleton()->SetSkee64Present(SKEE64Compat::Detect());
+				SKEE64Compat::Detect();
 				FUCK_Register::Install();
 			} else {
 				SKSE::log::error("FUCK.dll not found or version mismatch. Tool disabled.");

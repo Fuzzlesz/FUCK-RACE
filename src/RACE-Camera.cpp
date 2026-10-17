@@ -8,7 +8,6 @@ namespace Keys = RACE::Keys;
 namespace
 {
 	constexpr float RIGHT_INSET         = 334.0f;  // from the screen's right edge at 1080p, quickzoom framing.
-	constexpr float QUICKZOOM_MARGIN    =  1.25f;  // room around the body, as RaceMenu's bottom bar covers part of the screen
 
 	constexpr float GP_DPAD_MULT        =  0.5f;
 
@@ -308,7 +307,7 @@ void RaceCamera::ToggleQuickZoom()
 	if (!GetFramingRect(rect))
 		return;
 
-	FUCK::SetCameraBodyFraming(this, !FUCK::IsCameraBodyFramed(this), rect, QUICKZOOM_MARGIN);
+	FUCK::SetCameraBodyFraming(this, !FUCK::IsCameraBodyFramed(this), rect);
 }
 
 void RaceCamera::ResetOffsets()

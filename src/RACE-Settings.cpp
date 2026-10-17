@@ -2,7 +2,6 @@
 
 namespace
 {
-	constexpr const char* kCameraSection = "Camera";
 	constexpr const char* kWidgetSection = "Widget";
 	constexpr const char* kColorSection  = "Colour";
 
@@ -64,10 +63,5 @@ void RaceSettings::SaveColors() const
 
 void RaceSettings::Save() const
 {
-	GetINI().Save([this](CSimpleIniA& ini) {
-		kWidgetFields.Save(ini, widget);
-
-		// Camera settings now live in FUCK's camera.ini, so clear what earlier versions left here
-		ini.Delete(kCameraSection, nullptr);
-	});
+	GetINI().Save(kWidgetFields, widget);
 }
