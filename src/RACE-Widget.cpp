@@ -254,35 +254,38 @@ void RaceWidget::OnAdvanceMovie(RE::RaceSexMenu* a_menu)
 				}
 			}
 
-			// Hide Light Control using the textField clearing trick so layout collapses properly
-			if (GetCurrentMode() == 0) {
-				bool isGamepad = (FUCK::GetInputDevice() == FUCK::InputDevice::kGamepad);
-				if (!isGamepad) {
-					RE::GFxValue bottomBar, buttonPanel;
-					if (menuInstance.GetMember("bottomBar", &bottomBar) && bottomBar.GetMember("buttonPanel", &buttonPanel)) {
-						int lightBtnIdx = isGamepad ? 2 : 3;
+			// Leaves RaceMenu's light toggle out of the bottom bar on mouse and keyboard, as Ctrl is FUCK's camera modifier.
+			// Skipped as it's added, so every theme lays out the rest as normal
+			RE::GFxValue navPanel;
+			if (menuInstance.GetMember("navPanel", &navPanel) && navPanel.IsObject() && !navPanel.HasMember("FUCK_origAddButton")) {
+				RE::GFxValue origAddButton;
+				if (navPanel.GetMember("addButton", &origAddButton) && origAddButton.IsObject()) {
+					class AddButtonHandler : public RE::GFxFunctionHandler
+					{
+					public:
+						void Call(Params& a_params) override
+						{
+							if (!a_params.thisPtr || a_params.argCount < 1 || !a_params.args)
+								return;
 
-						auto killButton = [&](int idx) {
-							std::string  btnName = "button" + std::to_string(idx);
-							RE::GFxValue btn;
-							if (buttonPanel.GetMember(btnName.c_str(), &btn)) {
-								RE::GFxValue isVisible;
-								if (btn.GetMember("_visible", &isVisible) && isVisible.GetBool()) {
-									btn.SetMember("_visible", RE::GFxValue(false));
+							// RaceMenu then adds a click listener to the button it's given, which does nothing when there's none
+							RE::GFxValue text;
+							const bool   isLight = a_params.args[0].GetMember("text", &text) && text.IsString() && std::string_view(text.GetString()).starts_with("$Light");
+							if (isLight && FUCK::GetInputDevice() != FUCK::InputDevice::kGamepad)
+								return;
 
-									RE::GFxValue textField;
-									if (btn.GetMember("textField", &textField)) {
-										textField.SetMember("text", RE::GFxValue(""));
-										textField.SetMember("htmlText", RE::GFxValue(""));
-									}
+							a_params.thisPtr->Invoke("FUCK_origAddButton", a_params.retVal, a_params.args, a_params.argCount);
+						}
+					};
 
-									RE::GFxValue arg(true);
-									buttonPanel.Invoke("updateButtons", nullptr, &arg, 1);
-								}
-							}
-						};
-						killButton(lightBtnIdx);
-					}
+					navPanel.SetMember("FUCK_origAddButton", origAddButton);
+
+					RE::GFxValue addButton;
+					a_menu->uiMovie->CreateFunction(&addButton, new AddButtonHandler());
+					navPanel.SetMember("addButton", addButton);
+
+					// The bar is already built, so build it again without the light. RaceMenu rebuilds it itself when the device changes
+					menuInstance.Invoke("updateBottomBar", nullptr, nullptr, 0);
 				}
 			}
 		}
