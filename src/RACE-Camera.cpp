@@ -107,7 +107,7 @@ void RaceCamera::BeginSessionIfNeeded()
 
 	FUCK::CameraSessionOptions opts;
 	opts.client  = this;
-	opts.flags   = FUCK::CameraSessionFlags::kPresetHotkeys | FUCK::CameraSessionFlags::kResumable;
+	opts.flags   = FUCK::CameraSessionFlags::kPresetHotkeys | FUCK::CameraSessionFlags::kResumable | FUCK::CameraSessionFlags::kRunPhysics;
 	FUCK::BeginCameraSession(opts);
 }
 
