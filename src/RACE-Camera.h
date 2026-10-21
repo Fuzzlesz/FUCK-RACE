@@ -30,6 +30,7 @@ private:
 	void OnCameraTakenOver() override { _isTakenOver = true; }
 
 	void BeginSessionIfNeeded();
+	void ApplyWideScreen();
 	void SyncQuickZoomButton();
 	bool GetFramingRect(FUCK::CameraScreenRect& a_out) const;
 
@@ -45,4 +46,12 @@ private:
 	bool  _wireframeLock   = false;
 	bool  _isTakenOver     = false;  // another plugin took the camera, so don't take it back until RaceMenu reopens
 	bool  _wasFramed       = false;
+
+	// Wider than 16:9: RaceMenu's camera as RaceMenu placed it, and as moved back to the 16:9 distance (see ApplyWideScreen)
+	RE::NiPoint3 _wideRaceMenuPos;
+	RE::NiPoint3 _wideShownPos;
+	RE::NiPoint3 _wideCachedRaceMenuPos;
+	RE::NiPoint3 _wideCachedPos;
+	bool         _wideShown  = false;
+	bool         _wideCached = false;
 };

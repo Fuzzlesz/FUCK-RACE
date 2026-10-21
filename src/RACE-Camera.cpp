@@ -31,6 +31,23 @@ namespace
 
 	bool GetCameraEditor(RE::GFxValue& a_out) { return GetMenuMember("cameraEditor", a_out); }
 
+	// RaceMenu works out its camera distance from the screen's width, so wider than 16:9 it sits too close, and at 32:9 inside the head.
+	// Skyrim keeps the vertical FOV whatever the width, so the 16:9 distance gives the 16:9 framing. Thank you theosw, from Ultrawide Chargen Camera Fix
+	float WideScreenScale()
+	{
+		float horizontal = 0.0f, vertical = 0.0f;
+		if (!FUCK::GetCameraFov(horizontal, vertical) || vertical <= 0.0f)
+			return 1.0f;
+
+		const float aspect = std::tan(RE::deg_to_rad(horizontal) * 0.5f) / std::tan(RE::deg_to_rad(vertical) * 0.5f);
+		return std::max(aspect / (16.0f / 9.0f), 1.0f);
+	}
+
+	bool NearlyEqual(const RE::NiPoint3& a_lhs, const RE::NiPoint3& a_rhs)
+	{
+		return std::abs(a_lhs.x - a_rhs.x) < 0.01f && std::abs(a_lhs.y - a_rhs.y) < 0.01f && std::abs(a_lhs.z - a_rhs.z) < 0.01f;
+	}
+
 	// Find where RaceMenu's slider list ends on screen, to use as the left bound for framing Quick Zoom.
 	// Falls back to the default layout if a UI theme leaves it unreadable
 	float GetSliderPanelEdge()
@@ -107,7 +124,7 @@ void RaceCamera::BeginSessionIfNeeded()
 
 	FUCK::CameraSessionOptions opts;
 	opts.client  = this;
-	opts.flags   = FUCK::CameraSessionFlags::kPresetHotkeys | FUCK::CameraSessionFlags::kResumable | FUCK::CameraSessionFlags::kRunPhysics;
+	opts.flags   = FUCK::CameraSessionFlags::kPresetHotkeys | FUCK::CameraSessionFlags::kResumable;
 	FUCK::BeginCameraSession(opts);
 }
 
@@ -137,6 +154,54 @@ void RaceCamera::Revert()
 {
 	BeginSessionIfNeeded();
 	FUCK::RevertCamera(this);
+
+	// RaceMenu's own camera back too, so RaceMenu and FUCK both work from where RaceMenu put it
+	auto root = RE::PlayerCamera::GetSingleton()->cameraRoot.get();
+	if (root && _wideShown && NearlyEqual(root->local.translate, _wideShownPos)) {
+		root->local.translate = _wideRaceMenuPos;
+		RE::NiUpdateData ctx;
+		root->Update(ctx);
+	}
+	_wideShown = false;
+}
+
+void RaceCamera::ApplyWideScreen()
+{
+	auto root = RE::PlayerCamera::GetSingleton()->cameraRoot.get();
+	if (!root)
+		return;
+
+	const RE::NiPoint3 raceMenuPos = root->local.translate;
+
+	// Worked out again only when RaceMenu moves its camera, so the head's idle sway can't wiggle it
+	if (!_wideCached || !NearlyEqual(raceMenuPos, _wideCachedRaceMenuPos)) {
+		_wideCached = false;
+
+		const float scale = WideScreenScale();
+		auto        model = RE::PlayerCharacter::GetSingleton()->Get3D(false);
+		auto        head  = model ? model->GetObjectByName("NPC Head [Head]") : nullptr;
+		if (scale < 1.01f || !head)
+			return;
+
+		// Back along the view (the camera looks down its y axis) by however much nearer than 16:9 RaceMenu put it, keeping it centred as it was
+		const auto&        rotate  = root->local.rotate;
+		const RE::NiPoint3 forward = { rotate.entry[0][1], rotate.entry[1][1], rotate.entry[2][1] };
+		const float        depth   = forward.Dot(head->world.translate - raceMenuPos);
+		if (depth < 1.0f)
+			return;
+
+		_wideCachedRaceMenuPos = raceMenuPos;
+		_wideCachedPos         = raceMenuPos - forward * ((scale - 1.0f) * depth);
+		_wideCached            = true;
+	}
+
+	root->local.translate = _wideCachedPos;
+	RE::NiUpdateData ctx;
+	root->Update(ctx);
+
+	_wideRaceMenuPos = raceMenuPos;
+	_wideShownPos    = _wideCachedPos;
+	_wideShown       = true;
 }
 
 void RaceCamera::Update(float a_interval)
@@ -145,6 +210,10 @@ void RaceCamera::Update(float a_interval)
 	if (widget->IsJournalOpen() || widget->IsFittingRoomOpen()) {
 		return;
 	}
+
+	// Under FUCK's offsets, so they move from the corrected view
+	if (FUCK::IsCameraSessionActive(this))
+		ApplyWideScreen();
 
 	FUCK::UpdateCamera(this, a_interval);
 }
