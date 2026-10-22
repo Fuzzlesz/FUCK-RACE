@@ -134,6 +134,8 @@ void RaceWidget::OnAdvanceMovie(RE::RaceSexMenu* a_menu)
 	auto ui           = RE::UI::GetSingleton();
 	_isConfirmingDone = ui && ui->IsMenuOpen(RE::MessageBoxMenu::MENU_NAME);
 
+	RaceLightManager::GetSingleton()->OnAdvanceMovie();
+
 	if (a_menu && a_menu->uiMovie) {
 		RE::GFxValue menuInstance;
 		if (GetMenuInstance(a_menu->uiMovie.get(), menuInstance)) {

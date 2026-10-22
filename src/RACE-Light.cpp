@@ -7,6 +7,8 @@ void RaceLightManager::Initialize()
 {
 	_hasLightStudio = (GetModuleHandleW(L"FUCK-LIGHT.dll") != nullptr);
 
+	SKSE::GetModCallbackEventSource()->AddEventSink(this);
+
 	FUCK::AddMenuListener(this, [](const char* menuName, bool opening, void* userdata) {
 		if (std::string_view(menuName) == RE::RaceSexMenu::MENU_NAME) {
 			auto mgr = static_cast<RaceLightManager*>(userdata);
@@ -51,6 +53,8 @@ void RaceLightManager::OnRaceMenuOpen()
 	_isOpen     = false;
 	_lightFound = false;
 	_rmLightRef.reset();
+	_openTime     = FUCK::GetTime();
+	_lastScanTime = 0.0;
 
 	auto rmLightBase = GetRaceMenuLightBase();
 
@@ -63,8 +67,84 @@ void RaceLightManager::OnRaceMenuOpen()
 
 void RaceLightManager::OnRaceMenuClose()
 {
+	RemoveOwnLight();
 	_lightFound = false;
 	_rmLightRef.reset();
+}
+
+// RaceMenu's script places its light as the menu opens, so a game busy with scripts can open the menu without one, or get it very late.
+// After a moment without it one is placed here, in the same spot, and handed back to RaceMenu's own if that turns up
+void RaceLightManager::OnAdvanceMovie()
+{
+	constexpr double WAIT_FOR_RACEMENU = 0.5;  // seconds, used for light
+	constexpr double SCAN_INTERVAL     = 0.25;
+
+	const double now = FUCK::GetTime();
+
+	// RaceMenu's light is looked for until it's found, even with ours up, so the two are never both lit
+	const bool ownLight = static_cast<bool>(_ownLightRef.get());
+	if ((!_lightFound || ownLight) && now - _lastScanTime >= SCAN_INTERVAL) {
+		_lastScanTime = now;
+		ScanForRaceMenuLight();
+	}
+
+	if (!_lightFound && !ownLight && now - _openTime >= WAIT_FOR_RACEMENU) {
+		PlaceOwnLight();
+	}
+}
+
+// RaceMenu's Light button sends this for its script to toggle the light, which waits behind every other script.
+// It's answered here as it's sent, so the light switches at once and the script's toggle lands on a light already switched
+RE::BSEventNotifyControl RaceLightManager::ProcessEvent(const SKSE::ModCallbackEvent* a_event, RE::BSTEventSource<SKSE::ModCallbackEvent>*)
+{
+	if (a_event && a_event->eventName == "RSM_ToggleLight") {
+		if (auto ref = _rmLightRef.get()) {
+			if (a_event->numArg != 0.0f) {
+				ref->Enable(false);
+			} else {
+				ref->Disable();
+			}
+		}
+	}
+	return RE::BSEventNotifyControl::kContinue;
+}
+
+// Where RaceMenu's script puts it: 60 units in front of the player, at their height
+void RaceLightManager::PlaceOwnLight()
+{
+	auto player = RE::PlayerCharacter::GetSingleton();
+	auto base   = GetRaceMenuLightBase();
+	if (!player || !base || !player->GetParentCell()) {
+		return;
+	}
+
+	auto ref = player->PlaceObjectAtMe(base, false);
+	if (!ref) {
+		return;
+	}
+
+	const float  heading = player->GetAngleZ();
+	RE::NiPoint3 pos     = player->GetPosition();
+	pos.x += 60.0f * std::sin(heading);
+	pos.y += 60.0f * std::cos(heading);
+	pos.z += player->GetHeight();
+	ref->SetPosition(pos);
+
+	_ownLightRef = ref->GetHandle();
+	_rmLightRef  = _ownLightRef;
+	_lightFound  = true;
+	_needsUpdate = true;  // so any light settings changed this session carry over
+
+	logger::info("RaceMenu's light hadn't been placed by its script, so RaceMenu Enhancer placed one");
+}
+
+void RaceLightManager::RemoveOwnLight()
+{
+	if (auto ref = _ownLightRef.get()) {
+		ref->Disable();
+		ref->SetDelete(true);
+	}
+	_ownLightRef.reset();
 }
 
 void RaceLightManager::ScanForRaceMenuLight()
@@ -80,11 +160,18 @@ void RaceLightManager::ScanForRaceMenuLight()
 		return;
 	}
 
+	const auto ownLight = _ownLightRef.get();
 	for (auto& item : player->GetParentCell()->GetRuntimeData().references) {
 		if (auto ref = item.get()) {
-			if (ref->GetBaseObject() == rmLightBase && !ref->IsDeleted()) {
-				_rmLightRef = ref;
-				_lightFound = true;
+			if (ref->GetBaseObject() == rmLightBase && !ref->IsDeleted() && ref != ownLight.get()) {
+				// RaceMenu's own arrived, so it takes over from ours. It's moved to ours first, as the script places it at the player's feet and only then in front
+				if (ownLight) {
+					ref->SetPosition(ownLight->GetPosition());
+				}
+				RemoveOwnLight();
+				_rmLightRef  = ref->GetHandle();
+				_lightFound  = true;
+				_needsUpdate = true;
 				break;
 			}
 		}

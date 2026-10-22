@@ -1,8 +1,12 @@
 #pragma once
 
-class RaceLightManager : public REX::Singleton<RaceLightManager>
+class RaceLightManager :
+	public REX::Singleton<RaceLightManager>,
+	public RE::BSTEventSink<SKSE::ModCallbackEvent>
 {
 public:
+	RE::BSEventNotifyControl ProcessEvent(const SKSE::ModCallbackEvent* a_event, RE::BSTEventSource<SKSE::ModCallbackEvent>*) override;
+
 	void Initialize();
 	void Update();
 
@@ -20,6 +24,7 @@ public:
 
 	void OnRaceMenuOpen();
 	void OnRaceMenuClose();
+	void OnAdvanceMovie();
 
 	bool HasLightStudio() const { return _hasLightStudio; }
 
@@ -29,6 +34,8 @@ private:
 
 	void ScanForRaceMenuLight();
 	void ApplyToLight();
+	void PlaceOwnLight();
+	void RemoveOwnLight();
 
 	bool   _isOpen         = false;
 	bool   _hasLightStudio = false;
@@ -40,6 +47,11 @@ private:
 	RE::TESObjectLIGH*  _rmLightBase = nullptr;
 	RE::ObjectRefHandle _rmLightRef;
 	bool                _lightFound = false;
+
+	// Placed here when RaceMenu's script is too slow to place its own (see OnAdvanceMovie)
+	RE::ObjectRefHandle _ownLightRef;
+	double              _openTime     = 0.0;
+	double              _lastScanTime = 0.0;
 
 	float         _fade        = 1.0f;
 	std::uint32_t _radius      = 500;
