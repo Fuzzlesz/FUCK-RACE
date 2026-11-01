@@ -152,6 +152,10 @@ bool RaceCamera::GetFramingRect(FUCK::CameraScreenRect& a_out) const
 
 void RaceCamera::Revert()
 {
+	// The camera's held where it is behind the system menu, as Update stops applying it, so it doesn't drop back to RaceMenu's view
+	if (RaceWidget::GetSingleton()->IsJournalOpen())
+		return;
+
 	BeginSessionIfNeeded();
 	FUCK::RevertCamera(this);
 
