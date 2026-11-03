@@ -28,13 +28,26 @@ public:
 		static bool s_eatingEscape   = false;
 		static bool s_pendingJournal = false;
 
+		// Escape on keyboard, Start on controller. Start is always ours, so the game can't open the journal as well
+		const auto isBackOut = [](const RE::ButtonEvent* a_btn) {
+			switch (a_btn->GetDevice()) {
+			case RE::INPUT_DEVICE::kKeyboard:
+				return a_btn->GetIDCode() == RACE::Keys::kKB_Esc;
+			case RE::INPUT_DEVICE::kGamepad:
+				// The event carries the controller's own button code, not FUCK's kGP_Start
+				return a_btn->GetIDCode() == static_cast<uint32_t>(RE::BSWin32GamepadDevice::Key::kStart);
+			default:
+				return false;
+			}
+		};
+
 		auto widget    = RaceWidget::GetSingleton();
 		bool isRSM     = widget->IsRaceMenuOpen() && !widget->IsFittingRoomOpen() && widget->IsVisible();
 		bool isJournal = widget->IsJournalOpen();
 
 		for (auto event = *inputEvents; event; event = event->next) {
 			auto btn = event->AsButtonEvent();
-			if (!btn || btn->GetDevice() != RE::INPUT_DEVICE::kKeyboard || btn->GetIDCode() != static_cast<uint32_t>(RE::BSWin32KeyboardDevice::Key::kEscape))
+			if (!btn || !isBackOut(btn))
 				continue;
 
 			// Trap Escape to close panels or open Journal.

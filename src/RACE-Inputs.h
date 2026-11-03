@@ -13,4 +13,5 @@ namespace RACE::Keys
 	inline constexpr uint32_t kKB_E   = static_cast<uint32_t>(RE::BSWin32KeyboardDevice::Key::kE);
 	inline constexpr uint32_t kKB_Tab = static_cast<uint32_t>(RE::BSWin32KeyboardDevice::Key::kTab);
 	inline constexpr uint32_t kKB_F11 = static_cast<uint32_t>(RE::BSWin32KeyboardDevice::Key::kF11);
+	inline constexpr uint32_t kKB_Esc = static_cast<uint32_t>(RE::BSWin32KeyboardDevice::Key::kEscape);
 }
