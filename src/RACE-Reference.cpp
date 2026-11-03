@@ -52,10 +52,6 @@ void RaceReferenceManager::ScanReferences()
 	std::string     refDir = FUCK::PluginSettings().GetConfigDirectory() + "\\references";
 	std::error_code ec;
 
-	if (!fs::exists(refDir, ec)) {
-		fs::create_directories(refDir, ec);
-	}
-
 	if (fs::exists(refDir, ec) && fs::is_directory(refDir, ec)) {
 		for (const auto& entry : fs::directory_iterator(refDir, ec)) {
 			if (entry.is_regular_file(ec)) {
